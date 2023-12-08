@@ -4,8 +4,8 @@ import { SkinViewer } from "~/components/SkinViewer";
 
 export const meta: MetaFunction = () => {
   return [
-    { title: "New Remix App" },
-    { name: "description", content: "Welcome to Remix!" },
+    { title: "Striped Skins" },
+    { name: "description", content: "Another MineLP Skin Viewer" },
   ];
 };
 
@@ -27,7 +27,7 @@ export default function Index() {
     <div className='w-screen h-screen bg-zinc-700'>
       <Form method='GET' className='p-4'>
         <input
-          className='w-full py-2 px-4 rounded-md'
+          className='w-full py-2 px-4 rounded-md outline-none focus:ring ring-orange-500 transition'
           type='text'
           name="skin"
           placeholder='Ссылка на скин'
