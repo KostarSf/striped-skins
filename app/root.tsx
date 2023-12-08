@@ -10,6 +10,7 @@ import {
 } from "@remix-run/react";
 
 import styles from "./tailwind.css";
+import { useEffect } from "react";
 
 export const links: LinksFunction = () => [
   ...(cssBundleHref ? [{ rel: "stylesheet", href: cssBundleHref }] : []),
@@ -17,11 +18,25 @@ export const links: LinksFunction = () => [
 ];
 
 export default function App() {
+  useEffect(() => {
+    function preventDefault(e: TouchEvent) {
+      e.preventDefault();
+    }
+
+    document.body.addEventListener("touchmove", preventDefault, {
+      passive: false,
+    });
+
+    return () => {
+      document.body.removeEventListener('touchmove', preventDefault)
+    }
+  }, []);
+
   return (
-    <html lang="en">
+    <html lang='en'>
       <head>
-        <meta charSet="utf-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta charSet='utf-8' />
+        <meta name='viewport' content='width=device-width, initial-scale=1' />
         <Meta />
         <Links />
       </head>

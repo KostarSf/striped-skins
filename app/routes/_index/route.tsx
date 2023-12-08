@@ -1,4 +1,4 @@
-import { useLoaderData, useNavigation } from "@remix-run/react";
+import { useLoaderData } from "@remix-run/react";
 import { Interface } from "./components/Interface";
 import { Layout } from "./components/Layout";
 import { ViewerErrorMessage } from "./components/ViewerErrrorMessage";
@@ -8,14 +8,11 @@ import type { loader } from "./server";
 export { loader, meta } from "./server";
 
 export default function Index() {
-  const { skinUrl } = useLoaderData<typeof loader>();
-
-  const navigation = useNavigation();
-  const skinIsLoaded = navigation.state === "idle";
+  const { skinUrl, comparedSkinUrl } = useLoaderData<typeof loader>();
 
   return (
     <Layout>
-      <ViewerWrapper skinUrl={skinUrl} skinIsLoaded={skinIsLoaded} />
+      <ViewerWrapper skinUrl={skinUrl} comparedSkinUrl={comparedSkinUrl} />
       <Interface />
     </Layout>
   );

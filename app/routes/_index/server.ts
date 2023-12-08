@@ -8,11 +8,21 @@ export const meta: MetaFunction = () => {
 };
 
 export const loader = ({ request }: LoaderFunctionArgs) => {
-  const skin = new URL(request.url).searchParams.get("skin");
+  const searchParams = new URL(request.url).searchParams;
+
+  const skin = searchParams.get("skin");
+  const comparedSkin = searchParams.get("compare-with");
+
+  const comparedSkinUrl = comparedSkin
+    ? "/skin-proxy?url=" + comparedSkin
+    : null;
 
   if (!skin) {
-    return { skinUrl: "/steve_pony.png" };
+    return { skinUrl: "/steve_pony.png", comparedSkinUrl };
   }
 
-  return { skinUrl: "/skin-proxy?url=" + skin };
+  return {
+    skinUrl: "/skin-proxy?url=" + skin,
+    comparedSkinUrl,
+  };
 };
