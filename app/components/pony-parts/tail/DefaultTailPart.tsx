@@ -1,17 +1,13 @@
-import type { Texture } from "three";
-import { Plane } from "~/components/model/Plane";
-import { SCALE_MULTIPLIER } from "~/components/model/constants";
-import type { XyzArray } from "~/components/model/types";
+import { Plane } from "~/components/model-components/Plane";
+import type { XyzArray } from "~/components/model-components/types";
 
 type DefaultTailPartProps = {
-  texture: Texture;
   position: XyzArray;
   drawTop?: boolean;
   drawBottom?: boolean;
   type: 'topHalf' | 'bottomHalf'
 };
 export function DefaultTailPart({
-  texture,
   position,
   drawTop,
   drawBottom,
@@ -22,72 +18,48 @@ export function DefaultTailPart({
   return (
     <group position={position}>
       <Plane // Front
-        texture={texture}
-        parameters={{
-          textureSize: 64,
-          layout: [32, uv, 4, 4],
-        }}
+        layout={[32, uv, 4, 4]}
         position={[0, 0, 0.4]}
         rotation={[0, 0, 0]}
-        scale={[4 * SCALE_MULTIPLIER, 4 * SCALE_MULTIPLIER]}
+        scale={[4, 4]}
       />
 
       <Plane // Back
-        texture={texture}
-        parameters={{
-          textureSize: 64,
-          layout: [32, uv, 4, 4],
-        }}
+        layout={[32, uv, 4, 4]}
         position={[0, 0, -0.4]}
         rotation={[0, Math.PI, 0]}
-        scale={[4 * SCALE_MULTIPLIER, 4 * SCALE_MULTIPLIER]}
+        scale={[4, 4]}
       />
 
       <Plane // Right
-        texture={texture}
-        parameters={{
-          textureSize: 64,
-          layout: [36, uv, 4, 4],
-        }}
+        layout={[36, uv, 4, 4]}
         position={[-0.4, 0, 0]}
         rotation={[0, -Math.PI / 2, 0]}
-        scale={[4 * SCALE_MULTIPLIER, 4 * SCALE_MULTIPLIER]}
+        scale={[4, 4]}
       />
 
       <Plane // Left
-        texture={texture}
-        parameters={{
-          textureSize: 64,
-          layout: [36, uv, 4, 4],
-        }}
+        layout={[36, uv, 4, 4]}
         position={[0.4, 0, 0]}
         rotation={[0, Math.PI / 2, 0]}
-        scale={[4 * SCALE_MULTIPLIER, 4 * SCALE_MULTIPLIER]}
+        scale={[4, 4]}
       />
 
       {drawTop && (
         <Plane // Top
-          texture={texture}
-          parameters={{
-            textureSize: 64,
-            layout: [32, uv, 4, 4],
-          }}
+          layout={[32, uv, 4, 4]}
           position={[0, 0.4, 0]}
           rotation={[-Math.PI / 2, 0, 0]}
-          scale={[4 * SCALE_MULTIPLIER, 4 * SCALE_MULTIPLIER]}
+          scale={[4, 4]}
         />
       )}
 
       {drawBottom && (
         <Plane // Bottom
-          texture={texture}
-          parameters={{
-            textureSize: 64,
-            layout: [32, uv, 4, 4],
-          }}
+          layout={[32, uv, 4, 4]}
           position={[0, -0.4, 0]}
           rotation={[Math.PI / 2, 0, 0]}
-          scale={[4 * SCALE_MULTIPLIER, 4 * SCALE_MULTIPLIER]}
+          scale={[4, 4]}
         />
       )}
     </group>

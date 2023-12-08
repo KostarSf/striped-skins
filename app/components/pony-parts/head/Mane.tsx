@@ -1,24 +1,21 @@
-import type { Texture } from "three";
-import { Box } from "~/components/model/Box";
-import type { XyzArray } from "~/components/model/types";
+import { Box } from "~/components/model-components/Box";
+import type { XyzArray } from "~/components/model-components/types";
 
 type ManeProps = {
-  texture: Texture;
   position: XyzArray;
 };
 
-export function Mane({ texture, position }: ManeProps) {
+export function Mane({ position }: ManeProps) {
   return (
     <Box // Mane
-      texture={texture}
       parameters={{
-        textureSize: 64,
         uvScale: [8, 8, 8],
         uvOrigin: [32, 0],
       }}
       position={position}
       rotation={[0, 0, 0]}
       scale={[9, 9, 9]}
+      innerSides
     />
   );
 }

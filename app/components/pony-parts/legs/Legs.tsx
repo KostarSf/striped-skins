@@ -1,15 +1,13 @@
-import type { Texture } from "three";
-import type { XyzArray } from "~/components/model/types";
+import type { XyzArray } from "~/components/model-components/types";
 import { BaseLegs } from "./BaseLegs";
 
 type LegsProps = {
-  texture: Texture;
   position: XyzArray
 };
-export function Legs({ texture, position }: LegsProps) {
+export function Legs({ position }: LegsProps) {
   return (
     <>
-      <BaseLegs texture={texture} position={position} />
+      <BaseLegs position={position} />
     </>
   );
 }

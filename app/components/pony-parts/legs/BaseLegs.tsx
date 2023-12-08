@@ -1,18 +1,14 @@
-import type { Texture } from "three";
-import { Box } from "~/components/model/Box";
-import type { XyzArray } from "~/components/model/types";
+import { Box } from "~/components/model-components/Box";
+import type { XyzArray } from "~/components/model-components/types";
 
 type BaseLegsProps = {
-  texture: Texture;
   position: XyzArray;
 };
-export function BaseLegs({ texture, position }: BaseLegsProps) {
+export function BaseLegs({ position }: BaseLegsProps) {
   return (
     <group position={position}>
       <Box // Front right leg
-        texture={texture}
         parameters={{
-          textureSize: 64,
           uvScale: [4, 4, 12],
           uvOrigin: [40, 16],
         }}
@@ -22,9 +18,7 @@ export function BaseLegs({ texture, position }: BaseLegsProps) {
       />
 
       <Box // Font left leg
-        texture={texture}
         parameters={{
-          textureSize: 64,
           uvScale: [4, 4, 12],
           uvOrigin: [32, 48],
         }}
@@ -34,9 +28,7 @@ export function BaseLegs({ texture, position }: BaseLegsProps) {
       />
 
       <Box // Back right leg
-        texture={texture}
         parameters={{
-          textureSize: 64,
           uvScale: [4, 4, 12],
           uvOrigin: [0, 16],
         }}
@@ -46,9 +38,7 @@ export function BaseLegs({ texture, position }: BaseLegsProps) {
       />
 
       <Box // Back right leg
-        texture={texture}
         parameters={{
-          textureSize: 64,
           uvScale: [4, 4, 12],
           uvOrigin: [16, 48],
         }}

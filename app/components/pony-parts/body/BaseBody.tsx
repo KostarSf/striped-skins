@@ -1,19 +1,17 @@
-import type { Texture } from "three";
-import type { XyzArray } from "~/components/model/types";
+import type { XyzArray } from "~/components/model-components/types";
 import { BaseBodyFront } from "./BaseBodyFront";
 import { BaseBodyMiddle } from "./BaseBodyMiddle";
 import { BaseBodyBack } from "./BaseBodyBack";
 
 type BaseBodyProps = {
-  texture: Texture;
   position: XyzArray;
 };
-export function BaseBody({ texture, position }: BaseBodyProps) {
+export function BaseBody({ position }: BaseBodyProps) {
   return (
     <>
-      <BaseBodyFront texture={texture} position={position} />
-      <BaseBodyMiddle texture={texture} position={position} />
-      <BaseBodyBack texture={texture} position={position} />
+      <BaseBodyFront position={position} />
+      <BaseBodyMiddle position={position} />
+      <BaseBodyBack position={position} />
     </>
   );
 }

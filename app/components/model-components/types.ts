@@ -5,10 +5,5 @@ export type LayoutDimensions = [
   height: number
 ];
 
-export type TextureParameters = {
-  layout: LayoutDimensions;
-  textureSize: number;
-};
-
 export type XyzArray = [x: number, y: number, z: number];
 export type XyArray = [x: number, y: number];
