@@ -9,11 +9,18 @@ const SkinTextureContext = createContext<{
 export default SkinTextureContext;
 
 export const useSkinTextureContext = () => {
-  const context = useContext(SkinTextureContext)
+  const context = useContext(SkinTextureContext);
 
   if (!context) {
     throw new Error("Не задан SkinTextureContext");
   }
 
-  return context;
-}
+  const source = context.texture.image as HTMLImageElement;
+  const oldSkinFormat = source.width !== source.height;
+
+  return {
+    texture: context.texture.clone(),
+    textureSize: context.textureSize,
+    oldSkinFormat,
+  };
+};

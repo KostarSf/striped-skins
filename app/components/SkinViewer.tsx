@@ -4,7 +4,6 @@ import {
   useTexture,
 } from "@react-three/drei";
 import { Canvas } from "@react-three/fiber";
-import { EffectComposer, SMAA } from "@react-three/postprocessing";
 import { RegularPony } from "~/components/pony/RegularPony";
 import SkinTextureContext from "./model-components/SkinTextureContext";
 import { Suspense } from "react";
@@ -41,6 +40,7 @@ function ScenePreferences() {
 
 function PonyModel({ skinUrl }: { skinUrl: string }) {
   const texture = useTexture(skinUrl);
+
   return (
     <SkinTextureContext.Provider value={{ texture, textureSize: 64 }}>
       <RegularPony position={[-0.2, 1, 0]} />

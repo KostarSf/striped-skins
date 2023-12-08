@@ -13,11 +13,11 @@ export function LoadingScreen() {
           cx='50'
           cy='50'
           r='32'
-          stroke-width='8'
+          strokeWidth='8'
           stroke='#ee6123'
-          stroke-dasharray='50.26548245743669 50.26548245743669'
+          strokeDasharray='50.26548245743669 50.26548245743669'
           fill='none'
-          stroke-linecap='round'
+          strokeLinecap='round'
           transform='matrix(1,0,0,1,0,0)'
         ></circle>
       </svg>

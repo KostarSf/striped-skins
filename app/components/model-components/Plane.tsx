@@ -15,18 +15,20 @@ type PlaneProps = {
 export function Plane(props: PlaneProps) {
   const [uw, uv, width, height] = props.layout;
 
-  const { texture: originalTexture, textureSize } = useSkinTextureContext();
-
-  const texture = originalTexture.clone();
+  const {
+    texture,
+    textureSize,
+    oldSkinFormat,
+  } = useSkinTextureContext();
 
   // texture.anisotropy = 8;
   texture.magFilter = 1003;
 
-  const percentWidth = width / textureSize;
-  const percentHeight = height / textureSize;
+  const percentWidth = (width / textureSize);
+  const percentHeight = height / (textureSize * (oldSkinFormat ? 0.5 : 1));
 
-  const percentUw = uw / textureSize;
-  const percentUv = uv / textureSize;
+  const percentUw = (uw / textureSize);
+  const percentUv = uv / (textureSize * (oldSkinFormat ? 0.5 : 1));
 
   const edgeOffset = 0.0005;
 
