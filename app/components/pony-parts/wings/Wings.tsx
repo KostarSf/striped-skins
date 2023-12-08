@@ -12,11 +12,14 @@ export function Wings({ position }: WingsProps) {
   return (
     <group position={position}>
       <ClosedWing position={[-1, 0, 0]} side='right' />
-      <ClosedWing
-        position={[1, 0, 0]}
-        side={oldSkinFormat ? "right" : "left"}
-        mirrored={oldSkinFormat}
-      />
+
+      <group rotation={[0, 0, oldSkinFormat ? Math.PI : 0]}>
+        <ClosedWing
+          position={[oldSkinFormat ? -1 : 1, 0, 0]}
+          side={oldSkinFormat ? "right" : "left"}
+          mirrored={oldSkinFormat}
+        />
+      </group>
     </group>
   );
 }

@@ -22,6 +22,7 @@ export function DefaultTailPart({
         position={[0, 0, 0.4]}
         rotation={[0, 0, 0]}
         scale={[4, 4]}
+        doubleSide
       />
 
       <Plane // Back
@@ -29,6 +30,7 @@ export function DefaultTailPart({
         position={[0, 0, -0.4]}
         rotation={[0, Math.PI, 0]}
         scale={[4, 4]}
+        doubleSide
       />
 
       <Plane // Right
@@ -36,6 +38,7 @@ export function DefaultTailPart({
         position={[-0.4, 0, 0]}
         rotation={[0, -Math.PI / 2, 0]}
         scale={[4, 4]}
+        doubleSide
       />
 
       <Plane // Left
@@ -43,6 +46,7 @@ export function DefaultTailPart({
         position={[0.4, 0, 0]}
         rotation={[0, Math.PI / 2, 0]}
         scale={[4, 4]}
+        doubleSide
       />
 
       {drawTop && (
@@ -51,6 +55,7 @@ export function DefaultTailPart({
           position={[0, 0.4, 0]}
           rotation={[-Math.PI / 2, 0, 0]}
           scale={[4, 4]}
+          doubleSide
         />
       )}
 
@@ -60,6 +65,7 @@ export function DefaultTailPart({
           position={[0, -0.4, 0]}
           rotation={[Math.PI / 2, 0, 0]}
           scale={[4, 4]}
+          doubleSide
         />
       )}
     </group>
