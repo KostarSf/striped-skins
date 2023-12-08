@@ -29,7 +29,7 @@ function ScenePreferences() {
       <PerspectiveCamera makeDefault position={[4, 1, 9]} />
 
       <ambientLight intensity={0.9} />
-      <directionalLight color='white' position={[2, 3, 5]} />
+      <directionalLight color='white' position={[2, 3, 5]} intensity={1.2} />
 
       {/* <EffectComposer>
         <SMAA />

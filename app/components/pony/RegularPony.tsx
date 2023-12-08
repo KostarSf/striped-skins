@@ -4,6 +4,7 @@ import { Head } from "~/components/pony-parts/head/Head";
 import { Legs } from "~/components/pony-parts/legs/Legs";
 import { Tail } from "~/components/pony-parts/tail/Tail";
 import type { XyzArray } from "../model-components/types";
+import { Wings } from "../pony-parts/wings/Wings";
 
 type RegularPonyProps = { position: XyzArray };
 export function RegularPony({ position }: RegularPonyProps) {
@@ -16,6 +17,7 @@ export function RegularPony({ position }: RegularPonyProps) {
       <Body position={[0, -1, 0]} />
       <Tail position={[0, -1.05, -3.5]} />
       <Legs position={[0, -3, -0.6]} />
+      <Wings position={[0, -1, -1.6]} />
     </group>
   );
 }
