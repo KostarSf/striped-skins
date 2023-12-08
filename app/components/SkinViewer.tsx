@@ -5,7 +5,7 @@ import { RegularPony } from "~/components/pony/RegularPony";
 
 export function SkinViewer({skinUrl}: {skinUrl: string}) {
   return (
-    <div className='w-full h-full bg-zinc-700'>
+    <div className='w-full h-full'>
       <Canvas>
         <CameraControls />
         <PerspectiveCamera makeDefault position={[4, 1, 9]} />

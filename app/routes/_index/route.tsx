@@ -24,18 +24,22 @@ export default function Index() {
   const [params] = useSearchParams();
 
   return (
-    <div className='w-screen h-screen bg-zinc-700'>
-      <Form method='GET' className='p-4'>
-        <input
-          className='w-full py-2 px-4 rounded-md outline-none focus:ring ring-orange-500 transition'
-          type='text'
-          name="skin"
-          placeholder='Ссылка на скин'
-          defaultValue={params.get("skin") ?? ""}
-        />
-      </Form>
+    <div className='w-screen h-screen bg-zinc-700 relative'>
+      <div className='absolute inset-0'>
+        <SkinViewer skinUrl={skinUrl} />
+      </div>
 
-      <SkinViewer skinUrl={skinUrl} />
+      <div className='absolute left-0 top-0 right-0 p-4'>
+        <Form method='GET'>
+          <input
+            className='w-full py-2 px-4 rounded-md outline-none focus:ring ring-orange-500 transition shadow-lg'
+            type='text'
+            name='skin'
+            placeholder='Ссылка на скин'
+            defaultValue={params.get("skin") ?? ""}
+          />
+        </Form>
+      </div>
     </div>
   );
 }
