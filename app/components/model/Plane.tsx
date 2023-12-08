@@ -15,7 +15,7 @@ export function Plane(props: PlaneProps) {
     textureSize,
   } = props.parameters;
 
-  const texture = props.texture.clone()
+  const texture = props.texture.clone();
 
   texture.anisotropy = 8;
   texture.magFilter = 1003;
@@ -26,13 +26,17 @@ export function Plane(props: PlaneProps) {
   const percentUw = uw / textureSize;
   const percentUv = uv / textureSize;
 
+  const edgeOffset = 0.00005;
+
   texture.center.set(0, 1);
-  texture.offset.set(percentUw, -percentUv);
-  texture.repeat.set(percentWidth, percentHeight);
+  texture.offset.set(percentUw + edgeOffset, -percentUv - edgeOffset);
+  texture.repeat.set(percentWidth - edgeOffset, percentHeight - edgeOffset);
 
   return (
     <mesh position={props.position} rotation={props.rotation}>
-      <planeGeometry args={props.scale} />
+      <planeGeometry
+        args={props.scale.map((i) => i + 0.0001) as [number, number]}
+      />
       <meshStandardMaterial map={texture} alphaTest={0.5} />
     </mesh>
   );
