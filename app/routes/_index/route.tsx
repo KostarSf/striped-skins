@@ -8,7 +8,7 @@ import { ViewerErrorMessage } from "./components/ViewerErrrorMessage";
 export const meta: MetaFunction = () => {
   return [
     { title: "Striped Skins" },
-    { name: "description", content: "Another MineLP Skin Viewer" },
+    { name: "description", content: "Simple MineLP Skin Viewer" },
   ];
 };
 
