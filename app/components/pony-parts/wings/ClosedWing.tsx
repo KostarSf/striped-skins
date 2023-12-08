@@ -4,11 +4,12 @@ import type { XyzArray } from "~/components/model-components/types";
 type ClosedWingProps = {
   position: XyzArray;
   side: "left" | "right";
+  mirrored?: boolean;
 };
 
-export function ClosedWing({ position, side }: ClosedWingProps) {
+export function ClosedWing({ position, mirrored, side }: ClosedWingProps) {
   return (
-    <group position={position}>
+    <group position={position} scale={[1, mirrored ? -1 : 1, 1]}>
       <group rotation={[Math.PI / 2, Math.PI / 2, 0]}>
         <Feather
           position={[0, 0, 0]}

@@ -47,17 +47,25 @@ export function Plane(props: PlaneProps) {
     <group
       position={props.position}
       rotation={props.rotation}
-      scale={[1, props.flipY ? -1 : 1, 1]}
+      scale={[props.flipX ? -1 : 1, props.flipY ? -1 : 1, 1]}
     >
       <mesh>
         <planeGeometry args={scale} />
-        <meshStandardMaterial map={texture} alphaTest={0.5} />
+        <meshStandardMaterial
+          map={texture}
+          alphaTest={0.1}
+          transparent
+        />
       </mesh>
 
       {props.doubleSide && (
         <mesh rotation={[Math.PI, 0, 0]} scale={[1, -1, 1]}>
           <planeGeometry args={scale} />
-          <meshStandardMaterial map={texture} alphaTest={0.5} />
+          <meshStandardMaterial
+            map={texture}
+            alphaTest={0.1}
+            transparent
+          />
         </mesh>
       )}
     </group>

@@ -5,7 +5,7 @@ type LegsClothesProps = {
   position: XyzArray;
 };
 export function LegsClothes({ position }: LegsClothesProps) {
-  const clothesScale = [4.3, 4.3, 12.2] as XyzArray;
+  const clothesScale = [4.5, 4.5, 12.5] as XyzArray;
 
   return (
     <group position={position}>

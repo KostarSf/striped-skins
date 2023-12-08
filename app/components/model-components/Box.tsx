@@ -63,6 +63,8 @@ export function Box({ parameters, scale, position, innerSides }: BoxProps) {
         rotation={[Math.PI / 2, 0, Math.PI]}
         scale={[scaleX, scaleY]}
         doubleSide={innerSides}
+        flipX
+        flipY
       />
 
       <Plane // Back
