@@ -13,7 +13,7 @@ export function Head({ position, hideMane }: HeadProps) {
     <>
       <Skull position={position} />
       <Ears position={position} />
-      <Muzzle position={position} />
+      <Muzzle position={position} rounded />
       {!hideMane && <Mane position={position} />}
     </>
   );

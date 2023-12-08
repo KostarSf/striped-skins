@@ -7,15 +7,19 @@ import { Canvas } from "@react-three/fiber";
 import { EffectComposer, SMAA } from "@react-three/postprocessing";
 import { RegularPony } from "~/components/pony/RegularPony";
 import SkinTextureContext from "./model-components/SkinTextureContext";
+import { Suspense } from "react";
+import { LoadingScreen } from "./ui/LoadingScreen";
 
 export function SkinViewer({ skinUrl }: { skinUrl: string }) {
   return (
-    <div className='w-full h-full'>
-      <Canvas>
-        <ScenePreferences />
-        <PonyModel skinUrl={skinUrl} />
-      </Canvas>
-    </div>
+    <Suspense fallback={<LoadingScreen />}>
+      <div className='w-full h-full'>
+        <Canvas>
+          <ScenePreferences />
+          <PonyModel skinUrl={skinUrl} />
+        </Canvas>
+      </div>
+    </Suspense>
   );
 }
 
@@ -28,9 +32,9 @@ function ScenePreferences() {
       <ambientLight intensity={0.9} />
       <directionalLight color='white' position={[2, 3, 5]} />
 
-      <EffectComposer>
+      {/* <EffectComposer>
         <SMAA />
-      </EffectComposer>
+      </EffectComposer> */}
     </>
   );
 }
@@ -39,7 +43,7 @@ function PonyModel({ skinUrl }: { skinUrl: string }) {
   const texture = useTexture(skinUrl);
   return (
     <SkinTextureContext.Provider value={{ texture, textureSize: 64 }}>
-      <RegularPony position={[0, 0, 0]} />
+      <RegularPony position={[-0.2, 1, 0]} />
     </SkinTextureContext.Provider>
   );
 }

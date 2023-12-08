@@ -8,6 +8,8 @@ type PlaneProps = {
   rotation: XyzArray;
   scale: XyArray;
   doubleSide?: boolean;
+  flipX?: boolean;
+  flipY?: boolean;
 };
 
 export function Plane(props: PlaneProps) {
@@ -40,7 +42,11 @@ export function Plane(props: PlaneProps) {
   ) as XyArray;
 
   return (
-    <group position={props.position} rotation={props.rotation}>
+    <group
+      position={props.position}
+      rotation={props.rotation}
+      scale={[1, props.flipY ? -1 : 1, 1]}
+    >
       <mesh>
         <planeGeometry args={scale} />
         <meshStandardMaterial map={texture} alphaTest={0.5} />

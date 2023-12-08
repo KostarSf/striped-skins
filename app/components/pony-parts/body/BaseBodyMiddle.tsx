@@ -26,6 +26,7 @@ export function BaseBodyMiddle({ position }: BaseBodyMiddleProps) {
         position={[position[0] - 0.8, position[1], position[2] - 1.6]}
         rotation={[Math.PI, -Math.PI / 2, 0]}
         scale={[8, 8]}
+        flipY
       />
 
       <Plane // Middle Left

@@ -33,6 +33,7 @@ export function BaseBodyBack({ position }: BaseBodyBackProps) {
         position={[position[0] - 0.8, position[1], position[2] - 2.8]}
         rotation={[Math.PI, -Math.PI / 2, 0]}
         scale={[4, 8]}
+        flipY
       />
 
       <Plane // Qutie Left
