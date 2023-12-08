@@ -21,7 +21,7 @@ export function Plane(props: PlaneProps) {
     oldSkinFormat,
   } = useSkinTextureContext();
 
-  // texture.anisotropy = 8;
+  texture.anisotropy = 8;
   texture.magFilter = 1003;
 
   const percentWidth = (width / textureSize);
