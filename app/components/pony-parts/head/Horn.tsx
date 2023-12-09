@@ -16,6 +16,7 @@ export default function Horn({ position }: HornProps) {
         position={[0, 1, 0.9]}
         rotation={[Math.PI * 0.18, 0, 0]}
         scale={[1, 1, 4]}
+        innerSides
       />
     </group>
   );

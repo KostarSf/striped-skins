@@ -62,7 +62,6 @@ export function Box({ parameters, scale, position, rotation, innerSides }: BoxPr
         scale={[scaleX, scaleY]}
         doubleSide={innerSides}
         flipX
-        flipY
       />
 
       <Plane // Back
