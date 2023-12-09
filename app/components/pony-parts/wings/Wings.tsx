@@ -1,6 +1,6 @@
 import type { XyzArray } from "~/components/model-components/types";
 import { ClosedWing } from "./ClosedWing";
-import { useSkinTextureContext } from "~/components/model-components/SkinTextureContext";
+import { useSkinTextureContext } from "~/components/model-components/skinTextureContext";
 
 type WingsProps = {
   position: XyzArray;

@@ -1,27 +1,22 @@
 import { Form, useSearchParams } from "@remix-run/react";
-import { useState } from "react";
+import type { ComparisonModeType } from "~/components/skin-viewer/ViewerParametersContext";
+import {
+  SECOND_SKIN_SEARCH_PARAM,
+  SKIN_SEARCH_PARAM,
+  useViewerParameters,
+} from "~/components/skin-viewer/ViewerParametersContext";
 import { SkinInputField } from "~/components/ui/SkinInputField";
 import { APP_VERSION } from "~/constants";
 
 export function Interface() {
   const [params, setParams] = useSearchParams();
-  const skinUrl = params.get("skin") ?? "";
-  const comparedSkinUrl = params.get("compare-with") ?? "";
+  const skinUrl = params.get(SKIN_SEARCH_PARAM) ?? "";
+  const comparedSkinUrl = params.get(SECOND_SKIN_SEARCH_PARAM) ?? "";
 
-  const [enableComparison, setEnableComparison] = useState(!!comparedSkinUrl);
+  const { comparisonMode, setComparisonMode } = useViewerParameters();
 
-  const switchComparisonModeHandle = () => {
-    setEnableComparison((comparison) => {
-      if (comparison) {
-        params.delete("compare-with");
-      } else {
-        params.set("compare-with", params.get("skin") || "");
-      }
-
-      setParams(params);
-
-      return !comparison;
-    });
+  const switchComparisonModeHandle = (type: ComparisonModeType) => {
+    return () => setComparisonMode(type);
   };
 
   return (
@@ -36,10 +31,10 @@ export function Interface() {
           <div className='max-w-screen-md flex-1 max-xl:w-full'>
             <SkinInputField defaultFieldValue={skinUrl} />
             <div className='mt-2 flex justify-between'>
-              {!enableComparison && (
+              {comparisonMode === "off" && (
                 <button
                   className='text-zinc-600 bg-white rounded-md px-4 py-2 hover:text-orange-500 transition shadow-lg'
-                  onClick={switchComparisonModeHandle}
+                  onClick={switchComparisonModeHandle("side-by-side")}
                   title='Comparison mode'
                 >
                   <svg
@@ -78,12 +73,12 @@ export function Interface() {
             </div>
           </div>
 
-          {enableComparison && (
+          {comparisonMode !== "off" && (
             <div className='max-w-screen-md flex-1 max-xl:w-full'>
               <div className='flex gap-2 items-start'>
                 <button
                   className='text-zinc-600 bg-white rounded-md px-4 py-2 hover:text-orange-500 transition shadow-lg'
-                  onClick={switchComparisonModeHandle}
+                  onClick={switchComparisonModeHandle("off")}
                   title='Quit comparison mode'
                 >
                   <svg
@@ -105,7 +100,7 @@ export function Interface() {
                 <div className='flex-1'>
                   <SkinInputField
                     defaultFieldValue={comparedSkinUrl}
-                    searchParamName='compare-with'
+                    searchParamName='second-skin'
                   />
                 </div>
               </div>

@@ -3,6 +3,7 @@ import { Ears } from "./Ears";
 import { Skull } from "./Skull";
 import { Muzzle } from "./Muzzle";
 import { Mane } from "./Mane";
+import Horn from "./Horn";
 
 type HeadProps = {
   position: XyzArray;
@@ -15,6 +16,7 @@ export function Head({ position, hideMane }: HeadProps) {
       <Ears position={position} />
       <Muzzle position={position} rounded />
       {!hideMane && <Mane position={position} />}
+      <Horn position={position} />
     </>
   );
 }

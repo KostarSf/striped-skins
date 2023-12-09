@@ -1,6 +1,6 @@
 import type { XyzArray } from "~/components/model-components/types";
 import { BaseLegs } from "./BaseLegs";
-import { useSkinTextureContext } from "~/components/model-components/SkinTextureContext";
+import { useSkinTextureContext } from "~/components/model-components/skinTextureContext";
 import { OldBaseLegs } from "./OldBaseLegs";
 import { LegsClothes } from "./LegsClothes";
 

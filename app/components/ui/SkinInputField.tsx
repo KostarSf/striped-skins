@@ -1,8 +1,7 @@
-import { Form } from "@remix-run/react";
 import { useState } from "react";
 
 type SkinInputFieldProps = {
-  searchParamName?: "skin" | "compare-with";
+  searchParamName?: "skin" | "second-skin";
   defaultFieldValue?: string;
 };
 

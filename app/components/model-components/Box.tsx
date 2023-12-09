@@ -13,7 +13,7 @@ type BoxProps = {
   innerSides?: boolean;
 };
 
-export function Box({ parameters, scale, position, innerSides }: BoxProps) {
+export function Box({ parameters, scale, position, rotation, innerSides }: BoxProps) {
   const {
     uvOrigin: [originX, originY],
     uvScale: [x, y, z],
@@ -21,13 +21,11 @@ export function Box({ parameters, scale, position, innerSides }: BoxProps) {
 
   const [scaleX, scaleY, scaleZ] = scale;
 
-  const [posX, posY, posZ] = position;
-
   return (
-    <>
+    <group position={position} rotation={rotation}>
       <Plane // Right
         layout={[originX, originY + y, y, z]}
-        position={[posX - Math.abs(scaleX * SCALE_MULTIPLIER) / 2, posY, posZ]}
+        position={[-Math.abs(scaleX * SCALE_MULTIPLIER) / 2, 0, 0]}
         rotation={[0, -Math.PI / 2, 0]}
         scale={[scaleY, scaleZ]}
         doubleSide={innerSides}
@@ -35,7 +33,7 @@ export function Box({ parameters, scale, position, innerSides }: BoxProps) {
 
       <Plane // Front
         layout={[originX + y, originY + y, x, z]}
-        position={[posX, posY, posZ + Math.abs(scaleY * SCALE_MULTIPLIER) / 2]}
+        position={[0, 0, Math.abs(scaleY * SCALE_MULTIPLIER) / 2]}
         rotation={[0, 0, 0]}
         scale={[scaleX, scaleZ]}
         doubleSide={innerSides}
@@ -43,7 +41,7 @@ export function Box({ parameters, scale, position, innerSides }: BoxProps) {
 
       <Plane // Left
         layout={[originX + y + x, originY + y, y, z]}
-        position={[posX + Math.abs(scaleX * SCALE_MULTIPLIER) / 2, posY, posZ]}
+        position={[Math.abs(scaleX * SCALE_MULTIPLIER) / 2, 0, 0]}
         rotation={[0, Math.PI / 2, 0]}
         scale={[scaleY, scaleZ]}
         doubleSide={innerSides}
@@ -51,7 +49,7 @@ export function Box({ parameters, scale, position, innerSides }: BoxProps) {
 
       <Plane // Top
         layout={[originX + y, originY, x, y]}
-        position={[posX, posY + Math.abs(scaleZ * SCALE_MULTIPLIER) / 2, posZ]}
+        position={[0, Math.abs(scaleZ * SCALE_MULTIPLIER) / 2, 0]}
         rotation={[-Math.PI / 2, 0, 0]}
         scale={[scaleX, scaleY]}
         doubleSide={innerSides}
@@ -59,7 +57,7 @@ export function Box({ parameters, scale, position, innerSides }: BoxProps) {
 
       <Plane // Bottom
         layout={[originX + y + x, originY, x, y]}
-        position={[posX, posY - Math.abs(scaleZ * SCALE_MULTIPLIER) / 2, posZ]}
+        position={[0, -Math.abs(scaleZ * SCALE_MULTIPLIER) / 2, 0]}
         rotation={[Math.PI / 2, 0, Math.PI]}
         scale={[scaleX, scaleY]}
         doubleSide={innerSides}
@@ -69,11 +67,11 @@ export function Box({ parameters, scale, position, innerSides }: BoxProps) {
 
       <Plane // Back
         layout={[originX + x + y * 2, originY + y, x, z]}
-        position={[posX, posY, posZ - Math.abs(scaleY * SCALE_MULTIPLIER) / 2]}
+        position={[0, 0, -Math.abs(scaleY * SCALE_MULTIPLIER) / 2]}
         rotation={[0, Math.PI, 0]}
         scale={[scaleX, scaleZ]}
         doubleSide={innerSides}
       />
-    </>
+    </group>
   );
 }
