@@ -13,13 +13,6 @@ export function ScenePreferences({ children }: PropsWithChildren) {
         <SingleModeScenePreferences />
       )}
 
-      <hemisphereLight
-        color='#ffffff'
-        groundColor='#666666'
-        position={[-7, 25, 13]}
-        intensity={4}
-      />
-
       {children}
     </>
   );
@@ -28,8 +21,15 @@ export function ScenePreferences({ children }: PropsWithChildren) {
 function SingleModeScenePreferences() {
   return (
     <>
-      <CameraControls />
-      <PerspectiveCamera makeDefault position={[4, 1, 10]} fov={50} />
+      <CameraControls minDistance={5} maxDistance={20} />
+      <PerspectiveCamera makeDefault position={[4, 1, 10]} fov={50}>
+        <hemisphereLight
+          color='#ffffff'
+          groundColor='#666666'
+          position={[-30, 24, 3]}
+          intensity={4}
+        />
+      </PerspectiveCamera>
     </>
   );
 }
@@ -43,6 +43,13 @@ function SideBySideModeScenePreferences() {
         makeDefault
         position={[0, 0, mobileView ? 40 : 25]}
         fov={20}
+      />
+
+      <hemisphereLight
+        color='#ffffff'
+        groundColor='#666666'
+        position={[-7, 25, 13]}
+        intensity={4}
       />
     </>
   );
