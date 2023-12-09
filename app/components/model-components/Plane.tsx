@@ -61,11 +61,7 @@ export function Plane(props: PlaneProps) {
       {props.doubleSide && (
         <mesh rotation={[Math.PI, 0, 0]} scale={[1, -1, 1]}>
           <planeGeometry args={scale} />
-          <meshStandardMaterial
-            map={texture}
-            alphaTest={0.1}
-            transparent
-          />
+          <meshStandardMaterial map={texture} alphaTest={0.1} transparent />
         </mesh>
       )}
     </group>

@@ -1,4 +1,4 @@
-import type { MetaFunction } from "@remix-run/react";
+import { useSearchParams, type MetaFunction } from "@remix-run/react";
 import ViewerParametersContext from "~/components/skin-viewer/ViewerParametersContext";
 import { Interface } from "./components/Interface";
 import { Layout } from "./components/Layout";
@@ -13,6 +13,17 @@ export const meta: MetaFunction = () => {
 };
 
 export default function Index() {
+  const [searchParams] = useSearchParams()
+  const hideHud = searchParams.get("no-hud") !== null;
+
+  if (hideHud) {
+    return (
+      <ViewerParametersContext>
+        <ViewerWrapper />
+      </ViewerParametersContext>
+    );
+  }
+
   return (
     <Layout>
       <ViewerParametersContext>
@@ -24,6 +35,13 @@ export default function Index() {
 }
 
 export function ErrorBoundary() {
+  const [searchParams] = useSearchParams();
+  const hideHud = searchParams.get("no-hud") !== null;
+
+  if (hideHud) {
+    return <ViewerErrorMessage />;
+  }
+
   return (
     <Layout>
       <ViewerParametersContext>

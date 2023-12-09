@@ -1,7 +1,8 @@
-import { useViewerParameters } from "../ViewerParametersContext";
 import { CameraControls, PerspectiveCamera } from "@react-three/drei";
+import type { PropsWithChildren } from "react";
+import { useViewerParameters } from "../ViewerParametersContext";
 
-export function ScenePreferences() {
+export function ScenePreferences({ children }: PropsWithChildren) {
   const { isSideBySideMode } = useViewerParameters();
 
   return (
@@ -12,12 +13,14 @@ export function ScenePreferences() {
         <SingleModeScenePreferences />
       )}
 
-      <ambientLight intensity={0.9} />
-      <directionalLight color='white' position={[2, 3, 5]} intensity={1.2} />
+      <hemisphereLight
+        color='#ffffff'
+        groundColor='#666666'
+        position={[-7, 25, 13]}
+        intensity={4}
+      />
 
-      {/* <EffectComposer>
-        <SMAA />
-      </EffectComposer> */}
+      {children}
     </>
   );
 }
@@ -26,15 +29,10 @@ function SingleModeScenePreferences() {
   return (
     <>
       <CameraControls />
-      <PerspectiveCamera
-        makeDefault
-        position={[4, 1, 10]}
-        fov={50}
-      />
+      <PerspectiveCamera makeDefault position={[4, 1, 10]} fov={50} />
     </>
   );
 }
-
 
 function SideBySideModeScenePreferences() {
   const { mobileView } = useViewerParameters();

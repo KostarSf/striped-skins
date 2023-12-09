@@ -1,5 +1,4 @@
 import { Canvas } from "@react-three/fiber";
-import { Perf } from "r3f-perf";
 import { Suspense } from "react";
 import { LoadingScreen } from "../ui/LoadingScreen";
 import { ScenePreferences } from "./scene-preferences/ScenePreferences";
@@ -10,13 +9,15 @@ export function SkinViewer() {
     <Suspense fallback={<LoadingScreen />}>
       <div className='w-full h-full'>
         <Canvas
-          id="viewer-canvas"
+          id='viewer-canvas'
           frameloop='demand'
+          flat
         >
           {/* <Perf position='bottom-right' /> */}
 
-          <ScenePreferences />
-          <SceneView />
+          <ScenePreferences>
+            <SceneView />
+          </ScenePreferences>
         </Canvas>
       </div>
     </Suspense>

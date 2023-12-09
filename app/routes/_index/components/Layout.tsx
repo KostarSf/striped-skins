@@ -1,7 +1,9 @@
 import type { PropsWithChildren } from "react";
 
-export function Layout({children}: PropsWithChildren) {
+export function Layout({ children }: PropsWithChildren) {
   return (
-    <div className='w-screen h-[100svh] bg-zinc-700 relative'>{children}</div>
+    <div className='w-screen h-[100svh] bg-neutral-700 relative'>
+      {children}
+    </div>
   );
 }

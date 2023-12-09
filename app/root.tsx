@@ -41,7 +41,6 @@ export default function App() {
         <Links />
       </head>
       <body>
-        <p id="test"></p>
         <Outlet />
         <ScrollRestoration />
         <Scripts />
