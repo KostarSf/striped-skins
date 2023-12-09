@@ -1,3 +1,25 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer utilities {
+  .viewer-background {
+    background: rgb(64, 64, 64);
+    background: radial-gradient(
+      circle,
+      rgba(64, 64, 64, 1) 0%,
+      rgba(57, 57, 57, 1) 49%,
+      rgba(51, 51, 51, 1) 100%
+    );
+  }
+
+  .header-background {
+    background: rgb(51, 51, 51);
+    background: linear-gradient(
+      180deg,
+      rgba(51, 51, 51, 1) 0%,
+      rgba(51, 51, 51, 0.7) 30%,
+      rgba(51, 51, 51, 0) 100%
+    );
+  }
+}

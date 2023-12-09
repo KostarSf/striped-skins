@@ -37,6 +37,13 @@ export default function App() {
       <head>
         <meta charSet='utf-8' />
         <meta name='viewport' content='width=device-width, initial-scale=1' />
+        <meta name='theme-color' content='rgb(51, 51, 51)' />
+        <meta name='msapplication-navbutton-color' content='rgb(51, 51, 51)' />
+        <meta
+          name='apple-mobile-web-app-status-bar-style'
+          content='rgb(51, 51, 51)'
+        />
+
         <Meta />
         <Links />
       </head>
