@@ -9,7 +9,7 @@ export function SkinInputField({
   searchParamName = "skin",
   defaultFieldValue = "",
 }: SkinInputFieldProps) {
-  const [skinInput, setSkinInput] = useState<"file" | "url">(
+  const [skinInput, /* setSkinInput */] = useState<"file" | "url">(
     // skinUrl ? "url" : "file"
     "url"
   );
@@ -19,7 +19,7 @@ export function SkinInputField({
   };
 
   return (
-    <div className='px-2 flex items-center rounded-md ring-orange-500 bg-white focus-within:ring transition shadow-lg overflow-hidden'>
+    <div className='px-2 flex items-center rounded-md ring-orange-500 bg-white focus-within:ring transition shadow-lg overflow-hidden pointer-events-auto'>
       <button
         className='px-2 py-2 text-zinc-600 hover:text-orange-500 transition shrink-0'
         type='button'

@@ -1,11 +1,11 @@
 import { Plane } from "~/components/model-components/Plane";
 import type { XyzArray } from "~/components/model-components/types";
 
-type MuzzleProps = {
+type SnoutProps = {
   position: XyzArray;
   rounded?: boolean;
 };
-export function Muzzle({ position, rounded }: MuzzleProps) {
+export function Snout({ position, rounded }: SnoutProps) {
   return (
     <group position={position}>
       <Plane // Front Bottom

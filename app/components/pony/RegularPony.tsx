@@ -5,10 +5,11 @@ import { Legs } from "~/components/pony-parts/legs/Legs";
 import { Tail } from "~/components/pony-parts/tail/Tail";
 import type { XyzArray } from "../model-components/types";
 import { Wings } from "../pony-parts/wings/Wings";
+import { usePonyPreferences } from "~/api/PonyPreferences";
 
 type RegularPonyProps = { position: XyzArray };
 export function RegularPony({ position }: RegularPonyProps) {
-
+  const { race } = usePonyPreferences()
 
   return (
     <group position={position}>
@@ -17,7 +18,7 @@ export function RegularPony({ position }: RegularPonyProps) {
       <Body position={[0, -1, 0]} />
       <Tail position={[0, -1.05, -3.5]} />
       <Legs position={[0, -3, -0.6]} />
-      <Wings position={[0, -1, -1.6]} />
+      {race.wings && <Wings position={[0, -1, -1.6]} />}
     </group>
   );
 }

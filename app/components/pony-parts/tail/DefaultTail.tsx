@@ -1,22 +1,25 @@
 import type { XyzArray } from "~/components/model-components/types";
 import { DefaultTailPart } from "./DefaultTailPart";
 import { DefaultTailBeginning } from "./DefaultTailBeginning";
+import type { TailSize } from "~/api/skin-parameters/Tail";
 
 type DefaultTailProps = {
   position: XyzArray;
-  length: 1 | 2 | 3 | 4
+  length: TailSize
 };
 export function DefaultTail({ position, length }: DefaultTailProps) {
   return (
     <group position={position}>
       <DefaultTailBeginning position={[0, 0.85, -0.05]} />
 
-      <DefaultTailPart
-        position={[0, 1, -0.5]}
-        type='topHalf'
-        drawTop
-        drawBottom={length === 1}
-      />
+      {length > 0 && (
+        <DefaultTailPart
+          position={[0, 1, -0.5]}
+          type='topHalf'
+          drawTop
+          drawBottom={length === 1}
+        />
+      )}
       {length > 1 && (
         <DefaultTailPart
           position={[0, 0.2, -0.5]}

@@ -1,9 +1,11 @@
+import { usePonyPreferencesManager } from "~/api/PonyPreferencesManager";
 import { useViewerParameters } from "../ViewerParametersContext";
 import PonyModel from "./PonyModel";
 import useSideBySideRotation from "./useSideBySideRotation";
 
 export default function SideBySidePonyView() {
-  const { mobileView, firstSkin, secondSkin } = useViewerParameters()
+  const { mobileView, firstSkin, secondSkin } = useViewerParameters();
+  const { firstPony, secondPony } = usePonyPreferencesManager();
 
   const { pony1ref, pony2ref } = useSideBySideRotation();
 
@@ -17,6 +19,7 @@ export default function SideBySidePonyView() {
           skin={firstSkin}
           position={[0, 0, 0]}
           rotation={[0, 0, 0]}
+          {...firstPony}
         />
       </group>
 
@@ -25,6 +28,7 @@ export default function SideBySidePonyView() {
           skin={secondSkin}
           position={[0, 0, 0]}
           rotation={[0, 0, 0]}
+          {...secondPony}
         />
       </group>
     </>

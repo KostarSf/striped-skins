@@ -1,9 +1,10 @@
 import { useSearchParams, type MetaFunction } from "@remix-run/react";
 import ViewerParametersContext from "~/components/skin-viewer/ViewerParametersContext";
-import { Interface } from "./components/Interface";
+import { Interface } from "./components/interface/Interface";
 import { Layout } from "./components/Layout";
 import { ViewerErrorMessage } from "./components/ViewerErrrorMessage";
 import { ViewerWrapper } from "./components/ViewerWrapper";
+import PonyPreferencesManager from "~/api/PonyPreferencesManager";
 
 export const meta: MetaFunction = () => {
   return [
@@ -19,7 +20,9 @@ export default function Index() {
   if (hideHud) {
     return (
       <ViewerParametersContext>
-        <ViewerWrapper />
+        <PonyPreferencesManager>
+          <ViewerWrapper />
+        </PonyPreferencesManager>
       </ViewerParametersContext>
     );
   }
@@ -27,8 +30,10 @@ export default function Index() {
   return (
     <Layout>
       <ViewerParametersContext>
-        <ViewerWrapper />
-        <Interface />
+        <PonyPreferencesManager>
+          <ViewerWrapper />
+          <Interface />
+        </PonyPreferencesManager>
       </ViewerParametersContext>
     </Layout>
   );
@@ -45,8 +50,10 @@ export function ErrorBoundary() {
   return (
     <Layout>
       <ViewerParametersContext>
-        <ViewerErrorMessage />
-        <Interface />
+        <PonyPreferencesManager>
+          <ViewerErrorMessage />
+          <Interface />
+        </PonyPreferencesManager>
       </ViewerParametersContext>
     </Layout>
   );
