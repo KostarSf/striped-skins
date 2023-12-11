@@ -3,15 +3,17 @@ import type { XyzArray } from "~/components/model-components/types";
 
 type LegsClothesProps = {
   position: XyzArray;
+  slim?: boolean
 };
-export function LegsClothes({ position }: LegsClothesProps) {
-  const clothesScale = [4.5, 4.5, 12.5] as XyzArray;
+export function LegsClothes({ position, slim = false }: LegsClothesProps) {
+  const x = slim ? 3 : 4;
+  const clothesScale = [x + 0.5, 4.5, 12.5] as XyzArray;
 
   return (
     <group position={position}>
       <Box // Front right leg
         parameters={{
-          uvScale: [4, 4, 12],
+          uvScale: [x, 4, 12],
           uvOrigin: [40, 32],
         }}
         position={[-0.4, 0, 0]}
@@ -22,7 +24,7 @@ export function LegsClothes({ position }: LegsClothesProps) {
 
       <Box // Font left leg
         parameters={{
-          uvScale: [4, 4, 12],
+          uvScale: [x, 4, 12],
           uvOrigin: [48, 48],
         }}
         position={[0.4, 0, 0]}
@@ -33,7 +35,7 @@ export function LegsClothes({ position }: LegsClothesProps) {
 
       <Box // Back right leg
         parameters={{
-          uvScale: [4, 4, 12],
+          uvScale: [x, 4, 12],
           uvOrigin: [0, 32],
         }}
         position={[-0.4, 0, -1.8]}
@@ -44,7 +46,7 @@ export function LegsClothes({ position }: LegsClothesProps) {
 
       <Box // Back right leg
         parameters={{
-          uvScale: [4, 4, 12],
+          uvScale: [x, 4, 12],
           uvOrigin: [0, 48],
         }}
         position={[0.4, 0, -1.8]}

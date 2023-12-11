@@ -19,7 +19,8 @@ export class PonyPreferences {
     readonly tailLength: TailLength,
     readonly snout: Snout,
     readonly body: Body,
-    readonly magicGlow: string
+    readonly magicGlow: string,
+    readonly slim: boolean
   ) {}
 
   static fromSkin(image: HTMLImageElement) {
@@ -34,12 +35,30 @@ export class PonyPreferences {
     // const wearablesPixel = transformer.getPixelRGBA(1, 1);
     // const tailShapePixel = transformer.getPixelRGBA(2, 1);
 
+    const multiplier = image.width / 64;
+
+    // Average color of the part of the skin that should be empty
+    // if this skin is slim
+    // ( the square of 4 top left pixels of back side of back right leg -
+    // right below the front part of the ear )
+    const averageColor = transformer.getAverageRGBA(
+      14 * multiplier,
+      20 * multiplier,
+      2 * multiplier,
+      2 * multiplier
+    );
+    const isSlim = averageColor[3] < 10; // average alpha shold be low
+
+    console.log(averageColor);
+
+
     return new PonyPreferences(
       Race.fromPixel(racePixel),
       TailLength.fromPixel(tailLengthPixel),
       Snout.fromPixel(snoutPixel),
       Body.fromPixel(bodyPixel),
       toHexColor(magicGlowPixel, false, false),
+      isSlim
     );
   }
 
@@ -49,6 +68,7 @@ export class PonyPreferences {
     Snout.fromPixel(SnoutPixel.Rounded),
     Body.fromPixel(BodyPixel.Normal),
     "88caf0",
+    false
   );
 }
 
@@ -58,5 +78,5 @@ export const PonyPreferencesContext = createContext<PonyPreferences>(
 
 export const usePonyPreferences = () => {
   const context = useContext(PonyPreferencesContext);
-  return context
-}
+  return context;
+};
