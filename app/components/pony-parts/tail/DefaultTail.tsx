@@ -1,13 +1,14 @@
 import type { XyzArray } from "~/components/model-components/types";
-import { DefaultTailPart } from "./DefaultTailPart";
-import { DefaultTailBeginning } from "./DefaultTailBeginning";
+import DefaultTailPart from "./DefaultTailPart";
+import DefaultTailBeginning from "./DefaultTailBeginning";
 import type { TailSize } from "~/api/skin-parameters/Tail";
 
 type DefaultTailProps = {
-  position: XyzArray;
-  length: TailSize
+  position?: XyzArray;
+  length?: TailSize
 };
-export function DefaultTail({ position, length }: DefaultTailProps) {
+
+export default function DefaultTail({ position, length = 4 }: DefaultTailProps) {
   return (
     <group position={position}>
       <DefaultTailBeginning position={[0, 0.85, -0.05]} />

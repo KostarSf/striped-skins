@@ -1,11 +1,12 @@
 import type { XyzArray } from "~/components/model-components/types";
-import { DefaultTail } from "./DefaultTail";
+import DefaultTail from "./DefaultTail";
 import { usePonyPreferences } from "~/api/PonyPreferences";
 
 type TailProps = {
-  position: XyzArray;
+  position?: XyzArray;
 };
-export function Tail({ position }: TailProps) {
+
+export default function Tail({ position }: TailProps) {
   const { tailLength } = usePonyPreferences();
 
   return (

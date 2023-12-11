@@ -4,63 +4,69 @@ import { useSkinTextureContext } from "./skinTextureContext";
 
 type PlaneProps = {
   layout: LayoutDimensions;
-  position: XyzArray;
-  rotation: XyzArray;
-  scale: XyArray;
+
+  position?: XyzArray;
+  rotation?: XyzArray;
+  scale?: XyArray;
+
   doubleSide?: boolean;
+
   flipX?: boolean;
   flipY?: boolean;
 };
 
-export function Plane(props: PlaneProps) {
-  const [uw, uv, width, height] = props.layout;
+export function Plane({
+  layout,
 
-  const {
-    texture,
-    textureSize,
-    oldSkinFormat,
-  } = useSkinTextureContext();
+  position,
+  rotation,
+  scale,
 
-  texture.magFilter = 1003;
-  texture.minFilter = 1003;
+  doubleSide,
 
-  const percentWidth = (width / textureSize);
-  const percentHeight = height / (textureSize * (oldSkinFormat ? 0.5 : 1));
+  flipX,
+  flipY,
+}: PlaneProps) {
+  const { texture, textureSize, oldSkinFormat } = useSkinTextureContext();
 
-  const percentUw = (uw / textureSize);
-  const percentUv = uv / (textureSize * (oldSkinFormat ? 0.5 : 1));
+  const [uw, uv, width, height] = layout;
 
-  const edgeOffset = 0.0005;
+  texture.magFilter = 1003; // Nearest pixel
+  texture.minFilter = 1003; // Nearest pixel
+
+  const normalizedWidth = width / textureSize;
+  const normalizedHeight = height / (textureSize * (oldSkinFormat ? 0.5 : 1));
+
+  const normalizedUw = uw / textureSize;
+  const normalizedUv = uv / (textureSize * (oldSkinFormat ? 0.5 : 1));
+
+  const edgeOffset = 0.0005; // Texture's edges offset
 
   texture.center.set(0, 1);
-  texture.offset.set(percentUw + edgeOffset, -percentUv - edgeOffset);
+  texture.offset.set(normalizedUw + edgeOffset, -normalizedUv - edgeOffset);
   texture.repeat.set(
-    percentWidth - edgeOffset * 2,
-    percentHeight - edgeOffset * 2
+    normalizedWidth - edgeOffset * 2,
+    normalizedHeight - edgeOffset * 2
   );
 
-  const scale = props.scale.map(
-    (i) => i * SCALE_MULTIPLIER // + 0.0001
+  const scaledScale = (scale ?? [width, height]).map(
+    (i) => i * SCALE_MULTIPLIER
   ) as XyArray;
 
   return (
     <group
-      position={props.position}
-      rotation={props.rotation}
-      scale={[props.flipX ? -1 : 1, props.flipY ? -1 : 1, 1]}
+      position={position}
+      rotation={rotation}
+      scale={[flipX ? -1 : 1, flipY ? -1 : 1, 1]}
     >
       <mesh>
-        <planeGeometry args={scale} />
-        <meshStandardMaterial
-          map={texture}
-          alphaTest={0.1}
-          transparent
-        />
+        <planeGeometry args={scaledScale} />
+        <meshStandardMaterial map={texture} alphaTest={0.1} transparent />
       </mesh>
 
-      {props.doubleSide && (
+      {doubleSide && (
         <mesh rotation={[Math.PI, 0, 0]} scale={[1, -1, 1]}>
-          <planeGeometry args={scale} />
+          <planeGeometry args={scaledScale} />
           <meshStandardMaterial map={texture} alphaTest={0.1} transparent />
         </mesh>
       )}

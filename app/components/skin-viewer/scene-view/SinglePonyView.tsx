@@ -5,6 +5,7 @@ import PonyModel from "./PonyModel";
 export default function SinglePonyView() {
   const { activeSkin, firstSkin, secondSkin, isComparisonMode } =
     useViewerParameters();
+
   const { firstPony, secondPony } = usePonyPreferencesManager();
 
   const skin =

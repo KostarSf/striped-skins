@@ -2,40 +2,34 @@ import type { XyzArray } from "../model-components/types";
 import { Plane } from "../model-components/Plane";
 
 type NeckProps = {
-  position: XyzArray;
+  position?: XyzArray;
 };
-export function Neck({ position }: NeckProps) {
+
+export default function Neck({ position }: NeckProps) {
   return (
-    <>
-      <group position={position} rotation={[Math.PI / 16, 0, 0]}>
-        <Plane // Front
-          layout={[0, 16, 4, 4]}
-          position={[0, -0.2, 0.2]}
-          rotation={[0, 0, 0]}
-          scale={[4, 4]}
-        />
+    <group position={position} rotation={[Math.PI / 16, 0, 0]}>
+      <Plane // Front
+        layout={[0, 16, 4, 4]}
+        position={[0, -0.2, 0.2]}
+      />
 
-        <Plane // Back
-          layout={[0, 16, 4, 4]}
-          position={[0, -0.2, -0.6]}
-          rotation={[0, Math.PI, 0]}
-          scale={[4, 4]}
-        />
+      <Plane // Back
+        layout={[0, 16, 4, 4]}
+        position={[0, -0.2, -0.6]}
+        rotation={[0, Math.PI, 0]}
+      />
 
-        <Plane // Right
-          layout={[0, 16, 4, 4]}
-          position={[-0.4, -0.2, -0.2]}
-          rotation={[0, -Math.PI / 2, 0]}
-          scale={[4, 4]}
-        />
+      <Plane // Right
+        layout={[0, 16, 4, 4]}
+        position={[-0.4, -0.2, -0.2]}
+        rotation={[0, -Math.PI / 2, 0]}
+      />
 
-        <Plane // Left
-          layout={[0, 16, 4, 4]}
-          position={[0.4, -0.2, -0.2]}
-          rotation={[0, Math.PI / 2, 0]}
-          scale={[4, 4]}
-        />
-      </group>
-    </>
+      <Plane // Left
+        layout={[0, 16, 4, 4]}
+        position={[0.4, -0.2, -0.2]}
+        rotation={[0, Math.PI / 2, 0]}
+      />
+    </group>
   );
 }

@@ -3,7 +3,7 @@ import { useEffect } from "react";
 import { PonyPreferences, PonyPreferencesContext } from "~/api/PonyPreferences";
 import SkinTextureContext from "~/components/model-components/skinTextureContext";
 import type { XyzArray } from "~/components/model-components/types";
-import { RegularPony } from "~/components/pony/RegularPony";
+import RegularPony from "~/components/pony/RegularPony";
 
 type PonyModelProps = {
   skin: string;
@@ -15,16 +15,17 @@ type PonyModelProps = {
 
 export default function PonyModel({
   skin,
-  position = [0, 0, 0],
-  rotation = [0, 0, 0],
-  preferences, setPreferences
+  position,
+  rotation,
+  preferences,
+  setPreferences,
 }: PonyModelProps) {
   const texture = useTexture(skin);
 
   useEffect(() => {
     const preferences = PonyPreferences.fromSkin(texture.image);
     setPreferences(preferences);
-  }, [texture])
+  }, [texture]);
 
   return (
     <group position={position} rotation={rotation}>

@@ -8,8 +8,11 @@ import PonyPreferencesManager from "~/api/PonyPreferencesManager";
 
 export const meta: MetaFunction = () => {
   return [
-    { title: "Striped Skins" },
-    { name: "description", content: "Simple MineLP Skin Viewer" },
+    { title: "Striped Skins — Mine Little Pony skin viewer" },
+    {
+      name: "description",
+      content: "Watch and compare your awesome pony skins!",
+    },
   ];
 };
 

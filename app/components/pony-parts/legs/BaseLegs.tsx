@@ -1,54 +1,55 @@
 import { Box } from "~/components/model-components/Box";
-import type { XyzArray } from "~/components/model-components/types";
+import type { XyArray } from "~/components/model-components/types";
 
 type BaseLegsProps = {
-  position: XyzArray;
   slim?: boolean;
+  oldFormat?: boolean;
 };
-export function BaseLegs({ position, slim = false }: BaseLegsProps) {
-  const x = slim ? 3 : 4
+
+export default function BaseLegs({ slim, oldFormat }: BaseLegsProps) {
+  const x = slim ? 3 : 4;
+
+  const frLegUvOrigin: XyArray = [40, 16];
+  const flLegUvOrigin: XyArray = oldFormat ? frLegUvOrigin : [32, 48];
+
+  const brLegUvOrigin: XyArray = [0, 16];
+  const blLegUvOrigin: XyArray = oldFormat ? brLegUvOrigin : [16, 48];
 
   return (
-    <group position={position}>
+    <>
       <Box // Front right leg
         parameters={{
+          uvOrigin: frLegUvOrigin,
           uvScale: [x, 4, 12],
-          uvOrigin: [40, 16],
         }}
         position={[-0.4, 0, 0]}
-        rotation={[0, 0, 0]}
-        scale={[x, 4, 12]}
       />
 
       <Box // Font left leg
         parameters={{
+          uvOrigin: flLegUvOrigin,
           uvScale: [x, 4, 12],
-          uvOrigin: [32, 48],
         }}
         position={[0.4, 0, 0]}
-        rotation={[0, 0, 0]}
-        scale={[x, 4, 12]}
+        flipX={oldFormat}
       />
 
       <Box // Back right leg
         parameters={{
+          uvOrigin: brLegUvOrigin,
           uvScale: [x, 4, 12],
-          uvOrigin: [0, 16],
         }}
         position={[-0.4, 0, -1.8]}
-        rotation={[0, 0, 0]}
-        scale={[x, 4, 12]}
       />
 
-      <Box // Back right leg
+      <Box // Back left leg
         parameters={{
+          uvOrigin: blLegUvOrigin,
           uvScale: [x, 4, 12],
-          uvOrigin: [16, 48],
         }}
         position={[0.4, 0, -1.8]}
-        rotation={[0, 0, 0]}
-        scale={[x, 4, 12]}
+        flipX={oldFormat}
       />
-    </group>
+    </>
   );
 }

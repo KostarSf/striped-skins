@@ -1,27 +1,21 @@
-import type { XyzArray } from "~/components/model-components/types";
-import { BaseLegs } from "./BaseLegs";
-import { useSkinTextureContext } from "~/components/model-components/skinTextureContext";
-import { OldBaseLegs } from "./OldBaseLegs";
-import { LegsClothes } from "./LegsClothes";
 import { usePonyPreferences } from "~/api/PonyPreferences";
+import { useSkinTextureContext } from "~/components/model-components/skinTextureContext";
+import type { XyzArray } from "~/components/model-components/types";
+import BaseLegs from "./BaseLegs";
+import LegsClothes from "./LegsClothes";
 
 type LegsProps = {
-  position: XyzArray
+  position?: XyzArray;
 };
-export function Legs({ position }: LegsProps) {
-  const { oldSkinFormat } = useSkinTextureContext()
-  const { slim } = usePonyPreferences()
+
+export default function Legs({ position }: LegsProps) {
+  const { oldSkinFormat } = useSkinTextureContext();
+  const { slim } = usePonyPreferences();
 
   return (
-    <>
-      {oldSkinFormat ? (
-        <OldBaseLegs position={position} slim={slim} />
-      ) : (
-        <>
-          <BaseLegs position={position} slim={slim} />
-          <LegsClothes position={position} slim={slim} />
-        </>
-      )}
-    </>
+    <group position={position}>
+      <BaseLegs slim={slim} oldFormat={oldSkinFormat} />
+      {!oldSkinFormat && <LegsClothes slim={slim} />}
+    </group>
   );
 }

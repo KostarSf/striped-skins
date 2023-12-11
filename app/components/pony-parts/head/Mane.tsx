@@ -2,10 +2,10 @@ import { Box } from "~/components/model-components/Box";
 import type { XyzArray } from "~/components/model-components/types";
 
 type ManeProps = {
-  position: XyzArray;
+  position?: XyzArray;
 };
 
-export function Mane({ position }: ManeProps) {
+export default function Mane({ position }: ManeProps) {
   return (
     <Box // Mane
       parameters={{
@@ -13,7 +13,6 @@ export function Mane({ position }: ManeProps) {
         uvOrigin: [32, 0],
       }}
       position={position}
-      rotation={[0, 0, 0]}
       scale={[9, 9, 9]}
       innerSides
     />

@@ -4,7 +4,7 @@ import { LoadingScreen } from "../ui/LoadingScreen";
 import { ScenePreferences } from "./scene-preferences/ScenePreferences";
 import SceneView from "./scene-view/SceneView";
 
-export function SkinViewer() {
+export default function SkinViewer() {
   return (
     <Suspense fallback={<LoadingScreen />}>
       <div className='w-full h-full'>

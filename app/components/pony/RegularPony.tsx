@@ -1,15 +1,15 @@
-import { Neck } from "~/components/pony-parts/Neck";
-import { Body } from "~/components/pony-parts/body/Body";
-import { Head } from "~/components/pony-parts/head/Head";
-import { Legs } from "~/components/pony-parts/legs/Legs";
-import { Tail } from "~/components/pony-parts/tail/Tail";
-import type { XyzArray } from "../model-components/types";
-import { Wings } from "../pony-parts/wings/Wings";
 import { usePonyPreferences } from "~/api/PonyPreferences";
+import Neck from "~/components/pony-parts/Neck";
+import Body from "~/components/pony-parts/body/Body";
+import Head from "~/components/pony-parts/head/Head";
+import Legs from "~/components/pony-parts/legs/Legs";
+import Tail from "~/components/pony-parts/tail/Tail";
+import Wings from "~/components/pony-parts/wings/Wings";
+import type { XyzArray } from "../model-components/types";
 
-type RegularPonyProps = { position: XyzArray };
-export function RegularPony({ position }: RegularPonyProps) {
-  const { race } = usePonyPreferences()
+type RegularPonyProps = { position?: XyzArray };
+export default function RegularPony({ position }: RegularPonyProps) {
+  const { race } = usePonyPreferences();
 
   return (
     <group position={position}>

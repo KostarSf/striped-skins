@@ -1,18 +1,19 @@
-import type { XyzArray } from "~/components/model-components/types";
-import { BaseBody } from "./BaseBody";
 import { useSkinTextureContext } from "~/components/model-components/skinTextureContext";
-import { BodyClothes } from "./BodyClothes";
+import type { XyzArray } from "~/components/model-components/types";
+import BaseBody from "./BaseBody";
+import BodyClothes from "./BodyClothes";
 
 type BodyProps = {
-  position: XyzArray;
+  position?: XyzArray;
 };
-export function Body({ position }: BodyProps) {
+
+export default function Body({ position }: BodyProps) {
   const { oldSkinFormat } = useSkinTextureContext();
 
   return (
-    <>
-      <BaseBody position={position} />
-      {!oldSkinFormat && <BodyClothes position={position} />}
-    </>
+    <group position={position}>
+      <BaseBody />
+      {!oldSkinFormat && <BodyClothes />}
+    </group>
   );
 }

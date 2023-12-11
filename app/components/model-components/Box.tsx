@@ -7,68 +7,94 @@ type BoxProps = {
     uvOrigin: XyArray;
     uvScale: XyzArray;
   };
-  position: XyzArray;
-  rotation: XyzArray;
-  scale: XyzArray;
+
+  position?: XyzArray;
+  rotation?: XyzArray;
+  scale?: XyzArray;
+
   innerSides?: boolean;
+
+  flipX?: boolean;
+  flipY?: boolean;
+  flipZ?: boolean;
 };
 
-export function Box({ parameters, scale, position, rotation, innerSides }: BoxProps) {
+export function Box({
+  parameters,
+
+  scale = parameters.uvScale,
+  position,
+  rotation,
+
+  innerSides,
+
+  flipX,
+  flipY,
+  flipZ,
+}: BoxProps) {
   const {
     uvOrigin: [originX, originY],
     uvScale: [x, y, z],
   } = parameters;
 
-  const [scaleX, scaleY, scaleZ] = scale;
+  const initialScale: XyArray = [1 / SCALE_MULTIPLIER, 1 / SCALE_MULTIPLIER];
 
   return (
-    <group position={position} rotation={rotation}>
+    <group
+      position={position}
+      rotation={rotation}
+      scale={[
+        scale[0] * SCALE_MULTIPLIER * (flipX ? -1 : 1),
+        scale[2] * SCALE_MULTIPLIER * (flipZ ? -1 : 1),
+        scale[1] * SCALE_MULTIPLIER * (flipY ? -1 : 1),
+      ]}
+    >
       <Plane // Right
         layout={[originX, originY + y, y, z]}
-        position={[-Math.abs(scaleX * SCALE_MULTIPLIER) / 2, 0, 0]}
+        position={[-0.5, 0, 0]}
         rotation={[0, -Math.PI / 2, 0]}
-        scale={[scaleY, scaleZ]}
+        scale={initialScale}
         doubleSide={innerSides}
       />
 
       <Plane // Front
         layout={[originX + y, originY + y, x, z]}
-        position={[0, 0, Math.abs(scaleY * SCALE_MULTIPLIER) / 2]}
+        position={[0, 0, 0.5]}
         rotation={[0, 0, 0]}
-        scale={[scaleX, scaleZ]}
+        scale={initialScale}
         doubleSide={innerSides}
       />
 
       <Plane // Left
         layout={[originX + y + x, originY + y, y, z]}
-        position={[Math.abs(scaleX * SCALE_MULTIPLIER) / 2, 0, 0]}
+        position={[0.5, 0, 0]}
         rotation={[0, Math.PI / 2, 0]}
-        scale={[scaleY, scaleZ]}
+        scale={initialScale}
         doubleSide={innerSides}
       />
 
       <Plane // Top
         layout={[originX + y, originY, x, y]}
-        position={[0, Math.abs(scaleZ * SCALE_MULTIPLIER) / 2, 0]}
+        position={[0, 0.5, 0]}
         rotation={[-Math.PI / 2, 0, 0]}
-        scale={[scaleX, scaleY]}
+        scale={initialScale}
         doubleSide={innerSides}
       />
 
       <Plane // Bottom
         layout={[originX + y + x, originY, x, y]}
-        position={[0, -Math.abs(scaleZ * SCALE_MULTIPLIER) / 2, 0]}
+        position={[0, -0.5, 0]}
         rotation={[Math.PI / 2, 0, Math.PI]}
-        scale={[scaleX, scaleY]}
+        scale={initialScale}
         doubleSide={innerSides}
         flipX
       />
 
       <Plane // Back
         layout={[originX + x + y * 2, originY + y, x, z]}
-        position={[0, 0, -Math.abs(scaleY * SCALE_MULTIPLIER) / 2]}
+        position={[0, 0, -0.5]}
         rotation={[0, Math.PI, 0]}
-        scale={[scaleX, scaleZ]}
+        scale={initialScale}
         doubleSide={innerSides}
       />
     </group>
