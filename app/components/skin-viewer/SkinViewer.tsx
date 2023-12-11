@@ -13,8 +13,6 @@ export default function SkinViewer() {
           frameloop='demand'
           flat
         >
-          {/* <Perf position='bottom-right' /> */}
-
           <ScenePreferences>
             <SceneView />
           </ScenePreferences>

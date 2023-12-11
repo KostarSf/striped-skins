@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { Euler, Vector3, type Group, type Object3DEventMap } from "three";
 import { useViewerParameters } from "../ViewerParametersContext";
 import { useThree } from "@react-three/fiber";
+import { getViewerCanvasWrapper } from "~/utils";
 
 const xAxis = new Vector3(1, 0, 0);
 const yAxis = new Vector3(0, 1, 0);
@@ -19,9 +20,7 @@ export default function () {
   const rotatedByPointer = useRef(false);
 
   useEffect(() => {
-    const canvas = document.querySelector(
-      "#viewer-canvas"
-    ) as HTMLDivElement | null;
+    const canvas = getViewerCanvasWrapper()
     if (!canvas) return;
 
     canvas.addEventListener("pointerdown", onPointerDown);

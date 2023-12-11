@@ -1,9 +1,24 @@
 import { CameraControls, PerspectiveCamera } from "@react-three/drei";
-import type { PropsWithChildren } from "react";
+import { useEffect, type PropsWithChildren } from "react";
 import { useViewerParameters } from "../ViewerParametersContext";
+import { useThree } from "@react-three/fiber";
+import { getViewerCanvasWrapper } from "~/utils";
 
 export function ScenePreferences({ children }: PropsWithChildren) {
   const { isSideBySideMode } = useViewerParameters();
+  const invalidate = useThree((state) => state.invalidate);
+
+  useEffect(() => {
+    const canvas = getViewerCanvasWrapper()
+    if (!canvas) return;
+
+    function unfreezeView() {
+      invalidate();
+    }
+
+    canvas.addEventListener("pointerdown", unfreezeView);
+    return () => canvas.removeEventListener("pointerdown", unfreezeView);
+  }, []);
 
   return (
     <>

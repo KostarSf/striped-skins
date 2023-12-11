@@ -1,5 +1,7 @@
 import { createContext, useContext } from "react";
 import { ImageTransformer } from "./ImageTransformer";
+import { toHexColor } from "./number";
+import { Body } from "./skin-parameters/Body";
 import { Race } from "./skin-parameters/Race";
 import { Snout } from "./skin-parameters/Snout";
 import { TailLength } from "./skin-parameters/Tail";
@@ -9,8 +11,6 @@ import {
   SnoutPixel,
   TailLengthPixel,
 } from "./skin-parameters/skin-pixels";
-import { Body } from "./skin-parameters/Body";
-import { toHexColor } from "./number";
 
 export class PonyPreferences {
   // eslint-disable-next-line no-useless-constructor
@@ -48,9 +48,6 @@ export class PonyPreferences {
       2 * multiplier
     );
     const isSlim = averageColor[3] < 10; // average alpha shold be low
-
-    console.log(averageColor);
-
 
     return new PonyPreferences(
       Race.fromPixel(racePixel),

@@ -7,3 +7,7 @@ export function getSafeSkinUrl(url: string | null) {
 
   return url;
 }
+
+export function getViewerCanvasWrapper() {
+  return document.querySelector("#viewer-canvas") as HTMLDivElement | null;
+}
