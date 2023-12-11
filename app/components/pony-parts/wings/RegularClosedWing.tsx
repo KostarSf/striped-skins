@@ -1,13 +1,17 @@
 import { Plane } from "~/components/model-components/Plane";
 import type { XyzArray } from "~/components/model-components/types";
 
-type ClosedWingProps = {
+type RegularClosedWingProps = {
   position: XyzArray;
   side: "left" | "right";
   mirrored?: boolean;
 };
 
-export function ClosedWing({ position, mirrored, side }: ClosedWingProps) {
+export function RegularClosedWing({
+  position,
+  mirrored,
+  side,
+}: RegularClosedWingProps) {
   return (
     <group position={position} scale={[1, mirrored ? -1 : 1, 1]}>
       <group rotation={[Math.PI / 2, Math.PI / 2, 0]}>

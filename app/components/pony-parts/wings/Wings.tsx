@@ -1,25 +1,21 @@
+import { usePonyPreferences } from "~/api/PonyPreferences";
 import type { XyzArray } from "~/components/model-components/types";
-import { ClosedWing } from "./ClosedWing";
-import { useSkinTextureContext } from "~/components/model-components/skinTextureContext";
+import RegularWings from "./RegularWings";
+import ChangelingWings from "./ChangelingWings";
 
 type WingsProps = {
   position: XyzArray;
 };
 
 export function Wings({ position }: WingsProps) {
-  const { oldSkinFormat } = useSkinTextureContext();
+  const { race } = usePonyPreferences();
+  const regularWings = !race.batWings && !race.changelingWings;
 
   return (
     <group position={position}>
-      <ClosedWing position={[-1, 0, 0]} side='right' />
-
-      <group rotation={[0, 0, oldSkinFormat ? Math.PI : 0]}>
-        <ClosedWing
-          position={[oldSkinFormat ? -1 : 1, 0, 0]}
-          side={oldSkinFormat ? "right" : "left"}
-          mirrored={oldSkinFormat}
-        />
-      </group>
+      {regularWings && <RegularWings />}
+      {race.changelingWings && <ChangelingWings />}
+      {race.batWings && <RegularWings />}
     </group>
   );
 }
