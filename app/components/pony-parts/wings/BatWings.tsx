@@ -2,17 +2,20 @@ import { Box } from "~/components/model-components/Box";
 import type { XyzArray } from "~/components/model-components/types";
 
 export default function BatWings() {
+  const [x, y, z] = [0.92, 0.4 - 0.0225, 0]
+  const scale = 1.26;
+
   return (
     <>
-      <BatWing
-        position={[0.92, 0.3, 0]}
+      <BatWing // Left Wing
+        position={[x, y, z]}
         rotation={[Math.PI / 2, 0, 0]}
-        scale={[1.2, 1.2, 1.2]}
+        scale={[scale, scale, scale]}
       />
-      <BatWing
-        position={[-0.92, 0.3, 0]}
+      <BatWing // Right Wing
+        position={[-x, y, z]}
         rotation={[Math.PI / 2, 0, 0]}
-        scale={[-1.2, 1.2, 1.2]}
+        scale={[-scale, scale, scale]}
       />
     </>
   );
@@ -27,7 +30,7 @@ type BatWingProps = {
 function BatWing({
   position = [0, 0, 0],
   rotation = [0, 0, 0],
-  scale = [1, 1,1],
+  scale = [1, 1, 1],
 }: BatWingProps) {
   return (
     <group position={position} rotation={rotation} scale={scale}>
@@ -37,8 +40,6 @@ function BatWing({
           uvScale: [1, 1, 7],
         }}
         position={[-0.1, 0, 0]}
-        rotation={[0, 0, 0]}
-        scale={[1, 1, 7]}
       />
       <Box
         parameters={{
@@ -46,8 +47,6 @@ function BatWing({
           uvScale: [1, 1, 7],
         }}
         position={[0, 0, 0.2]}
-        rotation={[0, 0, 0]}
-        scale={[1, 1, 7]}
       />
       <Box
         parameters={{
@@ -55,8 +54,6 @@ function BatWing({
           uvScale: [1, 1, 6],
         }}
         position={[0, 0.1, 0.4]}
-        rotation={[0, 0, 0]}
-        scale={[1, 1, 6]}
       />
       <Box
         parameters={{
@@ -64,8 +61,6 @@ function BatWing({
           uvScale: [1, 1, 4],
         }}
         position={[-0.1, 0.3, 0.6]}
-        rotation={[0, 0, 0]}
-        scale={[1, 1, 4]}
       />
     </group>
   );

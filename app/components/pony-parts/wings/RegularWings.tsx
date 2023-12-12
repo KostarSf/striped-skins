@@ -7,9 +7,9 @@ export default function RegularWings() {
 
   return (
     <>
-      <RegularClosedWing position={[-1, 0, 0]} texture='right-wing' />
+      <RegularClosedWing position={[-1, 0, -0.2]} texture='right-wing' />
       <RegularClosedWing
-        position={[1, 0, 0]}
+        position={[1, 0, -0.2]}
         texture={oldSkinFormat ? "right-wing" : "left-wing"}
         mirrored
       />
