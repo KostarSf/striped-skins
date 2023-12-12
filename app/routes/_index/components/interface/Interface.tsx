@@ -118,7 +118,7 @@ export function Interface() {
             <div className='max-w-screen-md xl:w-full'>
               <SkinInfoWidget preferences={firstPony.preferences} />
             </div>
-            <div className='max-w-screen-md xl:w-full text-right'>
+            <div className='max-w-screen-md xl:w-full flex gap-2 justify-end items-start'>
               <SkinInfoWidget preferences={secondPony.preferences} />
             </div>
           </div>
