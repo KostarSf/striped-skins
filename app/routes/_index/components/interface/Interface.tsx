@@ -15,11 +15,20 @@ export function Interface() {
   const skinUrl = params.get(SKIN_SEARCH_PARAM) ?? "";
   const comparedSkinUrl = params.get(SECOND_SKIN_SEARCH_PARAM) ?? "";
 
-  const { comparisonMode, setComparisonMode } = useViewerParameters();
+  const { comparisonMode, setComparisonMode, setFirstSkin, setSecondSkin } =
+    useViewerParameters();
   const { firstPony, secondPony } = usePonyPreferencesManager();
 
   const switchComparisonModeHandle = (type: ComparisonModeType) => {
     return () => setComparisonMode(type);
+  };
+
+  const setFirstSkinHandle = (url: string) => {
+    setFirstSkin(url, false)
+  }
+
+  const setSecondSkinHandle = (url: string) => {
+    setSecondSkin(url, false);
   };
 
   return (
@@ -32,7 +41,10 @@ export function Interface() {
           <input type='submit' hidden />
 
           <div className='max-w-screen-md flex-1 max-xl:w-full'>
-            <SkinInputField defaultFieldValue={skinUrl} />
+            <SkinInputField
+              defaultFieldValue={skinUrl}
+              onImageChange={setFirstSkinHandle}
+            />
             <div className='mt-2 flex justify-between items-start gap-2'>
               {comparisonMode === "off" && (
                 <button
@@ -91,6 +103,7 @@ export function Interface() {
                   <div className='flex-1'>
                     <SkinInputField
                       defaultFieldValue={comparedSkinUrl}
+                      onImageChange={setSecondSkinHandle}
                       searchParamName='second-skin'
                     />
                   </div>

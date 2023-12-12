@@ -7,8 +7,8 @@ export type ComparisonModeType = "off" | "on" | "side-by-side";
 type ViewerParameters = {
   firstSkin: string;
   secondSkin: string;
-  setFirstSkin: (url: string) => void;
-  setSecondSkin: (url: string) => void;
+  setFirstSkin: (url: string, updateUrl: boolean) => void;
+  setSecondSkin: (url: string, updateUrl: boolean) => void;
 
   defaultSkin: string;
 
@@ -102,13 +102,13 @@ export default function ViewerParametersContext({
     }
   }, [defaultFirstSkin, defaultSecondSkin]);
 
-  const setFirstSkinHandle = (url: string | null) => {
-    setDefaultFirstSkin(url)
+  const setFirstSkinHandle = (url: string | null, updateUrl: boolean) => {
+    if (updateUrl) setDefaultFirstSkin(url);
     setFirstSkin(getSafeSkinUrl(url));
   };
 
-  const setSecondSkinHandle = (url: string | null) => {
-    setDefaultSecondSkin(url);
+  const setSecondSkinHandle = (url: string | null, updateUrl: boolean) => {
+    if (updateUrl) setDefaultSecondSkin(url);
     setSecondSkin(getSafeSkinUrl(url));
   };
 

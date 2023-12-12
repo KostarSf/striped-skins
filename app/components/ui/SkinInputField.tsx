@@ -3,19 +3,33 @@ import { useState } from "react";
 type SkinInputFieldProps = {
   searchParamName?: "skin" | "second-skin";
   defaultFieldValue?: string;
+  onImageChange?: (url: string) => void;
 };
 
 export function SkinInputField({
   searchParamName = "skin",
   defaultFieldValue = "",
+  onImageChange = (url) => {},
 }: SkinInputFieldProps) {
-  const [skinInput, /* setSkinInput */] = useState<"file" | "url">(
-    // skinUrl ? "url" : "file"
-    "url"
+  const [skinInput, setSkinInput] = useState<"file" | "url">(
+    defaultFieldValue ? "url" : "file"
   );
 
+  const [fileName, setFileName] = useState("");
+
   const changeSkinInputHandle = () => {
-    // setSkinInput((input) => (input === "file" ? "url" : "file"));
+    setSkinInput((input) => (input === "file" ? "url" : "file"));
+    setFileName("");
+  };
+
+  const uploadLocalImageHandle = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.currentTarget.files && e.currentTarget.files[0];
+    if (!file) return;
+
+    setFileName(file.name);
+
+    const url = URL.createObjectURL(file);
+    onImageChange(url);
   };
 
   return (
@@ -67,11 +81,15 @@ export function SkinInputField({
           defaultValue={defaultFieldValue}
         />
       ) : (
-        <input
-          className='text-zinc-800 px-2 flex-1'
-          type='file'
-          accept='image/png'
-        />
+        <label className='text-zinc-800 px-2 flex-1 cursor-pointer hover:text-orange-500 transition overflow-hidden whitespace-nowrap text-ellipsis'>
+          {fileName || "choose skin locally..."}
+          <input
+            className='opacity-0 absolute pointer-events-none'
+            type='file'
+            accept='image/png'
+            onChange={uploadLocalImageHandle}
+          />
+        </label>
       )}
     </div>
   );
