@@ -12,7 +12,8 @@ export default function SkinInfoWidget({
 }: SkinInfoWidgetProps) {
   const [open, setOpen] = useState(!!defaultOpen);
 
-  const { race, snout, tailLength, body, magicGlow } = preferences;
+  const { race, snout, tailLength, body, magicGlow, tailShape, wearables } =
+    preferences;
 
   return !open ? (
     <button
@@ -68,7 +69,16 @@ export default function SkinInfoWidget({
           value={tailLength.name}
           pixel={tailLength.pixel}
         />
+        <PixelParameter
+          title='Tail Shape'
+          value={tailShape.name}
+          pixel={tailShape.pixel}
+        />
         <PixelParameter title='Magic' pixel={magicGlow} />
+        <PixelParameter title='Wearables' pixel={wearables.rawPixel} />
+        {wearables.items.map((item, i) => (
+          <PixelParameter key={i} value={item.name} pixel={item.pixel} />
+        ))}
       </div>
     </div>
   );
@@ -80,7 +90,7 @@ function PixelParameter({
   value,
 }: {
   pixel: string;
-  title: string;
+  title?: string;
   value?: string;
 }) {
   const none = pixel === "none";
@@ -88,14 +98,14 @@ function PixelParameter({
 
   return (
     <div className='flex flex-col sm:flex-row gap-2'>
-      <p className='font-semibold w-24 shrink-0'>{title}</p>
+      {title && <p className='font-semibold w-24 shrink-0'>{title}</p>}
       <div className='flex items-center gap-2'>
         <div
           className={
             "w-4 h-4 rounded-md shadow-sm shrink-0" + (none ? " border" : "")
           }
           title={hexColor}
-          style={{ backgroundColor: "#" + pixel }}
+          style={{ backgroundColor: "#" + pixel.padStart(6, "0") }}
         />
         <div className='relative'>
           <p

@@ -1,7 +1,7 @@
 import type { XyzArray } from "~/components/model-components/types";
 import DefaultTailPart from "./DefaultTailPart";
 import DefaultTailBeginning from "./DefaultTailBeginning";
-import type { TailSize } from "~/api/skin-parameters/Tail";
+import type { TailSize } from "~/api/skin-parameters/TailLength";
 
 type DefaultTailProps = {
   position?: XyzArray;

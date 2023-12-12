@@ -4,13 +4,16 @@ import { toHexColor } from "./number";
 import { Body } from "./skin-parameters/Body";
 import { Race } from "./skin-parameters/Race";
 import { Snout } from "./skin-parameters/Snout";
-import { TailLength } from "./skin-parameters/Tail";
+import { TailLength } from "./skin-parameters/TailLength";
 import {
   BodyPixel,
   RacePixel,
   SnoutPixel,
   TailLengthPixel,
+  TailShapePixel,
 } from "./skin-parameters/skin-pixels";
+import { TailShape } from "./skin-parameters/TailShape";
+import { Wearables } from "./skin-parameters/Wearables";
 
 export class PonyPreferences {
   // eslint-disable-next-line no-useless-constructor
@@ -20,7 +23,9 @@ export class PonyPreferences {
     readonly snout: Snout,
     readonly body: Body,
     readonly magicGlow: string,
-    readonly slim: boolean
+    readonly slim: boolean,
+    readonly wearables: Wearables,
+    readonly tailShape: TailShape
   ) {}
 
   static fromSkin(image: HTMLImageElement) {
@@ -31,14 +36,12 @@ export class PonyPreferences {
     const snoutPixel = transformer.getPixelRGBA(2, 0);
     const bodyPixel = transformer.getPixelRGBA(3, 0);
     const magicGlowPixel = transformer.getPixelRGBA(0, 1);
-
-    // const wearablesPixel = transformer.getPixelRGBA(1, 1);
-    // const tailShapePixel = transformer.getPixelRGBA(2, 1);
+    const wearablesPixel = transformer.getPixelRGBA(1, 1);
+    const tailShapePixel = transformer.getPixelRGBA(2, 1);
 
     const multiplier = image.width / 64;
 
-    // Average color of the part of the skin that should be empty
-    // if this skin is slim
+    // Average color of part of the skin that should be empty if skin is slim
     // ( the square of 4 top left pixels of back side of back right leg -
     // right below the front part of the ear )
     const averageColor = transformer.getAverageRGBA(
@@ -55,7 +58,9 @@ export class PonyPreferences {
       Snout.fromPixel(snoutPixel),
       Body.fromPixel(bodyPixel),
       toHexColor(magicGlowPixel, false, false),
-      isSlim
+      isSlim,
+      Wearables.fromPixel(wearablesPixel),
+      TailShape.fromPixel(tailShapePixel),
     );
   }
 
@@ -65,7 +70,9 @@ export class PonyPreferences {
     Snout.fromPixel(SnoutPixel.Rounded),
     Body.fromPixel(BodyPixel.Normal),
     "88caf0",
-    false
+    false,
+    Wearables.fromPixel('000000'),
+    TailShape.fromPixel(TailShapePixel.Straight),
   );
 }
 
