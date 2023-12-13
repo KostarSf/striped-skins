@@ -2,11 +2,16 @@
   "name": "@striped-skins/viewer",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
-  "devDependencies": {},
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+  "main": "build/index.js",
+  "devDependencies": {
+    "typescript": "^5.3.3"
   },
-  "author": "",
-  "license": "ISC"
+  "scripts": {
+    "build": "tsc --build"
+  },
+  "author": "KostarSf",
+  "license": "ISC",
+  "dependencies": {
+    "@striped-skins/api": "^1.0.0"
+  }
 }

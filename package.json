@@ -8,8 +8,9 @@
   ],
   "scripts": {
     "build:api": "npm run build --workspace ./packages/api",
-    "build": "npm run build:api & remix build",
-    "dev": "npm run build:api & remix dev --manual",
+    "build:viewer": "npm run build --workspace ./packages/viewer",
+    "build": "npm run build:api & npm run build:viewer & remix build",
+    "dev": "npm run build:api & npm run build:viewer & remix dev --manual",
     "start": "remix-serve ./build/index.js",
     "typecheck": "tsc"
   },

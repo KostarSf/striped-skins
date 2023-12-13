@@ -9,6 +9,6 @@
   "scripts": {
     "build": "tsc --build"
   },
-  "author": "",
+  "author": "KostarSf",
   "license": "ISC"
 }
