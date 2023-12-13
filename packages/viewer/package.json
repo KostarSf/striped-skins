@@ -3,7 +3,10 @@
   "version": "1.0.0",
   "description": "",
   "main": "build/index.js",
+  "src": "src/index.ts",
+  "type": "module",
   "devDependencies": {
+    "@types/three": "^0.159.0",
     "typescript": "^5.3.3"
   },
   "scripts": {
@@ -12,6 +15,12 @@
   "author": "KostarSf",
   "license": "ISC",
   "dependencies": {
-    "@striped-skins/api": "^1.0.0"
+    "@react-three/drei": "^9.92.1",
+    "@react-three/fiber": "^8.15.12",
+    "@striped-skins/api": "^1.0.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "three": "^0.159.0",
+    "zustand": "^4.4.7"
   }
 }

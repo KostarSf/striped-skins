@@ -2,6 +2,7 @@
   "name": "@striped-skins/api",
   "version": "1.0.0",
   "description": "",
+  "type": "module",
   "main": "build/index.js",
   "devDependencies": {
     "typescript": "^5.3.3"

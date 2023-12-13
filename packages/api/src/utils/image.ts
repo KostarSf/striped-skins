@@ -3,6 +3,7 @@ export function loadImage(url: string): Promise<HTMLImageElement> {
     const img = new Image();
     img.addEventListener("load", () => resolve(img));
     img.addEventListener("error", (err) => reject(err));
+    img.crossOrigin = "Anonymous";
     img.src = url;
   });
 }
