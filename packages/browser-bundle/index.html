@@ -7,23 +7,18 @@
     <title>Vite App</title>
   </head>
   <body>
-    <div id="app" style="width: 500px; height: 500px; background: gray;"></div>
+    <div id="app" style="width: 500px; height: 500px; background: gray"></div>
     <script type="module" src="/main.js"></script>
 
     <script>
       var onStripedLoaded = () => {
         StripedViewer.preferences.set({
           defaultSkinUrl: "https://striped-skins.ru/steve_pony.png",
+          firstSkinUrl:
+            "https://cdn.discordapp.com/attachments/1027982135635742842/1184174627803639898/Kostar_64.png?ex=658b0390&is=65788e90&hm=8290e0cea820bd4a8cde5b21556c832eb6ba07300627cd154e7a081e3088d534&",
         });
 
-        setTimeout(() => {
-          StripedViewer.preferences.set({
-            firstSkinUrl:
-              "https://striped-skins.ru/skin-proxy/?url=https://auth.mc4ep.net/media/skin/400e2059-a40a-40c0-acd4-9d13ffb8b404",
-          });
-        }, 500);
-
-        StripedViewer.run('#app');
+        StripedViewer.run("#app");
       };
     </script>
   </body>
