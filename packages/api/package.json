@@ -1,0 +1,14 @@
+{
+  "name": "@striped-skins/api",
+  "version": "1.0.0",
+  "description": "",
+  "main": "build/index.js",
+  "devDependencies": {
+    "typescript": "^5.3.3"
+  },
+  "scripts": {
+    "build": "tsc --build"
+  },
+  "author": "",
+  "license": "ISC"
+}

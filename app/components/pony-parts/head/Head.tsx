@@ -1,4 +1,4 @@
-import { usePonyPreferences } from "~/api/PonyPreferences";
+import { usePony } from "~/api/Pony";
 import type { XyzArray } from "~/components/model-components/types";
 import Ears from "./Ears";
 import Horn from "./Horn";
@@ -12,7 +12,7 @@ type HeadProps = {
 };
 
 export default function Head({ position, hideMane }: HeadProps) {
-  const { race, snout } = usePonyPreferences();
+  const { race, snout } = usePony();
 
   return (
     <>

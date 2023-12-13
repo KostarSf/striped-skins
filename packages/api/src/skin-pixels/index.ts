@@ -1,14 +1,3 @@
-export function keyOfEnum<T extends Object>(
-  en: T,
-  value: string,
-  def?: any
-): T {
-  const key = Object.keys(en)[Object.values(en).indexOf(value)];
-  const enumValue = (en as any)[key];
-
-  return !enumValue && !!def ? def : enumValue;
-}
-
 export enum RacePixel {
   Human = "none",
   Earthpony = "f9b131",

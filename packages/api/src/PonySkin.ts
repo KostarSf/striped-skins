@@ -1,21 +1,22 @@
-import { createContext, useContext } from "react";
-import { ImageTransformer } from "./ImageTransformer";
-import { toHexColor } from "./number";
-import { Body } from "./skin-parameters/Body";
-import { Race } from "./skin-parameters/Race";
-import { Snout } from "./skin-parameters/Snout";
-import { TailLength } from "./skin-parameters/TailLength";
 import {
-  BodyPixel,
+  Race,
+  TailLength,
+  Snout,
+  Wearables,
+  TailShape,
+  Body,
+} from "./skin-parameters";
+import {
   RacePixel,
-  SnoutPixel,
   TailLengthPixel,
+  SnoutPixel,
+  BodyPixel,
   TailShapePixel,
-} from "./skin-parameters/skin-pixels";
-import { TailShape } from "./skin-parameters/TailShape";
-import { Wearables } from "./skin-parameters/Wearables";
+} from "./skin-pixels";
+import { loadImage, toHexColor } from "./utils";
+import { ImageTransformer } from "./utils/ImageTransformer";
 
-export class PonyPreferences {
+export class PonySkin {
   // eslint-disable-next-line no-useless-constructor
   constructor(
     readonly race: Race,
@@ -28,8 +29,13 @@ export class PonyPreferences {
     readonly tailShape: TailShape
   ) {}
 
-  static fromSkin(image: HTMLImageElement) {
-    const transformer = new ImageTransformer(image);
+  static async fromUrl(imageUrl: string) {
+    const image = await loadImage(imageUrl);
+    return this.fromImage(image);
+  }
+
+  static fromImage(imageElement: HTMLImageElement) {
+    const transformer = new ImageTransformer(imageElement);
 
     const racePixel = transformer.getPixelRGBA(0, 0);
     const tailLengthPixel = transformer.getPixelRGBA(1, 0);
@@ -39,7 +45,7 @@ export class PonyPreferences {
     const wearablesPixel = transformer.getPixelRGBA(1, 1);
     const tailShapePixel = transformer.getPixelRGBA(2, 1);
 
-    const multiplier = image.width / 64;
+    const multiplier = imageElement.width / 64;
 
     // Average color of part of the skin that should be empty if skin is slim
     // ( the square of 4 top left pixels of back side of back right leg -
@@ -52,7 +58,7 @@ export class PonyPreferences {
     );
     const isSlim = averageColor[3] < 10; // average alpha shold be low
 
-    return new PonyPreferences(
+    return new PonySkin(
       Race.fromPixel(racePixel),
       TailLength.fromPixel(tailLengthPixel),
       Snout.fromPixel(snoutPixel),
@@ -60,27 +66,18 @@ export class PonyPreferences {
       toHexColor(magicGlowPixel, false, false),
       isSlim,
       Wearables.fromPixel(wearablesPixel),
-      TailShape.fromPixel(tailShapePixel),
+      TailShape.fromPixel(tailShapePixel)
     );
   }
 
-  static readonly DEFAULT = new PonyPreferences(
-    Race.fromPixel(RacePixel.Human),
+  static readonly DEFAULT = new PonySkin(
+    Race.fromPixel(RacePixel.Pegasus),
     TailLength.fromPixel(TailLengthPixel.Full),
     Snout.fromPixel(SnoutPixel.Rounded),
     Body.fromPixel(BodyPixel.Normal),
     "88caf0",
     false,
-    Wearables.fromPixel('000000'),
-    TailShape.fromPixel(TailShapePixel.Straight),
+    Wearables.fromPixel("000000"),
+    TailShape.fromPixel(TailShapePixel.Straight)
   );
 }
-
-export const PonyPreferencesContext = createContext<PonyPreferences>(
-  PonyPreferences.DEFAULT
-);
-
-export const usePonyPreferences = () => {
-  const context = useContext(PonyPreferencesContext);
-  return context;
-};

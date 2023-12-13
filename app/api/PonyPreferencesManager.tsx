@@ -1,19 +1,19 @@
+import { PonySkin } from "@striped-skins/api";
 import type { PropsWithChildren } from "react";
 import { createContext, useContext, useState } from "react";
-import { PonyPreferences } from "./PonyPreferences";
 
 const PonyPreferencesManagerContext = createContext({
-  firstPony: PonyPreferences.DEFAULT,
-  secondPony: PonyPreferences.DEFAULT,
-  setFirstPony: (pony: PonyPreferences) => {},
-  setSecondPony: (pony: PonyPreferences) => {},
+  firstPony: PonySkin.DEFAULT,
+  secondPony: PonySkin.DEFAULT,
+  setFirstPony: (pony: PonySkin) => {},
+  setSecondPony: (pony: PonySkin) => {},
 });
 
 export default function PonyPreferencesManager({
   children,
 }: PropsWithChildren) {
-  const [firstPony, setFirstPony] = useState(PonyPreferences.DEFAULT);
-  const [secondPony, setSecondPony] = useState(PonyPreferences.DEFAULT);
+  const [firstPony, setFirstPony] = useState(PonySkin.DEFAULT);
+  const [secondPony, setSecondPony] = useState(PonySkin.DEFAULT);
 
   return (
     <PonyPreferencesManagerContext.Provider
@@ -28,12 +28,12 @@ export const usePonyPreferencesManager = () => {
   const context = useContext(PonyPreferencesManagerContext);
   return {
     firstPony: {
-      preferences: context.firstPony,
-      setPreferences: context.setFirstPony,
+      skin: context.firstPony,
+      setSkin: context.setFirstPony,
     },
     secondPony: {
-      preferences: context.secondPony,
-      setPreferences: context.setSecondPony,
+      skin: context.secondPony,
+      setSkin: context.setSecondPony,
     },
   };
 }

@@ -16,7 +16,7 @@ export default function SideBySidePonyView() {
     <>
       <group ref={pony1ref} position={[x, y, 0]}>
         <PonyModel
-          skin={firstSkin}
+          skinUrl={firstSkin}
           position={[0, 0, 0]}
           rotation={[0, 0, 0]}
           {...firstPony}
@@ -25,7 +25,7 @@ export default function SideBySidePonyView() {
 
       <group ref={pony2ref} position={[-x, -y, 0]}>
         <PonyModel
-          skin={secondSkin}
+          skinUrl={secondSkin}
           position={[0, 0, 0]}
           rotation={[0, 0, 0]}
           {...secondPony}

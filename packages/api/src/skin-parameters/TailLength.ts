@@ -1,9 +1,8 @@
-import type { PixelColorData } from "../ImageTransformer"
-import { toHexColor } from "../number";
-import { TailLengthPixel } from "./skin-pixels"
+import { TailLengthPixel } from "../skin-pixels";
+import type { PixelColorData} from "../utils";
+import { toHexColor } from "../utils";
 
 const allTailLengths = new Map<string, TailLength>()
-// const allTailShapes = new Map<string, TailShape>()
 
 export type TailSize = 0 | 1 | 2 | 3 | 4;
 

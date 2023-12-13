@@ -70,7 +70,7 @@ export function Interface() {
               )}
 
               {comparisonMode === "off" && (
-                <SkinInfoWidget preferences={firstPony.preferences} />
+                <SkinInfoWidget skin={firstPony.skin} />
               )}
             </div>
           </div>
@@ -116,10 +116,10 @@ export function Interface() {
         {comparisonMode === "side-by-side" && (
           <div className='flex justify-between w-full max-xl:max-w-screen-md xl:justify-evenly gap-4 mx-auto max-xl:mt-2'>
             <div className='max-w-screen-md xl:w-full'>
-              <SkinInfoWidget preferences={firstPony.preferences} />
+              <SkinInfoWidget skin={firstPony.skin} />
             </div>
             <div className='max-w-screen-md xl:w-full flex gap-2 justify-end items-start'>
-              <SkinInfoWidget preferences={secondPony.preferences} />
+              <SkinInfoWidget skin={secondPony.skin} />
             </div>
           </div>
         )}

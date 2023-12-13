@@ -1,38 +1,39 @@
 import { useTexture } from "@react-three/drei";
+import { PonySkin } from "@striped-skins/api";
 import { useEffect } from "react";
-import { PonyPreferences, PonyPreferencesContext } from "~/api/PonyPreferences";
+import { PonyContext } from "~/api/Pony";
 import SkinTextureContext from "~/components/model-components/skinTextureContext";
 import type { XyzArray } from "~/components/model-components/types";
 import RegularPony from "~/components/pony/RegularPony";
 
 type PonyModelProps = {
-  skin: string;
+  skinUrl: string;
   position?: XyzArray;
   rotation?: XyzArray;
-  preferences: PonyPreferences;
-  setPreferences: (pony: PonyPreferences) => void;
+  skin: PonySkin;
+  setSkin: (pony: PonySkin) => void;
 };
 
 export default function PonyModel({
-  skin,
+  skinUrl,
   position,
   rotation,
-  preferences,
-  setPreferences,
+  skin,
+  setSkin,
 }: PonyModelProps) {
-  const texture = useTexture(skin);
+  const texture = useTexture(skinUrl);
 
   useEffect(() => {
-    const preferences = PonyPreferences.fromSkin(texture.image);
-    setPreferences(preferences);
+    const preferences = PonySkin.fromImage(texture.image);
+    setSkin(preferences);
   }, [texture]);
 
   return (
     <group position={position} rotation={rotation}>
       <SkinTextureContext.Provider value={{ texture, textureSize: 64 }}>
-        <PonyPreferencesContext.Provider value={preferences}>
+        <PonyContext.Provider value={skin}>
           <RegularPony position={[0, 1, 1.5]} />
-        </PonyPreferencesContext.Provider>
+        </PonyContext.Provider>
       </SkinTextureContext.Provider>
     </group>
   );

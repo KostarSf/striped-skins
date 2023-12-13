@@ -1,6 +1,6 @@
-import type { PixelColorData } from "../ImageTransformer";
-import { toHexColor } from "../number";
-import { WearablesPixel } from "./skin-pixels";
+import { WearablesPixel } from "../skin-pixels";
+import type { PixelColorData} from "../utils";
+import { toHexColor } from "../utils";
 
 export class Wearables {
   // eslint-disable-next-line no-useless-constructor

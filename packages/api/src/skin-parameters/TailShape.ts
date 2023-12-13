@@ -1,6 +1,6 @@
-import type { PixelColorData } from "../ImageTransformer";
-import { toHexColor } from "../number";
-import { TailShapePixel } from "./skin-pixels";
+import { TailShapePixel } from "../skin-pixels";
+import type { PixelColorData} from "../utils";
+import { toHexColor } from "../utils";
 
 const allTailShapes = new Map<string, TailShape>()
 

@@ -1,4 +1,4 @@
-import { usePonyPreferences } from "~/api/PonyPreferences";
+import { usePony } from "~/api/Pony";
 import { useSkinTextureContext } from "~/components/model-components/skinTextureContext";
 import type { XyzArray } from "~/components/model-components/types";
 import BaseLegs from "./BaseLegs";
@@ -10,7 +10,7 @@ type LegsProps = {
 
 export default function Legs({ position }: LegsProps) {
   const { oldSkinFormat } = useSkinTextureContext();
-  const { slim } = usePonyPreferences();
+  const { slim } = usePony();
 
   return (
     <group position={position}>

@@ -1,10 +1,6 @@
 import type { PixelColorData } from "./ImageTransformer";
 
-export function toHexColor(
-  color: PixelColorData,
-  sharp = true,
-  alpha = true
-) {
+export function toHexColor(color: PixelColorData, sharp = true, alpha = true) {
   return (
     (!sharp ? "" : "#") +
     color[0].toString(16).padStart(2, "0") +

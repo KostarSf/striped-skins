@@ -1,6 +1,6 @@
-import type { PixelColorData } from "../ImageTransformer";
-import { toHexColor } from "../number";
-import { SnoutPixel } from "./skin-pixels";
+import { SnoutPixel } from "../skin-pixels";
+import type { PixelColorData} from "../utils";
+import { toHexColor } from "../utils";
 
 const allSnouts = new Map<string, Snout>()
 

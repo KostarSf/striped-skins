@@ -1,6 +1,6 @@
-import type { PixelColorData } from "../ImageTransformer";
-import { toHexColor } from "../number";
-import { RacePixel } from "./skin-pixels";
+import { RacePixel } from "../skin-pixels";
+import type { PixelColorData} from "../utils";
+import { toHexColor } from "../utils";
 
 const allRaces = new Map<string, Race>();
 

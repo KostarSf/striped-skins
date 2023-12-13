@@ -1,4 +1,4 @@
-import { usePonyPreferences } from "~/api/PonyPreferences";
+import { usePony } from "~/api/Pony";
 import type { XyzArray } from "~/components/model-components/types";
 import BatWings from "./BatWings";
 import ChangelingWings from "./ChangelingWings";
@@ -9,7 +9,7 @@ type WingsProps = {
 };
 
 export default function Wings({ position }: WingsProps) {
-  const { race } = usePonyPreferences();
+  const { race } = usePony();
   const regularWings = !race.batWings && !race.changelingWings;
 
   return (

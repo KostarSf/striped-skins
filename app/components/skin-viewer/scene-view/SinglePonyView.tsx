@@ -14,5 +14,5 @@ export default function SinglePonyView() {
   const preferences =
     isComparisonMode && activeSkin === "second" ? secondPony : firstPony;
 
-  return <PonyModel skin={skin} {...preferences} />;
+  return <PonyModel skinUrl={skin} {...preferences} />;
 }

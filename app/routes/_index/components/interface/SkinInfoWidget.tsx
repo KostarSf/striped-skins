@@ -1,19 +1,19 @@
+import type { PonySkin } from "@striped-skins/api";
 import { useState } from "react";
-import type { PonyPreferences } from "~/api/PonyPreferences";
 
 type SkinInfoWidgetProps = {
-  preferences: PonyPreferences;
+  skin: PonySkin;
   defaultOpen?: boolean;
 };
 
 export default function SkinInfoWidget({
-  preferences,
+  skin,
   defaultOpen,
 }: SkinInfoWidgetProps) {
   const [open, setOpen] = useState(!!defaultOpen);
 
   const { race, snout, tailLength, body, magicGlow, tailShape, wearables } =
-    preferences;
+    skin;
 
   return !open ? (
     <button
