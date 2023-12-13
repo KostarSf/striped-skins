@@ -1,6 +1,6 @@
-import { TailLengthPixel } from "../skin-pixels";
-import type { PixelColorData} from "../utils";
-import { toHexColor } from "../utils";
+import { TailLengthPixel } from "../skin-pixels/index.js";
+import type { PixelColorData } from "../utils/index.js";
+import { toHexColor } from "../utils/index.js";
 
 const allTailLengths = new Map<string, TailLength>()
 

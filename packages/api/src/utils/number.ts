@@ -1,4 +1,4 @@
-import type { PixelColorData } from "./ImageTransformer";
+import type { PixelColorData } from "./ImageTransformer.js";
 
 export function toHexColor(color: PixelColorData, sharp = true, alpha = true) {
   return (

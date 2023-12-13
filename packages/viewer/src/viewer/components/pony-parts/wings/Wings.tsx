@@ -1,8 +1,8 @@
-import { usePony } from "../../../context/PonyContext";
-import type { XyzArray } from "../../model-components/types";
-import BatWings from "./BatWings";
-import ChangelingWings from "./ChangelingWings";
-import RegularWings from "./RegularWings";
+import { usePony } from "../../../context/index.js";
+import type { XyzArray } from "../../model-components/index.js";
+import BatWings from "./BatWings.js";
+import ChangelingWings from "./ChangelingWings.js";
+import RegularWings from "./RegularWings.js";
 
 type WingsProps = {
   position?: XyzArray;

@@ -1,1 +1,1 @@
-export { StripedViewer } from './StripedViewer'
+export { StripedViewer } from './StripedViewer.js'

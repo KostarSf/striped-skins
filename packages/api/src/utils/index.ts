@@ -1,3 +1,3 @@
-export * from './ImageTransformer'
-export * from './image'
-export * from './number'
+export * from "./ImageTransformer.js";
+export * from "./image.js";
+export * from "./number.js";

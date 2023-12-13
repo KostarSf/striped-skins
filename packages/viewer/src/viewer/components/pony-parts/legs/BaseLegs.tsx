@@ -1,5 +1,5 @@
-import { Box } from "../../model-components/Box";
-import type { XyArray } from "../../model-components/types";
+import { Box } from "../../model-components/index.js";
+import type { XyArray } from "../../model-components/index.js";
 
 type BaseLegsProps = {
   slim?: boolean;

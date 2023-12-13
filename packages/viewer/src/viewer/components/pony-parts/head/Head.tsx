@@ -1,10 +1,10 @@
-import { usePony } from "../../../context/PonyContext";
-import type { XyzArray } from "../../model-components/types";
-import Ears from "./Ears";
-import Horn from "./Horn";
-import Mane from "./Mane";
-import Skull from "./Skull";
-import Snout from "./Snout";
+import { usePony } from "../../../context/index.js";
+import type { XyzArray } from "../../model-components/index.js";
+import Ears from "./Ears.js";
+import Horn from "./Horn.js";
+import Mane from "./Mane.js";
+import Skull from "./Skull.js";
+import Snout from "./Snout.js";
 
 type HeadProps = {
   position?: XyzArray;

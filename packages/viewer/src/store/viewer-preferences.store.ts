@@ -1,6 +1,7 @@
 import { create } from "zustand";
-import { usePonyStore } from "./pony.store";
 import { PonySkin } from "@striped-skins/api";
+import { usePonyStore } from "./index.js";
+import type { XyzArray } from "../viewer/components/model-components/types.js";
 
 export type ViewerMode = "first-model" | "second-model" | "side-by-side";
 
@@ -9,6 +10,21 @@ export type ViewerPreferences = {
   firstSkinUrl: string | null;
   secondSkinUrl: string | null;
   mode: ViewerMode;
+  camera: CameraPreferences;
+};
+
+export type CameraPreferences = {
+  static: boolean;
+  distance: number;
+  minDistance: number;
+  maxDistance: number;
+  position: XyzArray;
+  rotation: XyzArray;
+  fov: number;
+};
+
+export type PartialViewerPreferences = Partial<Omit<ViewerPreferences, "camera">> & {
+  camera?: Partial<CameraPreferences>;
 };
 
 type ViewerPreferencesStoreState = ViewerPreferences & {
@@ -16,6 +32,7 @@ type ViewerPreferencesStoreState = ViewerPreferences & {
   setFirstSkin: (skinUrl: string | null) => void;
   setSecondSkin: (skinUrl: string | null) => void;
   setMode: (mode: ViewerMode) => void;
+  setCamera: (preferences: Partial<CameraPreferences>) => void;
 };
 
 export const useViewerPreferencesStore = create<ViewerPreferencesStoreState>()(
@@ -24,6 +41,15 @@ export const useViewerPreferencesStore = create<ViewerPreferencesStoreState>()(
     firstSkinUrl: null,
     secondSkinUrl: null,
     mode: "first-model",
+    camera: {
+      static: false,
+      distance: 10,
+      minDistance: 5,
+      maxDistance: 20,
+      fov: 50,
+      position: [4, 1, 10],
+      rotation: [0, 0, 0]
+    },
 
     setDefaultSkin: (url) => set(() => ({ defaultSkinUrl: url })),
 
@@ -48,5 +74,8 @@ export const useViewerPreferencesStore = create<ViewerPreferencesStoreState>()(
     },
 
     setMode: (mode) => set((state) => ({ mode: mode })),
+
+    setCamera: (prefs) =>
+      set((state) => ({ camera: { ...state.camera, ...prefs } })),
   })
 );

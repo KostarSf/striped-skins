@@ -1,8 +1,8 @@
 import { CameraControls, PerspectiveCamera } from "@react-three/drei";
 import { useThree } from "@react-three/fiber";
 import { useEffect, type PropsWithChildren } from "react";
-import { useViewerPreferencesStore } from "../../../store/viewer-preferences.store";
-import { getViewerCanvasWrapper } from "../../utils";
+import { useViewerPreferencesStore } from "../../../store/index.js";
+import { getViewerCanvasWrapper } from "../../utils/index.js";
 
 export function ScenePreferences({ children }: PropsWithChildren) {
   const { mode } = useViewerPreferencesStore();
@@ -35,10 +35,23 @@ export function ScenePreferences({ children }: PropsWithChildren) {
 }
 
 function SingleModeScenePreferences() {
+  const camera = useViewerPreferencesStore((state) => state.camera);
+
   return (
     <>
-      <CameraControls minDistance={5} maxDistance={20} />
-      <PerspectiveCamera makeDefault position={[4, 1, 10]} fov={50}>
+      {!camera.static && (
+        <CameraControls
+          minDistance={camera.minDistance}
+          maxDistance={camera.maxDistance}
+          distance={camera.distance}
+        />
+      )}
+      <PerspectiveCamera
+        makeDefault
+        position={camera.position}
+        rotation={camera.rotation}
+        fov={camera.fov}
+      >
         <hemisphereLight
           color='#ffffff'
           groundColor='#666666'

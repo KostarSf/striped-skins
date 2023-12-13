@@ -1,7 +1,9 @@
-import { usePonyStore } from "../../../store/pony.store";
-import { useViewerPreferencesStore } from "../../../store/viewer-preferences.store";
-import PonyModel from "./PonyModel";
-import useSideBySideRotation from "./useSideBySideRotation";
+import {
+  usePonyStore,
+  useViewerPreferencesStore,
+} from "../../../store/index.js";
+import PonyModel from "./PonyModel.js";
+import useSideBySideRotation from "./useSideBySideRotation.js";
 
 export default function SideBySidePonyView() {
   const { firstSkinUrl, secondSkinUrl, defaultSkinUrl } = useViewerPreferencesStore()

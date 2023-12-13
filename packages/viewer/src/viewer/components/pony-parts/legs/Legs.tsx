@@ -1,8 +1,7 @@
-import { usePony } from "../../../context/PonyContext";
-import { useSkinTextureContext } from "../../../context/SkinTextureContext";
-import type { XyzArray } from "../../model-components/types";
-import BaseLegs from "./BaseLegs";
-import LegsClothes from "./LegsClothes";
+import { usePony, useSkinTextureContext } from "../../../context/index.js";
+import type { XyzArray } from "../../model-components/index.js";
+import BaseLegs from "./BaseLegs.js";
+import LegsClothes from "./LegsClothes.js";
 
 type LegsProps = {
   position?: XyzArray;

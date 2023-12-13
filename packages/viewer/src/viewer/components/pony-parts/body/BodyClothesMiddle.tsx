@@ -1,4 +1,4 @@
-import { Plane } from "../../model-components/Plane";
+import { Plane } from "../../model-components/index.js";
 
 export default function BodyClothesMiddle() {
   return (

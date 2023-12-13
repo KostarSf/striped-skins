@@ -1,6 +1,6 @@
-import { BodyPixel } from "../skin-pixels";
-import type { PixelColorData} from "../utils";
-import { toHexColor } from "../utils";
+import { BodyPixel } from "../skin-pixels/index.js";
+import type { PixelColorData } from "../utils/index.js";
+import { toHexColor } from "../utils/index.js";
 
 const allBodies = new Map<string, Body>()
 

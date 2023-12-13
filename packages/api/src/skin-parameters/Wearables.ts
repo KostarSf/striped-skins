@@ -1,6 +1,6 @@
-import { WearablesPixel } from "../skin-pixels";
-import type { PixelColorData} from "../utils";
-import { toHexColor } from "../utils";
+import { WearablesPixel } from "../skin-pixels/index.js";
+import type { PixelColorData } from "../utils/index.js";
+import { toHexColor } from "../utils/index.js";
 
 export class Wearables {
   // eslint-disable-next-line no-useless-constructor

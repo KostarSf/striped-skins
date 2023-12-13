@@ -1,6 +1,6 @@
-import BodyClothesFront from "./BodyClothesFront";
-import BodyClothesMiddle from "./BodyClothesMiddle";
-import BodyClothesBack from "./BodyClothesBack";
+import BodyClothesFront from "./BodyClothesFront.js";
+import BodyClothesMiddle from "./BodyClothesMiddle.js";
+import BodyClothesBack from "./BodyClothesBack.js";
 
 export default function BodyClothes() {
   return (

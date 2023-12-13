@@ -1,6 +1,6 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
-import { Viewer } from "./Viewer";
+import { Viewer } from "./Viewer.js";
 
 export function attach(target: string | HTMLElement) {
   const domElement =

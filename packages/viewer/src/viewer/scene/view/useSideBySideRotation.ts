@@ -1,8 +1,8 @@
 import { useEffect, useRef } from "react";
 import { Euler, Vector3, type Group, type Object3DEventMap } from "three";
 import { useThree } from "@react-three/fiber";
-import { useViewerPreferencesStore } from "../../../store/viewer-preferences.store";
-import { getViewerCanvasWrapper } from "../../utils";
+import { useViewerPreferencesStore } from "../../../store/index.js";
+import { getViewerCanvasWrapper } from "../../utils/index.js";
 
 const xAxis = new Vector3(1, 0, 0);
 const yAxis = new Vector3(0, 1, 0);

@@ -1,9 +1,8 @@
 import { useTexture } from "@react-three/drei";
 import type { PonySkin } from "@striped-skins/api";
-import type { XyzArray } from "../../components/model-components/types";
-import { PonyContext } from "../../context/PonyContext";
-import SkinTextureContext from "../../context/SkinTextureContext";
-import RegularPony from "../../components/pony/RegularPony";
+import type { XyzArray } from "../../components/model-components/index.js";
+import RegularPony from "../../components/pony/RegularPony.js";
+import { PonyContext, SkinTextureContext } from "../../context/index.js";
 
 type PonyModelProps = {
   textureUri: string;

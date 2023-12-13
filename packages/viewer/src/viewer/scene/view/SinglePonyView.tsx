@@ -1,6 +1,8 @@
-import PonyModel from "./PonyModel";
-import { useViewerPreferencesStore } from "../../../store/viewer-preferences.store";
-import { usePonyStore } from "../../../store/pony.store";
+import {
+  usePonyStore,
+  useViewerPreferencesStore,
+} from "../../../store/index.js";
+import PonyModel from "./PonyModel.js";
 
 export default function SinglePonyView() {
   const { mode, firstSkinUrl, secondSkinUrl, defaultSkinUrl } =

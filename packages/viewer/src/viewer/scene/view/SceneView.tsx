@@ -1,6 +1,6 @@
-import { useViewerPreferencesStore } from "../../../store/viewer-preferences.store";
-import SideBySidePonyView from "./SideBySidePonyView";
-import SinglePonyView from "./SinglePonyView";
+import { useViewerPreferencesStore } from "../../../store/index.js";
+import SideBySidePonyView from "./SideBySidePonyView.js";
+import SinglePonyView from "./SinglePonyView.js";
 
 export default function SceneView() {
   const { mode } = useViewerPreferencesStore()

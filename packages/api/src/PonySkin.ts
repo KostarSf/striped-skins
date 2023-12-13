@@ -5,16 +5,15 @@ import {
   Wearables,
   TailShape,
   Body,
-} from "./skin-parameters";
+} from "./skin-parameters/index.js";
 import {
   RacePixel,
   TailLengthPixel,
   SnoutPixel,
   BodyPixel,
   TailShapePixel,
-} from "./skin-pixels";
-import { loadImage, toHexColor } from "./utils";
-import { ImageTransformer } from "./utils/ImageTransformer";
+} from "./skin-pixels/index.js";
+import { ImageTransformer, loadImage, toHexColor } from "./utils/index.js";
 
 export class PonySkin {
   // eslint-disable-next-line no-useless-constructor

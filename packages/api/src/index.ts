@@ -1,1 +1,1 @@
-export { PonySkin } from './PonySkin'
+export { PonySkin } from './PonySkin.js'

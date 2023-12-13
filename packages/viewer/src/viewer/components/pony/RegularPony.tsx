@@ -1,11 +1,11 @@
-import { usePony } from "../../context/PonyContext";
-import type { XyzArray } from "../model-components/types";
-import Neck from "../pony-parts/Neck";
-import Body from "../pony-parts/body/Body";
-import Head from "../pony-parts/head/Head";
-import Legs from "../pony-parts/legs/Legs";
-import Tail from "../pony-parts/tail/Tail";
-import Wings from "../pony-parts/wings/Wings";
+import { usePony } from "../../context/index.js";
+import type { XyzArray } from "../model-components/index.js";
+import Neck from "../pony-parts/Neck.js";
+import Body from "../pony-parts/body/Body.js";
+import Head from "../pony-parts/head/Head.js";
+import Legs from "../pony-parts/legs/Legs.js";
+import Tail from "../pony-parts/tail/Tail.js";
+import Wings from "../pony-parts/wings/Wings.js";
 
 type RegularPonyProps = { position?: XyzArray };
 export default function RegularPony({ position }: RegularPonyProps) {

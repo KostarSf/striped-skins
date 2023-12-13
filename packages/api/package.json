@@ -3,12 +3,14 @@
   "version": "1.0.0",
   "description": "",
   "type": "module",
-  "main": "build/index.js",
+  "main": "build/cjs/index.js",
+  "exports": "./build/esm/index.js",
+  "types": "./build/types/index.d.ts",
   "devDependencies": {
     "typescript": "^5.3.3"
   },
   "scripts": {
-    "build": "tsc --build"
+    "build": "tsc --build ./tsconfig.cjs.json ./tsconfig.esm.json ./tsconfig.types.json"
   },
   "author": "KostarSf",
   "license": "ISC"

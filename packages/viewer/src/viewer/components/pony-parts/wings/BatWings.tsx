@@ -1,5 +1,5 @@
-import { Box } from "../../model-components/Box";
-import type { XyzArray } from "../../model-components/types";
+import { Box } from "../../model-components/index.js";
+import type { XyzArray } from "../../model-components/index.js";
 
 export default function BatWings() {
   const [x, y, z] = [0.92, 0.4 - 0.0225, 0]

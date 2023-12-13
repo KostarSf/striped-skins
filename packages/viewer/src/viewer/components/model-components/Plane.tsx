@@ -1,6 +1,6 @@
-import type { LayoutDimensions, XyArray, XyzArray } from "./types";
-import { SCALE_MULTIPLIER } from "./constants";
-import { useSkinTextureContext } from "../../context/SkinTextureContext";
+import type { LayoutDimensions, XyArray, XyzArray } from ".";
+import { SCALE_MULTIPLIER } from "./index.js";
+import { useSkinTextureContext } from "../../context/index.js";
 
 type PlaneProps = {
   layout: LayoutDimensions;

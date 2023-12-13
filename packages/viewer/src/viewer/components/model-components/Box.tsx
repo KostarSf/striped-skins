@@ -1,6 +1,5 @@
-import type { XyArray, XyzArray } from "./types";
-import { Plane } from "./Plane";
-import { SCALE_MULTIPLIER } from "./constants";
+import type { XyArray, XyzArray } from "./index.js";
+import { Plane, SCALE_MULTIPLIER } from "./index.js";
 
 type BoxProps = {
   parameters: {

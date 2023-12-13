@@ -1,5 +1,5 @@
-import { Plane } from "../../model-components/Plane";
-import type { XyzArray } from "../../model-components/types";
+import { Plane } from "../../model-components/index.js";
+import type { XyzArray } from "../../model-components/index.js";
 
 type DefaultTailPartProps = {
   position?: XyzArray;

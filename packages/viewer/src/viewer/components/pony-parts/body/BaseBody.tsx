@@ -1,6 +1,6 @@
-import BaseBodyFront from "./BaseBodyFront";
-import BaseBodyMiddle from "./BaseBodyMiddle";
-import BaseBodyBack from "./BaseBodyBack";
+import BaseBodyFront from "./BaseBodyFront.js";
+import BaseBodyMiddle from "./BaseBodyMiddle.js";
+import BaseBodyBack from "./BaseBodyBack.js";
 
 export default function BaseBody() {
   return (

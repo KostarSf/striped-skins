@@ -1,6 +1,6 @@
-import { usePony } from "../../../context/PonyContext";
-import type { XyzArray } from "../../model-components/types";
-import DefaultTail from "./DefaultTail";
+import { usePony } from "../../../context/index.js";
+import type { XyzArray } from "../../model-components/index.js";
+import DefaultTail from "./DefaultTail.js";
 
 type TailProps = {
   position?: XyzArray;

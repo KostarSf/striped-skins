@@ -1,9 +1,9 @@
 import { useFrame, useThree } from "@react-three/fiber";
 import { useRef } from "react";
 import type { Group, Object3DEventMap } from "three";
-import { useSkinTextureContext } from "../../../context/SkinTextureContext";
-import type { LayoutDimensions } from "../../model-components/types";
-import { Plane } from "../../model-components/Plane";
+import { useSkinTextureContext } from "../../../context/index.js";
+import type { LayoutDimensions } from "../../model-components/index.js";
+import { Plane } from "../../model-components/index.js";
 
 export default function ChangelingWings() {
   const { oldSkinFormat } = useSkinTextureContext();

@@ -7,12 +7,14 @@
     "packages/*"
   ],
   "scripts": {
-    "bundle:viewer": "npm run bundle --workspace ./packages/viewer",
     "build:api": "npm run build --workspace ./packages/api",
     "build:viewer": "npm run build --workspace ./packages/viewer",
-    "build": "npm run build:api & npm run build:viewer & remix build",
-    "dev": "npm run build:api & npm run build:viewer & remix dev --manual",
+    "build": "remix build",
+    "build:lib": "npm run build --workspace ./packages/browser-bundle",
+    "dev": "remix dev --manual",
+    "dev:lib": "npm run dev --workspace ./packages/browser-bundle",
     "start": "remix-serve ./build/index.js",
+    "preview:lib": "npm run preview --workspace ./packages/browser-bundle",
     "typecheck": "tsc"
   },
   "dependencies": {

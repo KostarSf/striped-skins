@@ -1,6 +1,6 @@
-import { useSkinTextureContext } from "../../../context/SkinTextureContext";
-import { Box } from "../../model-components/Box";
-import type { XyArray, XyzArray } from "../../model-components/types";
+import { useSkinTextureContext } from "../../../context/index.js";
+import { Box } from "../../model-components/index.js";
+import type { XyArray, XyzArray } from "../../model-components/index.js";
 
 export default function RegularWings() {
   const { oldSkinFormat } = useSkinTextureContext();

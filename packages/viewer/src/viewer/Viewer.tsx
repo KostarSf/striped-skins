@@ -1,7 +1,7 @@
 import { Canvas } from "@react-three/fiber";
 import { Suspense } from "react";
-import { ScenePreferences } from "./scene/preferences/ScenePreferences";
-import SceneView from "./scene/view/SceneView";
+import { ScenePreferences } from "./scene/preferences/ScenePreferences.js";
+import SceneView from "./scene/view/SceneView.js";
 
 export function Viewer() {
   return (

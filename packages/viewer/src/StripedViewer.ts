@@ -1,8 +1,7 @@
-import { usePonyStore } from "./store/pony.store";
-import type { ViewerPreferences } from "./store/viewer-preferences.store";
-import { useViewerPreferencesStore } from "./store/viewer-preferences.store";
-import { attach } from "./viewer/entry";
 import type ReactDOM from "react-dom/client";
+import type { PartialViewerPreferences } from "./store/index.js";
+import { usePonyStore, useViewerPreferencesStore } from "./store/index.js";
+import { attach } from "./viewer/index.js";
 
 export class StripedViewer {
   private static viewerRoot: ReactDOM.Root | null = null;
@@ -32,13 +31,20 @@ export class StripedViewer {
 }
 
 class Preferences {
-  static set({defaultSkinUrl, firstSkinUrl, secondSkinUrl, mode}: Partial<ViewerPreferences>) {
-    const store = useViewerPreferencesStore.getState()
+  static set({
+    defaultSkinUrl,
+    firstSkinUrl,
+    secondSkinUrl,
+    mode,
+    camera,
+  }: PartialViewerPreferences) {
+    const store = useViewerPreferencesStore.getState();
 
-    if (defaultSkinUrl) store.setDefaultSkin(defaultSkinUrl)
-    if (firstSkinUrl) store.setFirstSkin(firstSkinUrl)
-    if (secondSkinUrl) store.setSecondSkin(secondSkinUrl)
-    if (mode) store.setMode(mode)
+    if (defaultSkinUrl) store.setDefaultSkin(defaultSkinUrl);
+    if (firstSkinUrl) store.setFirstSkin(firstSkinUrl);
+    if (secondSkinUrl) store.setSecondSkin(secondSkinUrl);
+    if (mode) store.setMode(mode);
+    if (camera) store.setCamera(camera);
   }
 
   static get defaultSkinUrl() {
