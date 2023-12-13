@@ -12,5 +12,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     response.headers.set("Cache-Control", "max-age=600");
   }
 
+  response.headers.set("Access-Control-Allow-Origin", '*');
+
   return response;
 };
