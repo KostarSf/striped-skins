@@ -2,17 +2,26 @@ import { Canvas } from "@react-three/fiber";
 import { Suspense } from "react";
 import { ScenePreferences } from "./scene/preferences/ScenePreferences.js";
 import SceneView from "./scene/view/SceneView.js";
+import { Perf } from "r3f-perf";
+import { useViewerPreferencesStore } from "../store/viewer-preferences.store.js";
 
 export function Viewer() {
+  const monitoring = useViewerPreferencesStore(
+    (state) => state.performanceMonitor
+  );
+
   return (
-    <Suspense fallback={<p>Loading...</p>}>
-      <div style={{ width: "100%", height: "100%" }}>
-        <Canvas id='viewer-canvas' frameloop='demand' flat>
-          <ScenePreferences>
-            <SceneView />
-          </ScenePreferences>
-        </Canvas>
-      </div>
-    </Suspense>
+    <Canvas
+      id='viewer-canvas'
+      frameloop={monitoring ? "always" : "demand"}
+      flat
+    >
+      <Suspense fallback={null}>
+        {monitoring && <Perf position='bottom-right' />}
+        <ScenePreferences>
+          <SceneView />
+        </ScenePreferences>
+      </Suspense>
+    </Canvas>
   );
 }

@@ -37,6 +37,7 @@ class Preferences {
     secondSkinUrl,
     mode,
     camera,
+    performanceMonitor,
   }: PartialViewerPreferences) {
     const store = useViewerPreferencesStore.getState();
 
@@ -45,6 +46,7 @@ class Preferences {
     if (secondSkinUrl) store.setSecondSkin(secondSkinUrl);
     if (mode) store.setMode(mode);
     if (camera) store.setCamera(camera);
+    if (performanceMonitor) store.setPerformanceMonitor(performanceMonitor);
   }
 
   static get defaultSkinUrl() {

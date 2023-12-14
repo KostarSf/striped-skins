@@ -1,6 +1,7 @@
-import type { LayoutDimensions, XyArray, XyzArray } from ".";
+import type { LayoutDimensions, XyArray, XyzArray } from "./index.js";
 import { SCALE_MULTIPLIER } from "./index.js";
 import { useSkinTextureContext } from "../../context/index.js";
+import { DoubleSide, FrontSide, PlaneGeometry } from "three";
 
 type PlaneProps = {
   layout: LayoutDimensions;
@@ -13,6 +14,8 @@ type PlaneProps = {
 
   flipX?: boolean;
   flipY?: boolean;
+
+  textureEdgesOffset?: number;
 };
 
 export function Plane({
@@ -26,6 +29,8 @@ export function Plane({
 
   flipX,
   flipY,
+
+  textureEdgesOffset = 0.0005,
 }: PlaneProps) {
   const { texture, textureSize, oldSkinFormat } = useSkinTextureContext();
 
@@ -40,18 +45,25 @@ export function Plane({
   const normalizedUw = uw / textureSize;
   const normalizedUv = uv / (textureSize * (oldSkinFormat ? 0.5 : 1));
 
-  const edgeOffset = 0.0005; // Texture's edges offset
+  const edgeOffset = textureEdgesOffset;
 
   texture.center.set(0, 1);
-  texture.offset.set(normalizedUw + edgeOffset, -normalizedUv - edgeOffset);
-  texture.repeat.set(
-    normalizedWidth - edgeOffset * 2,
-    normalizedHeight - edgeOffset * 2
-  );
 
   const scaledScale = (scale ?? [width, height]).map(
     (i) => i * SCALE_MULTIPLIER
   ) as XyArray;
+
+  const geometry = new PlaneGeometry(...scaledScale);
+  const guv = geometry.getAttribute("uv");
+
+  guv.array[0] = normalizedUw + edgeOffset; // Top Left Horizontal
+  guv.array[1] = 1 - normalizedUv - edgeOffset; // Top Left Vertical
+  guv.array[2] = normalizedUw + normalizedWidth - edgeOffset; // Top Right Horizontal
+  guv.array[3] = 1 - normalizedUv - edgeOffset; // Top Right Vertical
+  guv.array[4] = normalizedUw + edgeOffset; // Bottom Left Horizontal
+  guv.array[5] = 1 - (normalizedUv + normalizedHeight) + edgeOffset; // Bottom Left Vertical
+  guv.array[6] = normalizedUw + normalizedWidth - edgeOffset; // Bottom Right Horizontal
+  guv.array[7] = 1 - (normalizedUv + normalizedHeight) + edgeOffset; // Bottom Right Vertical
 
   return (
     <group
@@ -59,17 +71,14 @@ export function Plane({
       rotation={rotation}
       scale={[flipX ? -1 : 1, flipY ? -1 : 1, 1]}
     >
-      <mesh>
-        <planeGeometry args={scaledScale} />
-        <meshStandardMaterial map={texture} alphaTest={0.1} transparent />
+      <mesh geometry={geometry}>
+        <meshStandardMaterial
+          map={texture}
+          alphaTest={0.1}
+          transparent
+          side={doubleSide ? DoubleSide : FrontSide}
+        />
       </mesh>
-
-      {doubleSide && (
-        <mesh rotation={[Math.PI, 0, 0]} scale={[1, -1, 1]}>
-          <planeGeometry args={scaledScale} />
-          <meshStandardMaterial map={texture} alphaTest={0.1} transparent />
-        </mesh>
-      )}
     </group>
   );
 }

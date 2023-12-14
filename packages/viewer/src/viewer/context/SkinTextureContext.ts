@@ -17,7 +17,7 @@ export const useSkinTextureContext = () => {
   const oldSkinFormat = source.width !== source.height;
 
   return {
-    texture: context.texture.clone(),
+    texture: context.texture,
     textureSize: context.textureSize,
     oldSkinFormat,
   };

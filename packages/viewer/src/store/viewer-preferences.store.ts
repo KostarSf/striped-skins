@@ -9,6 +9,7 @@ export type ViewerPreferences = {
   defaultSkinUrl: string;
   firstSkinUrl: string | null;
   secondSkinUrl: string | null;
+  performanceMonitor: boolean;
   mode: ViewerMode;
   camera: CameraPreferences;
 };
@@ -23,7 +24,9 @@ export type CameraPreferences = {
   fov: number;
 };
 
-export type PartialViewerPreferences = Partial<Omit<ViewerPreferences, "camera">> & {
+export type PartialViewerPreferences = Partial<
+  Omit<ViewerPreferences, "camera">
+> & {
   camera?: Partial<CameraPreferences>;
 };
 
@@ -33,6 +36,7 @@ type ViewerPreferencesStoreState = ViewerPreferences & {
   setSecondSkin: (skinUrl: string | null) => void;
   setMode: (mode: ViewerMode) => void;
   setCamera: (preferences: Partial<CameraPreferences>) => void;
+  setPerformanceMonitor: (state: boolean) => void;
 };
 
 export const useViewerPreferencesStore = create<ViewerPreferencesStoreState>()(
@@ -41,6 +45,7 @@ export const useViewerPreferencesStore = create<ViewerPreferencesStoreState>()(
     firstSkinUrl: null,
     secondSkinUrl: null,
     mode: "first-model",
+    performanceMonitor: false,
     camera: {
       static: false,
       distance: 10,
@@ -48,7 +53,7 @@ export const useViewerPreferencesStore = create<ViewerPreferencesStoreState>()(
       maxDistance: 20,
       fov: 50,
       position: [4, 1, 10],
-      rotation: [0, 0, 0]
+      rotation: [0, 0, 0],
     },
 
     setDefaultSkin: (url) => set(() => ({ defaultSkinUrl: url })),
@@ -77,5 +82,8 @@ export const useViewerPreferencesStore = create<ViewerPreferencesStoreState>()(
 
     setCamera: (prefs) =>
       set((state) => ({ camera: { ...state.camera, ...prefs } })),
+
+    setPerformanceMonitor: (state) =>
+      set(() => ({ performanceMonitor: state })),
   })
 );
