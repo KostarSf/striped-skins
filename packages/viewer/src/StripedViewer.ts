@@ -1,7 +1,7 @@
 import type ReactDOM from "react-dom/client";
 import type { PartialViewerPreferences } from "./store/index.js";
 import { usePonyStore, useViewerPreferencesStore } from "./store/index.js";
-import { attach } from "./viewer/index.js";
+import { Viewer, attach } from "./viewer/index.js";
 
 export class StripedViewer {
   private static viewerRoot: ReactDOM.Root | null = null;
@@ -27,6 +27,10 @@ export class StripedViewer {
     if (this.viewerRoot !== null) {
       this.viewerRoot.unmount();
     }
+  }
+
+  static getJsxComponent() {
+    return Viewer
   }
 }
 
