@@ -1,5 +1,5 @@
 import { PonySkin } from "@striped-skins/api";
-import { create } from "zustand";
+import create from "zustand";
 
 type PonyState = {
   skin: PonySkin,
@@ -11,7 +11,7 @@ type PonyStoreState = {
   secondPony: PonyState;
 };
 
-export const usePonyStore = create<PonyStoreState>()((set) => ({
+export const usePonyStore = create<PonyStoreState>((set) => ({
   firstPony: {
     skin: PonySkin.DEFAULT,
     setSkin: (skin) =>

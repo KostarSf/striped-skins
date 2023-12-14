@@ -9,16 +9,15 @@
   "scripts": {
     "build:api": "npm run build --workspace ./packages/api",
     "build:viewer": "npm run build --workspace ./packages/viewer",
-    "build": "remix build",
+    "build": "vite build && vite build --ssr",
     "build:lib": "npm run build --workspace ./packages/browser-bundle",
-    "dev": "remix dev --manual",
+    "dev": "vite dev",
     "dev:lib": "npm run dev --workspace ./packages/browser-bundle",
-    "start": "remix-serve ./build/index.js",
+    "start": "remix-serve ./build/server/index.js",
     "preview:lib": "npm run preview --workspace ./packages/browser-bundle",
     "typecheck": "tsc"
   },
   "dependencies": {
-    "@remix-run/css-bundle": "^2.3.1",
     "@remix-run/node": "^2.3.1",
     "@remix-run/react": "^2.3.1",
     "@remix-run/serve": "^2.3.1",
@@ -33,9 +32,12 @@
     "@remix-run/eslint-config": "^2.3.1",
     "@types/react": "^18.2.20",
     "@types/react-dom": "^18.2.7",
+    "autoprefixer": "^10.4.16",
     "eslint": "^8.38.0",
     "tailwindcss": "^3.3.6",
-    "typescript": "^5.1.6"
+    "typescript": "^5.1.6",
+    "vite": "^5.0.9",
+    "vite-tsconfig-paths": "^4.2.2"
   },
   "engines": {
     "node": ">=18.0.0"

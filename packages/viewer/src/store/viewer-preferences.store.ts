@@ -1,4 +1,4 @@
-import { create } from "zustand";
+import create from "zustand";
 import { PonySkin } from "@striped-skins/api";
 import { usePonyStore } from "./index.js";
 import type { XyzArray } from "../viewer/components/model-components/types.js";
@@ -39,7 +39,7 @@ type ViewerPreferencesStoreState = ViewerPreferences & {
   setPerformanceMonitor: (state: boolean) => void;
 };
 
-export const useViewerPreferencesStore = create<ViewerPreferencesStoreState>()(
+export const useViewerPreferencesStore = create<ViewerPreferencesStoreState>(
   (set) => ({
     defaultSkinUrl: "",
     firstSkinUrl: null,
