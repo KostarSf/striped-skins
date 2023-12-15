@@ -14,6 +14,7 @@
   "dependencies": {
     "@react-three/drei": "^9.92.1",
     "@react-three/fiber": "^8.15.12",
+    "@react-three/postprocessing": "^2.15.11",
     "@striped-skins/api": "^1.0.0",
     "r3f-perf": "^7.1.2",
     "react": "^18.2.0",

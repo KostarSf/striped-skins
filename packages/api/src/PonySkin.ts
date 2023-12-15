@@ -18,6 +18,7 @@ import { ImageTransformer, loadImage, toHexColor } from "./utils/index.js";
 export class PonySkin {
   // eslint-disable-next-line no-useless-constructor
   constructor(
+    readonly source: ImageTransformer,
     readonly race: Race,
     readonly tailLength: TailLength,
     readonly snout: Snout,
@@ -58,6 +59,7 @@ export class PonySkin {
     const isSlim = averageColor[3] < 10; // average alpha shold be low
 
     return new PonySkin(
+      transformer,
       Race.fromPixel(racePixel),
       TailLength.fromPixel(tailLengthPixel),
       Snout.fromPixel(snoutPixel),
@@ -70,6 +72,7 @@ export class PonySkin {
   }
 
   static readonly DEFAULT = new PonySkin(
+    new ImageTransformer(),
     Race.fromPixel(RacePixel.Pegasus),
     TailLength.fromPixel(TailLengthPixel.Full),
     Snout.fromPixel(SnoutPixel.Rounded),

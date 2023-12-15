@@ -11,7 +11,7 @@
     "build:viewer": "npm run build --workspace ./packages/viewer",
     "build": "vite build && vite build --ssr",
     "build:lib": "npm run build --workspace ./packages/browser-bundle",
-    "dev": "vite dev",
+    "dev": "vite dev --host",
     "dev:lib": "npm run dev --workspace ./packages/browser-bundle",
     "start": "remix-serve ./build/server/index.js",
     "preview:lib": "npm run preview --workspace ./packages/browser-bundle",

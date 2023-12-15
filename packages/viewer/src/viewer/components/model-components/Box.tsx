@@ -5,7 +5,6 @@ type BoxProps = {
   parameters: {
     uvOrigin: XyArray;
     uvScale: XyzArray;
-    edgesOffset?: number;
   };
 
   position?: XyzArray;
@@ -55,7 +54,6 @@ export function Box({
         rotation={[0, -Math.PI / 2, 0]}
         scale={initialScale}
         doubleSide={innerSides}
-        textureEdgesOffset={parameters.edgesOffset}
       />
 
       <Plane // Front
@@ -64,7 +62,6 @@ export function Box({
         rotation={[0, 0, 0]}
         scale={initialScale}
         doubleSide={innerSides}
-        textureEdgesOffset={parameters.edgesOffset}
       />
 
       <Plane // Left
@@ -73,7 +70,6 @@ export function Box({
         rotation={[0, Math.PI / 2, 0]}
         scale={initialScale}
         doubleSide={innerSides}
-        textureEdgesOffset={parameters.edgesOffset}
       />
 
       <Plane // Top
@@ -82,7 +78,6 @@ export function Box({
         rotation={[-Math.PI / 2, 0, 0]}
         scale={initialScale}
         doubleSide={innerSides}
-        textureEdgesOffset={parameters.edgesOffset}
       />
 
       <Plane // Bottom
@@ -91,7 +86,6 @@ export function Box({
         rotation={[Math.PI / 2, 0, Math.PI]}
         scale={initialScale}
         doubleSide={innerSides}
-        textureEdgesOffset={parameters.edgesOffset}
         flipX
       />
 
@@ -101,7 +95,6 @@ export function Box({
         rotation={[0, Math.PI, 0]}
         scale={initialScale}
         doubleSide={innerSides}
-        textureEdgesOffset={parameters.edgesOffset}
       />
     </group>
   );

@@ -3,51 +3,71 @@ export type PixelColorData =
   | Uint8ClampedArray;
 
 export class ImageTransformer {
-  private rawImage?: HTMLImageElement;
+  private _rawImage?: HTMLImageElement;
 
-  private canvas: HTMLCanvasElement;
-  private context: CanvasRenderingContext2D;
+  private _canvas?: HTMLCanvasElement;
+  private _context?: CanvasRenderingContext2D;
+
+  get rawImage() {
+    return this._rawImage;
+  }
+
+  get canvas() {
+    return this._canvas;
+  }
 
   constructor(image?: HTMLImageElement) {
-    this.canvas = document.createElement("canvas");
-    this.context = this.canvas.getContext("2d")!;
-
     if (image) this.setImage(image);
   }
 
   get hasImage() {
-    return !!this.rawImage && !!this.canvas && !!this.context;
+    return !!this._rawImage && !!this._canvas && !!this._context;
   }
 
   setImage(image: HTMLImageElement) {
-    this.rawImage = image;
+    this._rawImage = image;
 
-    this.canvas = document.createElement("canvas");
-    this.canvas.width = image.width;
-    this.canvas.height = image.height;
+    this._canvas = this.initializeCanvas(image.width, image.height);
+    this._context = this._canvas.getContext("2d")!;
 
-    this.context = this.canvas.getContext("2d")!;
+    this._context.drawImage(image, 0, 0);
+  }
 
-    this.context.drawImage(image, 0, 0);
+  private initializeCanvas(width: number, height: number): HTMLCanvasElement {
+    if (typeof OffscreenCanvas !== "undefined") {
+      return new OffscreenCanvas(width, height) as unknown as HTMLCanvasElement;
+    }
+
+    console.log(
+      "ImageTransformer: Use HTMLCanvasElement instead of OffscreenCanvas"
+    );
+
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+
+    return canvas;
   }
 
   getPixelRGBA(x: number, y: number): PixelColorData {
     this.checkForCanvasBoundaries(x, y, 1, 1);
 
-    return this.context.getImageData(x, y, 1, 1).data;
+    return this._context?.getImageData(x, y, 1, 1).data ?? [0, 0, 0, 0];
   }
 
   getAverageRGBA(x: number, y: number, w: number, h: number): PixelColorData {
     this.checkForCanvasBoundaries(x, y, w, h);
 
-    const pixelsData = this.context.getImageData(x, y, w, h).data;
-    const rChannel: number[] = []
+    const pixelsData = this._context?.getImageData(x, y, w, h).data;
+    if (!pixelsData) return [0, 0, 0, 0];
+
+    const rChannel: number[] = [];
     const gChannel: number[] = [];
     const bChannel: number[] = [];
     const aChannel: number[] = [];
 
     for (let i = 0; i < pixelsData.length / 4; i++) {
-      rChannel.push(pixelsData[i * 4])
+      rChannel.push(pixelsData[i * 4]);
       gChannel.push(pixelsData[i * 4 + 1]);
       bChannel.push(pixelsData[i * 4 + 2]);
       aChannel.push(pixelsData[i * 4 + 3]);
@@ -64,20 +84,20 @@ export class ImageTransformer {
   }
 
   private checkForCanvasBoundaries(x: number, y: number, w: number, h: number) {
-    if (x < 0 || y < 0 || x >= this.canvas.width || y >= this.canvas.height) {
+    if (!this._canvas) return;
+
+    if (x < 0 || y < 0 || x >= this._canvas.width || y >= this._canvas.height) {
       throw new Error(
-        `X or Y is out of picture sizes. Picture sizes: [${
-          this.canvas.width
-        }, ${this.canvas.height}]. Given pixel pos: [${x}, ${y}]`
+        `X or Y is out of picture sizes. Picture sizes: [${this._canvas.width}, ${this._canvas.height}]. Given pixel pos: [${x}, ${y}]`
       );
     }
 
     if (w < 1 || h < 1) {
-      throw new Error(`W or H must be greater than zero`)
+      throw new Error(`W or H must be greater than zero`);
     }
 
-    if (x + w > this.canvas.width || y + h > this.canvas.height) {
-      throw new Error('W or H is out of picture bounds')
+    if (x + w > this._canvas.width || y + h > this._canvas.height) {
+      throw new Error("W or H is out of picture bounds");
     }
   }
 }

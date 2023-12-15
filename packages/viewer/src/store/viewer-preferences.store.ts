@@ -56,7 +56,12 @@ export const useViewerPreferencesStore = create<ViewerPreferencesStoreState>(
       rotation: [0, 0, 0],
     },
 
-    setDefaultSkin: (url) => set(() => ({ defaultSkinUrl: url })),
+    setDefaultSkin: (url) => {
+      PonySkin.fromUrl(url).then((skin) => {
+        usePonyStore.getState().defaultPony.setSkin(skin)
+        set(() => ({ defaultSkinUrl: url }));
+      });
+    },
 
     setFirstSkin: (url) => {
       const skinUrl =

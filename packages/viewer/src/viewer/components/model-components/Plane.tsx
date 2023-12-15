@@ -1,7 +1,7 @@
+import { DoubleSide, FrontSide, NearestFilter, PlaneGeometry } from "three";
+import { useSkinTextureContext } from "../../context/index.js";
 import type { LayoutDimensions, XyArray, XyzArray } from "./index.js";
 import { SCALE_MULTIPLIER } from "./index.js";
-import { useSkinTextureContext } from "../../context/index.js";
-import { DoubleSide, FrontSide, PlaneGeometry } from "three";
 
 type PlaneProps = {
   layout: LayoutDimensions;
@@ -14,8 +14,6 @@ type PlaneProps = {
 
   flipX?: boolean;
   flipY?: boolean;
-
-  textureEdgesOffset?: number;
 };
 
 export function Plane({
@@ -29,15 +27,13 @@ export function Plane({
 
   flipX,
   flipY,
-
-  textureEdgesOffset = 0.0005,
 }: PlaneProps) {
   const { texture, textureSize, oldSkinFormat } = useSkinTextureContext();
 
   const [uw, uv, width, height] = layout;
 
-  texture.magFilter = 1003; // Nearest pixel
-  texture.minFilter = 1003; // Nearest pixel
+  texture.magFilter = NearestFilter;
+  texture.minFilter = NearestFilter;
 
   const normalizedWidth = width / textureSize;
   const normalizedHeight = height / (textureSize * (oldSkinFormat ? 0.5 : 1));
@@ -45,9 +41,7 @@ export function Plane({
   const normalizedUw = uw / textureSize;
   const normalizedUv = uv / (textureSize * (oldSkinFormat ? 0.5 : 1));
 
-  const edgeOffset = textureEdgesOffset;
-
-  texture.center.set(0, 1);
+  const edgeOffset = 0;
 
   const scaledScale = (scale ?? [width, height]).map(
     (i) => i * SCALE_MULTIPLIER

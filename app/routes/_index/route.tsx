@@ -14,25 +14,15 @@ export const meta: MetaFunction = () => {
 };
 
 export default function Index() {
-  const SkinViewer = StripedViewer.getJsxComponent();
-
   useEffect(() => {
     StripedViewer.preferences.set({
       defaultSkinUrl: "/steve_pony.png",
-      performanceMonitor: true,
     });
-
-    setTimeout(() => {
-      StripedViewer.preferences.set({
-        firstSkinUrl:
-          "https://cdn.discordapp.com/attachments/1027982135635742842/1184174627803639898/Kostar_64.png?ex=658b0390&is=65788e90&hm=8290e0cea820bd4a8cde5b21556c832eb6ba07300627cd154e7a081e3088d534&",
-      });
-    }, 1000);
   }, []);
 
   return (
     <div className='w-screen h-[100svh] viewer-background relative'>
-      <SkinViewer />
+      <StripedViewer.Component />
 
       <div className='absolute left-0 right-0 top-0 pointer-events-none'></div>
 

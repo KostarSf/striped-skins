@@ -1,5 +1,6 @@
 import { CameraControls, PerspectiveCamera } from "@react-three/drei";
 import { useThree } from "@react-three/fiber";
+import { EffectComposer, SMAA } from "@react-three/postprocessing";
 import { useEffect, type PropsWithChildren } from "react";
 import { useViewerPreferencesStore } from "../../../store/index.js";
 import { getViewerCanvasWrapper } from "../../utils/index.js";
@@ -21,6 +22,8 @@ export function ScenePreferences({ children }: PropsWithChildren) {
     return () => canvas.removeEventListener("pointerdown", unfreezeView);
   }, []);
 
+  const smaa = true;
+
   return (
     <>
       {mode === "side-by-side" ? (
@@ -28,6 +31,10 @@ export function ScenePreferences({ children }: PropsWithChildren) {
       ) : (
         <SingleModeScenePreferences />
       )}
+
+      <EffectComposer multisampling={0} enabled={smaa}>
+        <SMAA />
+      </EffectComposer>
 
       {children}
     </>

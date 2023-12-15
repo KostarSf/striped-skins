@@ -29,7 +29,7 @@ export class StripedViewer {
     }
   }
 
-  static getJsxComponent() {
+  static get Component() {
     return Viewer
   }
 }

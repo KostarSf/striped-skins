@@ -13,8 +13,8 @@ export const useSkinTextureContext = () => {
     throw new Error("Не задан SkinTextureContext");
   }
 
-  const source = context.texture.image as HTMLImageElement;
-  const oldSkinFormat = source.width !== source.height;
+  const source = context.texture.image as HTMLImageElement | null;
+  const oldSkinFormat = source?.width !== source?.height;
 
   return {
     texture: context.texture,

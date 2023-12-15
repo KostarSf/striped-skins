@@ -12,6 +12,7 @@ export function Viewer() {
 
   return (
     <Canvas
+      gl={{ antialias: false }}
       id='viewer-canvas'
       frameloop={monitoring ? "always" : "demand"}
       flat
