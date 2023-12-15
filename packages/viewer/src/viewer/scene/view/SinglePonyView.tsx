@@ -8,7 +8,7 @@ export default function SinglePonyView() {
   const { mode } = useViewerPreferencesStore();
   const { firstPony, secondPony } = usePonyStore();
 
-  const activePony = mode === "first-model" ? firstPony : secondPony;
+  const activePony = mode === "second-model" ? secondPony : firstPony;
 
   return <PonyModel skin={activePony.skin} />;
 }
