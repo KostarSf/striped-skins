@@ -1,7 +1,11 @@
 import type { MetaFunction } from "@remix-run/node";
-import { APP_VERSION } from "~/constants";
-import { StripedViewer, StripedContextProvider } from "@striped-skins/viewer";
 import { useEffect, useState } from "react";
+import {
+  StripedContextProvider,
+  StripedViewer,
+} from "~/components/striped-viewer.client";
+import { EditorInterface } from "~/components/EditorInterface";
+import { EditorProvider } from "~/components/EditorContext";
 
 export const meta: MetaFunction = () => {
   return [
@@ -16,25 +20,19 @@ export const meta: MetaFunction = () => {
 export default function Index() {
   return (
     <div className='w-screen h-[100svh] viewer-background relative'>
-      <ViewerClientWrapper>
-        <div className='absolute left-0 right-0 top-0 pointer-events-none'></div>
-
-        <div className='absolute left-0 right-0 bottom-0 pointer-events-none p-4'>
-          <p className='text-zinc-400 text-xs/none font-mono'>
-            {"v" + APP_VERSION}
-          </p>
-        </div>
-      </ViewerClientWrapper>
+      <EditorClientWrapper>
+        <EditorInterface />
+      </EditorClientWrapper>
     </div>
   );
 }
 
-function ViewerClientWrapper({ children }: { children: React.ReactNode }) {
-  const [hydrated, setHydrated] = useState(false)
+function EditorClientWrapper({ children }: { children: React.ReactNode }) {
+  const [hydrated, setHydrated] = useState(false);
 
-  useEffect(() => setHydrated(true), [])
+  useEffect(() => setHydrated(true), []);
 
-  if (!hydrated) return children
+  if (!hydrated) return null;
 
   return (
     <StripedContextProvider
@@ -42,7 +40,7 @@ function ViewerClientWrapper({ children }: { children: React.ReactNode }) {
     >
       <StripedViewer.Component />
 
-      {children}
+      <EditorProvider>{children}</EditorProvider>
     </StripedContextProvider>
   );
 }
