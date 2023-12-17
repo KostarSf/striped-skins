@@ -38,7 +38,7 @@ export default function App() {
           content='rgb(51, 51, 51)'
         />
 
-        <meta property='og:image' content='/media.png' />
+        <meta property='og:image' content='/icon.png' />
         <meta
           property='og:title'
           content='Striped Skins - Mine Little Pony skin viewer'
@@ -50,6 +50,8 @@ export default function App() {
 
         <Meta />
         <Links />
+
+        <link rel="manifest" href="manifest.json" />
       </head>
       <body className='overflow-clip'>
         <Outlet />

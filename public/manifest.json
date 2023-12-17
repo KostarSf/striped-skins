@@ -1,0 +1,14 @@
+{
+  "name": "Striped Skins",
+  "start_url": "/",
+  "icons": [
+    {
+      "src": "icon.png",
+      "sizes": "64x64",
+      "type": "image/png"
+    }
+  ],
+  "display": "standalone",
+  "background_color": "rgb(64, 64, 64)",
+  "theme_color": "rgb(51, 51, 51)"
+}
