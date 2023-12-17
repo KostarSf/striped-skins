@@ -1,8 +1,15 @@
-import React from "react";
+import React, { useRef } from "react";
 import ReactDOM from "react-dom/client";
+import { type PonyStore, type ViewerPreferencesStore } from "../store/index.js";
+import { PonyContext } from "../store/pony.context.js";
+import { ViewerPreferencesContext } from "../store/viewer-preferences.context.js";
 import { Viewer } from "./Viewer.js";
 
-export function attach(target: string | HTMLElement) {
+export function attach(
+  target: string | HTMLElement,
+  ponyStore: PonyStore,
+  viewerPreferencesStore: ViewerPreferencesStore
+) {
   const domElement =
     typeof target === "string" ? document.querySelector(target) : target;
 
@@ -14,9 +21,37 @@ export function attach(target: string | HTMLElement) {
 
   root.render(
     <React.StrictMode>
-      <Viewer />
+      <StandaloneContextProvider
+        ponyStore={ponyStore}
+        viewerPreferencesStore={viewerPreferencesStore}
+      >
+        <Viewer />
+      </StandaloneContextProvider>
     </React.StrictMode>
   );
 
   return root;
+}
+
+function StandaloneContextProvider({
+  ponyStore,
+  viewerPreferencesStore,
+  children,
+}: {
+  ponyStore: PonyStore;
+  viewerPreferencesStore: ViewerPreferencesStore;
+  children: React.ReactNode;
+}) {
+  const ponyRef = useRef<PonyStore>(ponyStore);
+  const viewerPreferencesRef = useRef<ViewerPreferencesStore>(
+    viewerPreferencesStore
+  );
+
+  return (
+    <PonyContext.Provider value={ponyRef.current}>
+      <ViewerPreferencesContext.Provider value={viewerPreferencesRef.current}>
+        {children}
+      </ViewerPreferencesContext.Provider>
+    </PonyContext.Provider>
+  );
 }

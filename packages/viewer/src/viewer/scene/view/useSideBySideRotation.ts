@@ -1,27 +1,27 @@
+import { useThree } from "@react-three/fiber";
 import { useEffect, useRef } from "react";
 import { Euler, Vector3, type Group, type Object3DEventMap } from "three";
-import { useThree } from "@react-three/fiber";
-import { useViewerPreferencesStore } from "../../../store/index.js";
+import { useViewerPreferencesContext } from "../../../store/viewer-preferences.context.js";
 import { getViewerCanvasWrapper } from "../../utils/index.js";
 
 const xAxis = new Vector3(1, 0, 0);
 const yAxis = new Vector3(0, 1, 0);
 
 export default function () {
-  const { mode } = useViewerPreferencesStore()
-  const isSideBySideMode = mode === 'side-by-side'
+  const { mode } = useViewerPreferencesContext((state) => state);
+  const isSideBySideMode = mode === "side-by-side";
 
-  const invalidate = useThree(state => state.invalidate)
+  const invalidate = useThree((state) => state.invalidate);
 
   const pony1ref = useRef<Group<Object3DEventMap>>(null);
   const pony2ref = useRef<Group<Object3DEventMap>>(null);
 
-  const lastCursorPos = useRef([0, 0])
+  const lastCursorPos = useRef([0, 0]);
 
   const rotatedByPointer = useRef(false);
 
   useEffect(() => {
-    const canvas = getViewerCanvasWrapper()
+    const canvas = getViewerCanvasWrapper();
     if (!canvas) return;
 
     canvas.addEventListener("pointerdown", onPointerDown);
@@ -55,7 +55,7 @@ export default function () {
     if (!rotatedByPointer.current) return;
 
     if (lastCursorPos.current[0] === 0 && lastCursorPos.current[1] === 0) {
-      lastCursorPos.current = [e.clientX, e.clientY]
+      lastCursorPos.current = [e.clientX, e.clientY];
     }
 
     const movementX = e.clientX - lastCursorPos.current[0];
@@ -64,7 +64,7 @@ export default function () {
     const rotationXDifference = movementX / 100;
     const rotationYDifference = movementY / 200;
 
-    lastCursorPos.current = [e.clientX, e.clientY]
+    lastCursorPos.current = [e.clientX, e.clientY];
 
     pony1ref.current?.rotateOnWorldAxis(yAxis, rotationXDifference);
     pony1ref.current?.rotateOnWorldAxis(xAxis, rotationYDifference);

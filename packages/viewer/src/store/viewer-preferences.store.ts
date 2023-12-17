@@ -1,7 +1,7 @@
-import create from "zustand";
 import { PonySkin } from "@striped-skins/api";
-import { usePonyStore } from "./index.js";
+import { createStore } from "zustand";
 import type { XyzArray } from "../viewer/components/model-components/types.js";
+import type { PonyStore } from "./index.js";
 
 export type ViewerMode = "first-model" | "second-model" | "side-by-side";
 
@@ -24,13 +24,11 @@ export type CameraPreferences = {
   fov: number;
 };
 
-export type PartialViewerPreferences = Partial<
-  Omit<ViewerPreferences, "camera">
-> & {
+export type ViewerPreferencesProps = Partial<ViewerPreferences> & {
   camera?: Partial<CameraPreferences>;
 };
 
-type ViewerPreferencesStoreState = ViewerPreferences & {
+export type ViewerPreferencesStoreState = ViewerPreferences & {
   setDefaultSkin: (skinUrl: string) => void;
   setFirstSkin: (skinUrl: string | null) => void;
   setSecondSkin: (skinUrl: string | null) => void;
@@ -39,8 +37,15 @@ type ViewerPreferencesStoreState = ViewerPreferences & {
   setPerformanceMonitor: (state: boolean) => void;
 };
 
-export const useViewerPreferencesStore = create<ViewerPreferencesStoreState>(
-  (set) => ({
+export type ViewerPreferencesStore = ReturnType<
+  typeof createViewerPreferencesStore
+>;
+
+export const createViewerPreferencesStore = (
+  ponyStore: PonyStore,
+  initProps?: ViewerPreferencesProps
+) => {
+  const DEFAULT_PROPS: ViewerPreferences = {
     defaultSkinUrl: "",
     firstSkinUrl: null,
     secondSkinUrl: null,
@@ -55,30 +60,37 @@ export const useViewerPreferencesStore = create<ViewerPreferencesStoreState>(
       position: [4, 1, 10],
       rotation: [0, 0, 0],
     },
+  };
+
+  return createStore<ViewerPreferencesStoreState>()((set, get) => ({
+    ...DEFAULT_PROPS,
+    ...initProps,
+    camera: {
+      ...DEFAULT_PROPS.camera,
+      ...initProps?.camera,
+    },
 
     setDefaultSkin: (url) => {
       PonySkin.fromUrl(url).then((skin) => {
-        usePonyStore.getState().defaultPony.setSkin(skin)
+        ponyStore.getState().defaultPony.setSkin(skin);
         set(() => ({ defaultSkinUrl: url }));
       });
     },
 
     setFirstSkin: (url) => {
-      const skinUrl =
-        url || useViewerPreferencesStore.getState().defaultSkinUrl;
+      const skinUrl = url || get().defaultSkinUrl;
 
       PonySkin.fromUrl(skinUrl).then((skin) => {
-        usePonyStore.getState().firstPony.setSkin(skin);
+        ponyStore.getState().firstPony.setSkin(skin);
         set(() => ({ firstSkinUrl: skinUrl }));
       });
     },
 
     setSecondSkin: (url) => {
-      const skinUrl =
-        url || useViewerPreferencesStore.getState().defaultSkinUrl;
+      const skinUrl = url || get().defaultSkinUrl;
 
       PonySkin.fromUrl(skinUrl).then((skin) => {
-        usePonyStore.getState().secondPony.setSkin(skin);
+        ponyStore.getState().secondPony.setSkin(skin);
         set(() => ({ secondSkinUrl: skinUrl }));
       });
     },
@@ -90,5 +102,5 @@ export const useViewerPreferencesStore = create<ViewerPreferencesStoreState>(
 
     setPerformanceMonitor: (state) =>
       set(() => ({ performanceMonitor: state })),
-  })
-);
+  }));
+};

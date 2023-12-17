@@ -1,9 +1,9 @@
-import { usePonyStore } from "../../../store/index.js";
+import { usePonyContext } from "../../../store/pony.context.js";
 import PonyModel from "./PonyModel.js";
 import useSideBySideRotation from "./useSideBySideRotation.js";
 
 export default function SideBySidePonyView() {
-  const { firstPony, secondPony } = usePonyStore();
+  const { firstPony, secondPony } = usePonyContext((state) => state);
 
   const { pony1ref, pony2ref } = useSideBySideRotation();
 

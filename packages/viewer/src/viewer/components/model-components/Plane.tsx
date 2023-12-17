@@ -1,7 +1,7 @@
 import { DoubleSide, FrontSide, NearestFilter, PlaneGeometry } from "three";
 import { useSkinTextureContext } from "../../context/index.js";
-import type { LayoutDimensions, XyArray, XyzArray } from "./index.js";
-import { SCALE_MULTIPLIER } from "./index.js";
+import type { LayoutDimensions, XyArray, XyzArray } from "./types.js";
+import { SCALE_MULTIPLIER } from "./constants.js";
 
 type PlaneProps = {
   layout: LayoutDimensions;

@@ -1,12 +1,12 @@
 import { Canvas } from "@react-three/fiber";
+import { Perf } from "r3f-perf";
 import { Suspense } from "react";
+import { useViewerPreferencesContext } from "../store/viewer-preferences.context.js";
 import { ScenePreferences } from "./scene/preferences/ScenePreferences.js";
 import SceneView from "./scene/view/SceneView.js";
-import { Perf } from "r3f-perf";
-import { useViewerPreferencesStore } from "../store/viewer-preferences.store.js";
 
 export function Viewer() {
-  const monitoring = useViewerPreferencesStore(
+  const monitoring = useViewerPreferencesContext(
     (state) => state.performanceMonitor
   );
 

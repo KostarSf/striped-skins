@@ -1,12 +1,12 @@
 import {
-  usePonyStore,
-  useViewerPreferencesStore,
+  usePonyContext,
+  useViewerPreferencesContext,
 } from "../../../store/index.js";
 import PonyModel from "./PonyModel.js";
 
 export default function SinglePonyView() {
-  const { mode } = useViewerPreferencesStore();
-  const { firstPony, secondPony } = usePonyStore();
+  const { mode } = useViewerPreferencesContext((state) => state);
+  const { firstPony, secondPony } = usePonyContext((state) => state);
 
   const activePony = mode === "second-model" ? secondPony : firstPony;
 

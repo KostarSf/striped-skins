@@ -1,43 +1,59 @@
 import { PonySkin } from "@striped-skins/api";
-import create from "zustand";
+import { createStore } from "zustand";
 
 type PonyState = {
   skin: PonySkin;
   setSkin: (skin: PonySkin) => void;
 };
 
-type PonyStoreState = {
+export type PonyStoreState = {
   defaultPony: PonyState;
   firstPony: PonyState;
   secondPony: PonyState;
 };
 
-export const usePonyStore = create<PonyStoreState>((set) => ({
-  defaultPony: {
-    skin: PonySkin.DEFAULT,
-    setSkin: (skin) =>
-      set((state) => ({
-        defaultPony: { ...state.defaultPony, skin },
-        firstPony:
-          state.firstPony.skin === PonySkin.DEFAULT
-            ? { ...state.firstPony, skin }
-            : state.firstPony,
-        secondPony:
-          state.secondPony.skin === PonySkin.DEFAULT
-            ? { ...state.secondPony, skin }
-            : state.secondPony,
-      })),
-  },
+export type PonyProps = {
+  defaultPony: PonySkin;
+  firstPony: PonySkin;
+  secondPony: PonySkin;
+};
 
-  firstPony: {
-    skin: PonySkin.DEFAULT,
-    setSkin: (skin) =>
-      set((state) => ({ firstPony: { ...state.firstPony, skin } })),
-  },
+export type PonyStore = ReturnType<typeof createPonyStore>;
 
-  secondPony: {
-    skin: PonySkin.DEFAULT,
-    setSkin: (skin) =>
-      set((state) => ({ secondPony: { ...state.secondPony, skin } })),
-  },
-}));
+export const createPonyStore = (initProps?: Partial<PonyProps>) => {
+  const defaultProps: PonyProps = {
+    defaultPony: PonySkin.DEFAULT,
+    firstPony: PonySkin.DEFAULT,
+    secondPony: PonySkin.DEFAULT,
+  };
+
+  return createStore<PonyStoreState>()((set) => ({
+    defaultPony: {
+      skin: initProps?.defaultPony ?? defaultProps.defaultPony,
+      setSkin: (skin) =>
+        set((state) => ({
+          defaultPony: { ...state.defaultPony, skin },
+          firstPony:
+            state.firstPony.skin === PonySkin.DEFAULT
+              ? { ...state.firstPony, skin }
+              : state.firstPony,
+          secondPony:
+            state.secondPony.skin === PonySkin.DEFAULT
+              ? { ...state.secondPony, skin }
+              : state.secondPony,
+        })),
+    },
+
+    firstPony: {
+      skin: initProps?.firstPony ?? defaultProps.firstPony,
+      setSkin: (skin) =>
+        set((state) => ({ firstPony: { ...state.firstPony, skin } })),
+    },
+
+    secondPony: {
+      skin: initProps?.secondPony ?? defaultProps.secondPony,
+      setSkin: (skin) =>
+        set((state) => ({ secondPony: { ...state.secondPony, skin } })),
+    },
+  }));
+};

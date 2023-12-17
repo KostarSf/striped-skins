@@ -2,11 +2,11 @@ import { CameraControls, PerspectiveCamera } from "@react-three/drei";
 import { useThree } from "@react-three/fiber";
 import { EffectComposer, SMAA } from "@react-three/postprocessing";
 import { useEffect, type PropsWithChildren } from "react";
-import { useViewerPreferencesStore } from "../../../store/index.js";
 import { getViewerCanvasWrapper } from "../../utils/index.js";
+import { useViewerPreferencesContext } from "../../../store/index.js";
 
 export function ScenePreferences({ children }: PropsWithChildren) {
-  const { mode } = useViewerPreferencesStore();
+  const { mode } = useViewerPreferencesContext((state) => state);
 
   const invalidate = useThree((state) => state.invalidate);
 
@@ -42,7 +42,7 @@ export function ScenePreferences({ children }: PropsWithChildren) {
 }
 
 function SingleModeScenePreferences() {
-  const camera = useViewerPreferencesStore((state) => state.camera);
+  const camera = useViewerPreferencesContext((state) => state.camera);
 
   return (
     <>
