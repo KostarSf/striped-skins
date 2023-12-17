@@ -9,7 +9,6 @@ import {
 import { cssBundleHref } from "@remix-run/css-bundle";
 import styles from "./tailwind.css";
 import type { LinksFunction, MetaFunction } from "@remix-run/node";
-import { useEffect } from "react";
 
 export const links: LinksFunction = () => [
   ...(cssBundleHref ? [{ rel: "stylesheet", href: cssBundleHref }] : []),
@@ -27,16 +26,6 @@ export const meta: MetaFunction = () => {
 };
 
 export default function App() {
-  useEffect(() => {
-    const preventDefault = (e: TouchEvent) => e.preventDefault();
-
-    document.body.addEventListener("touchmove", preventDefault, {
-      passive: false,
-    });
-
-    return () => document.body.removeEventListener("touchmove", preventDefault);
-  }, []);
-
   return (
     <html lang='en'>
       <head>

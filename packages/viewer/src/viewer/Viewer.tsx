@@ -1,6 +1,6 @@
 import { Canvas } from "@react-three/fiber";
 import { Perf } from "r3f-perf";
-import { Suspense } from "react";
+import { Suspense, useEffect, useRef } from "react";
 import { useViewerPreferencesContext } from "../store/viewer-preferences.context.js";
 import { ScenePreferences } from "./scene/preferences/ScenePreferences.js";
 import SceneView from "./scene/view/SceneView.js";
@@ -11,6 +11,20 @@ export function Viewer() {
     (state) => state.performanceMonitor
   );
 
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+
+    const preventDefault = (e: TouchEvent) => e.preventDefault();
+
+    canvas?.addEventListener("touchmove", preventDefault, {
+      passive: false,
+    });
+
+    return () => canvas?.removeEventListener("touchmove", preventDefault);
+  }, []);
+
   return (
     <MobileViewProvider>
       <Canvas
@@ -18,6 +32,7 @@ export function Viewer() {
         id='viewer-canvas'
         frameloop={monitoring ? "always" : "demand"}
         flat
+        ref={canvasRef}
       >
         <Suspense fallback={null}>
           {monitoring && <Perf position='bottom-right' />}
