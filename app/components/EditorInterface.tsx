@@ -7,6 +7,7 @@ import {
 } from "./striped-viewer.client";
 import { IconButton } from "./IconButton";
 import { ScaleIcon } from "@heroicons/react/24/outline";
+import { LoadingScreen } from "./LoadingScreen";
 
 export function EditorInterface() {
   const { mode } = useViewerPreferencesContext((state) => state);
@@ -26,7 +27,10 @@ function SingleSkinInterface() {
   const { firstSkin, setFirstSkin } = useEditorContext();
   const { firstPony } = usePonyContext((state) => state);
 
-  const { setMode } = useViewerPreferencesContext((state) => state);
+  const { setMode, loadingFirstSkin, loadingDefaultSkin } =
+    useViewerPreferencesContext((state) => state);
+
+  const loadingSkin = loadingDefaultSkin || loadingFirstSkin;
 
   return (
     <>
@@ -34,6 +38,7 @@ function SingleSkinInterface() {
         <SkinSourceInput
           defaultFieldValue={firstSkin}
           onInputChange={setFirstSkin}
+          loading={loadingFirstSkin}
         />
 
         <div className='inline-block mt-2 pointer-events-auto'>
@@ -46,8 +51,14 @@ function SingleSkinInterface() {
       </div>
 
       <div className='w-full py-2 lg:max-w-screen-lg mx-auto flex justify-end'>
-        <PonyInfoWidget skin={firstPony.skin} />
+        <PonyInfoWidget skin={firstPony.skin} canCollapse={false} />
       </div>
+
+      {loadingSkin && (
+        <div className='absolute inset-0'>
+          <LoadingScreen />
+        </div>
+      )}
     </>
   );
 }
@@ -57,7 +68,8 @@ function SideBySideSkinInterface() {
     useEditorContext();
   const { firstPony, secondPony } = usePonyContext((state) => state);
 
-  const { setMode } = useViewerPreferencesContext((state) => state);
+  const { setMode, loadingFirstSkin, loadingSecondSkin } =
+    useViewerPreferencesContext((state) => state);
 
   return (
     <>
@@ -66,11 +78,13 @@ function SideBySideSkinInterface() {
           <SkinSourceInput
             defaultFieldValue={firstSkin}
             onInputChange={setFirstSkin}
+            loading={loadingFirstSkin}
           />
 
           <SkinSourceInput
             defaultFieldValue={secondSkin}
             onInputChange={setSecondSkin}
+            loading={loadingSecondSkin}
           />
         </div>
 

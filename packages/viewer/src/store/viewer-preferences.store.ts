@@ -29,6 +29,9 @@ export type ViewerPreferencesProps = Partial<ViewerPreferences> & {
 };
 
 export type ViewerPreferencesStoreState = ViewerPreferences & {
+  loadingDefaultSkin: boolean;
+  loadingFirstSkin: boolean;
+  loadingSecondSkin: boolean;
   setDefaultSkin: (skinUrl: string) => void;
   setFirstSkin: (skinUrl: string | null) => void;
   setSecondSkin: (skinUrl: string | null) => void;
@@ -70,29 +73,51 @@ export const createViewerPreferencesStore = (
       ...initProps?.camera,
     },
 
+    loadingDefaultSkin: false,
+    loadingFirstSkin: false,
+    loadingSecondSkin: false,
+
     setDefaultSkin: (url) => {
-      PonySkin.fromUrl(url).then((skin) => {
-        ponyStore.getState().defaultPony.setSkin(skin);
-        set(() => ({ defaultSkinUrl: url }));
-      });
+      set(() => ({ loadingDefaultSkin: true }));
+      PonySkin.fromUrl(url)
+        .then((skin) => {
+          ponyStore.getState().defaultPony.setSkin(skin);
+          set(() => ({ loadingDefaultSkin: false, defaultSkinUrl: url }));
+        })
+        .catch((reason) => {
+          console.error(reason);
+          set(() => ({ loadingDefaultSkin: false }));
+        });
     },
 
     setFirstSkin: (url) => {
       const skinUrl = url || get().defaultSkinUrl;
+      set(() => ({ loadingFirstSkin: true }));
 
-      PonySkin.fromUrl(skinUrl).then((skin) => {
-        ponyStore.getState().firstPony.setSkin(skin);
-        set(() => ({ firstSkinUrl: skinUrl }));
-      });
+      PonySkin.fromUrl(skinUrl)
+        .then((skin) => {
+          ponyStore.getState().firstPony.setSkin(skin);
+          set(() => ({ loadingFirstSkin: false, firstSkinUrl: skinUrl }));
+        })
+        .catch((reason) => {
+          console.error(reason);
+          set(() => ({ loadingFirstSkin: false }));
+        });
     },
 
     setSecondSkin: (url) => {
       const skinUrl = url || get().defaultSkinUrl;
+      set(() => ({ loadingSecondSkin: true }));
 
-      PonySkin.fromUrl(skinUrl).then((skin) => {
-        ponyStore.getState().secondPony.setSkin(skin);
-        set(() => ({ secondSkinUrl: skinUrl }));
-      });
+      PonySkin.fromUrl(skinUrl)
+        .then((skin) => {
+          ponyStore.getState().secondPony.setSkin(skin);
+          set(() => ({ loadingSecondSkin: false, secondSkinUrl: skinUrl }));
+        })
+        .catch((reason) => {
+          console.error(reason);
+          set(() => ({ loadingSecondSkin: false }));
+        });
     },
 
     setMode: (mode) => set((state) => ({ mode: mode })),
@@ -116,5 +141,5 @@ export const createViewerPreferencesStore = (
     store.getState().setDefaultSkin(initProps.secondSkinUrl);
   }
 
-  return store
+  return store;
 };

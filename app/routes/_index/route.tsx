@@ -1,4 +1,3 @@
-import type { MetaFunction } from "@remix-run/node";
 import { useEffect, useState } from "react";
 import {
   StripedContextProvider,
@@ -7,16 +6,7 @@ import {
 import { EditorInterface } from "~/components/EditorInterface";
 import { EditorProvider } from "~/components/EditorContext";
 import { APP_VERSION } from "~/constants";
-
-export const meta: MetaFunction = () => {
-  return [
-    { title: "Striped Skins - Mine Little Pony skin viewer" },
-    {
-      name: "description",
-      content: "Watch and compare your awesome pony skins!",
-    },
-  ];
-};
+import { LoadingScreen } from "~/components/LoadingScreen";
 
 export default function Index() {
   return (
@@ -26,9 +16,9 @@ export default function Index() {
       </EditorClientWrapper>
 
       <div className='absolute left-0 right-0 bottom-0 pointer-events-none p-4'>
-        <p className='text-zinc-400 text-xs/none font-mono'>
+        <small className='text-zinc-400 text-xs/none font-mono block'>
           {"v" + APP_VERSION}
-        </p>
+        </small>
       </div>
     </div>
   );
@@ -50,13 +40,5 @@ function EditorClientWrapper({ children }: { children: React.ReactNode }) {
       <StripedViewer.Component />
       <EditorProvider>{children}</EditorProvider>
     </StripedContextProvider>
-  );
-}
-
-function LoadingScreen() {
-  return (
-    <div className='w-full h-full grid place-items-center'>
-      <span className='loading-spinner' />
-    </div>
   );
 }

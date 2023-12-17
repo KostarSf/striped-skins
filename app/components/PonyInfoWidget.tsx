@@ -5,11 +5,13 @@ import { useState } from "react";
 type PonyInfoWidgetProps = {
   skin: PonySkin;
   defaultOpen?: boolean;
+  canCollapse?: boolean;
 };
 
 export default function PonyInfoWidget({
   skin,
   defaultOpen,
+  canCollapse = true,
 }: PonyInfoWidgetProps) {
   const [open, setOpen] = useState(!!defaultOpen);
 
@@ -38,23 +40,53 @@ export default function PonyInfoWidget({
       </div>
 
       <div className='flex flex-col px-4 pt-2 pb-4 sm:pb-6 gap-y-6'>
-        <PixelParameter title='Race' value={race.name} pixel={race.pixel} />
-        <PixelParameter title='Body' value={body.name} pixel={body.pixel} />
-        <PixelParameter title='Snout' value={snout.name} pixel={snout.pixel} />
+        <PixelParameter
+          title='Race'
+          value={race.name}
+          pixel={race.pixel}
+          canCollapse={canCollapse}
+        />
+        <PixelParameter
+          title='Body'
+          value={body.name}
+          pixel={body.pixel}
+          canCollapse={canCollapse}
+        />
+        <PixelParameter
+          title='Snout'
+          value={snout.name}
+          pixel={snout.pixel}
+          canCollapse={canCollapse}
+        />
         <PixelParameter
           title='Tail Length'
           value={tailLength.name}
           pixel={tailLength.pixel}
+          canCollapse={canCollapse}
         />
         <PixelParameter
           title='Tail Shape'
           value={tailShape.name}
           pixel={tailShape.pixel}
+          canCollapse={canCollapse}
         />
-        <PixelParameter title='Magic' pixel={magicGlow} />
-        <PixelParameter title='Wearables' pixel={wearables.rawPixel} />
+        <PixelParameter
+          title='Magic'
+          pixel={magicGlow}
+          canCollapse={canCollapse}
+        />
+        <PixelParameter
+          title='Wearables'
+          pixel={wearables.rawPixel}
+          canCollapse={canCollapse}
+        />
         {wearables.items.map((item, i) => (
-          <PixelParameter key={i} value={item.name} pixel={item.pixel} />
+          <PixelParameter
+            key={i}
+            value={item.name}
+            pixel={item.pixel}
+            canCollapse={canCollapse}
+          />
         ))}
       </div>
     </div>
@@ -65,18 +97,22 @@ function PixelParameter({
   pixel,
   title,
   value,
+  canCollapse,
 }: {
   pixel: string;
   title?: string;
   value?: string;
+  canCollapse?: boolean;
 }) {
   const none = pixel === "none";
   const hexColor = (none ? "" : "#") + pixel.toUpperCase();
 
   return (
-    <div className='flex flex-col sm:flex-row gap-2'>
+    <div
+      className={"flex gap-2" + (canCollapse ? " flex-col sm:flex-row" : "")}
+    >
       {title && (
-        <p className='font-semibold sm:w-[clamp(6rem,calc(6rem+2.5vw),12rem)] shrink-0'>
+        <p className='font-semibold w-24 sm:w-[clamp(6rem,calc(6rem+2.5vw),12rem)] shrink-0'>
           {title}
         </p>
       )}
