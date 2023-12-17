@@ -97,9 +97,8 @@ function SideBySideSkinInterface() {
         </div>
       </div>
 
-      <div className='py-2 flex items-end justify-between max-w-screen-2xl mx-auto w-full'>
-        <PonyInfoWidget skin={firstPony.skin} />
-        <PonyInfoWidget skin={secondPony.skin} />
+      <div className='py-2 flex items-end justify-end max-w-screen-2xl mx-auto w-full'>
+        <PonyInfoWidget skin={[firstPony.skin, secondPony.skin]} />
       </div>
     </>
   );

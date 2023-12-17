@@ -1,9 +1,10 @@
-import { InformationCircleIcon, XMarkIcon } from "@heroicons/react/24/outline";
+import { InformationCircleIcon } from "@heroicons/react/24/outline";
 import type { PonySkin } from "@striped-skins/api";
-import { useState } from "react";
+import { WidgetBase } from "./WidgetBase";
+import React from "react";
 
 type PonyInfoWidgetProps = {
-  skin: PonySkin;
+  skin: PonySkin | PonySkin[];
   defaultOpen?: boolean;
   canCollapse?: boolean;
 };
@@ -13,100 +14,94 @@ export default function PonyInfoWidget({
   defaultOpen,
   canCollapse = true,
 }: PonyInfoWidgetProps) {
-  const [open, setOpen] = useState(!!defaultOpen);
+  const skins = Array.isArray(skin) ? skin : [skin];
 
-  const { race, snout, tailLength, body, magicGlow, tailShape, wearables } =
-    skin;
-
-  return !open ? (
-    <button
-      className='px-4 py-2 bg-white rounded-md shadow-lg hover:text-orange-500 transition text-zinc-600 pointer-events-auto'
-      onClick={() => setOpen(true)}
+  return (
+    <WidgetBase
+      title='Skin info'
+      icon={<InformationCircleIcon className='w-6 h-6' />}
+      defaultOpen={defaultOpen}
     >
-      <InformationCircleIcon className='w-6 h-6' />
-    </button>
-  ) : (
-    <div className='rounded-md bg-white shadow-lg inline-block text-left pointer-events-auto max-h-[60vh] overflow-y-auto relative sm:px-4'>
-      <div className='flex gap-4 justify-between pb-4 pt-4 sticky mx-4 top-0 left-0 bg-white z-10 sm:pt-6'>
-        <p className='font-bold uppercase'>Skin info</p>
+      <PixelParameter title='Race' canCollapse={canCollapse}>
+        {skins.map((skin, i) => (
+          <PixelValue key={i} pixel={skin.race.pixel} value={skin.race.name} />
+        ))}
+      </PixelParameter>
 
-        <button
-          className='inline-block -m-4 p-4 text-zinc-600'
-          type='button'
-          onClick={() => setOpen(false)}
-        >
-          <XMarkIcon className='h-6 w-6 ' />
-        </button>
-      </div>
+      <PixelParameter title='Body' canCollapse={canCollapse}>
+        {skins.map((skin, i) => (
+          <PixelValue key={i} pixel={skin.body.pixel} value={skin.body.name} />
+        ))}
+      </PixelParameter>
 
-      <div className='flex flex-col px-4 pt-2 pb-4 sm:pb-6 gap-y-6'>
-        <PixelParameter
-          title='Race'
-          value={race.name}
-          pixel={race.pixel}
-          canCollapse={canCollapse}
-        />
-        <PixelParameter
-          title='Body'
-          value={body.name}
-          pixel={body.pixel}
-          canCollapse={canCollapse}
-        />
-        <PixelParameter
-          title='Snout'
-          value={snout.name}
-          pixel={snout.pixel}
-          canCollapse={canCollapse}
-        />
-        <PixelParameter
-          title='Tail Length'
-          value={tailLength.name}
-          pixel={tailLength.pixel}
-          canCollapse={canCollapse}
-        />
-        <PixelParameter
-          title='Tail Shape'
-          value={tailShape.name}
-          pixel={tailShape.pixel}
-          canCollapse={canCollapse}
-        />
-        <PixelParameter
-          title='Magic'
-          pixel={magicGlow}
-          canCollapse={canCollapse}
-        />
-        <PixelParameter
-          title='Wearables'
-          pixel={wearables.rawPixel}
-          canCollapse={canCollapse}
-        />
-        {wearables.items.map((item, i) => (
-          <PixelParameter
+      <PixelParameter title='Snout' canCollapse={canCollapse}>
+        {skins.map((skin, i) => (
+          <PixelValue
             key={i}
-            value={item.name}
-            pixel={item.pixel}
-            canCollapse={canCollapse}
+            pixel={skin.snout.pixel}
+            value={skin.snout.name}
           />
         ))}
-      </div>
-    </div>
+      </PixelParameter>
+
+      <PixelParameter title='Tail Length' canCollapse={canCollapse}>
+        {skins.map((skin, i) => (
+          <PixelValue
+            key={i}
+            pixel={skin.tailLength.pixel}
+            value={skin.tailLength.name}
+          />
+        ))}
+      </PixelParameter>
+
+      <PixelParameter title='Tail Shape' canCollapse={canCollapse}>
+        {skins.map((skin, i) => (
+          <PixelValue
+            key={i}
+            pixel={skin.tailShape.pixel}
+            value={skin.tailShape.name}
+          />
+        ))}
+      </PixelParameter>
+
+      <PixelParameter title='Magic' canCollapse={canCollapse}>
+        {skins.map((skin, i) => (
+          <PixelValue key={i} pixel={skin.magicGlow} />
+        ))}
+      </PixelParameter>
+
+      <PixelParameter title='Wearables' canCollapse={canCollapse}>
+        {skins.map((skin, i) => (
+          <PixelValue key={i} pixel={skin.wearables.rawPixel} />
+        ))}
+      </PixelParameter>
+
+      {skins.some(skin => skin.wearables.items.length > 0) && (
+        <div className='flex gap-2 justify-end'>
+          {skins.map((skin, i) => (
+            <div className='flex gap-8 flex-col min-w-[9rem]' key={i}>
+              {skin.wearables.items.map((item, i) => (
+                <PixelParameter key={i} canCollapse={canCollapse}>
+                  <PixelValue pixel={item.pixel} value={item.name} />
+                </PixelParameter>
+              ))}
+            </div>
+          ))}
+        </div>
+      )}
+    </WidgetBase>
   );
 }
 
 function PixelParameter({
-  pixel,
   title,
-  value,
   canCollapse,
+  children,
 }: {
-  pixel: string;
   title?: string;
-  value?: string;
   canCollapse?: boolean;
+  children?: React.ReactNode;
 }) {
-  const none = pixel === "none";
-  const hexColor = (none ? "" : "#") + pixel.toUpperCase();
-
   return (
     <div
       className={"flex gap-2" + (canCollapse ? " flex-col sm:flex-row" : "")}
@@ -116,28 +111,37 @@ function PixelParameter({
           {title}
         </p>
       )}
-      <div className='flex items-center gap-2'>
-        <div
+      <div className='flex gap-2 items-start'>{children}</div>
+    </div>
+  );
+}
+
+function PixelValue({ pixel, value }: { pixel: string; value?: string }) {
+  const none = pixel === "none";
+  const hexColor = (none ? "" : "#") + pixel.toUpperCase();
+
+  return (
+    <div className='flex items-center gap-2 min-w-[9rem]'>
+      <div
+        className={
+          "w-4 h-4 rounded-md shadow-sm shrink-0" + (none ? " border" : "")
+        }
+        title={hexColor}
+        style={{ backgroundColor: "#" + pixel.padStart(6, "0") }}
+      />
+      <div className='relative'>
+        <p
           className={
-            "w-4 h-4 rounded-md shadow-sm shrink-0" + (none ? " border" : "")
+            value
+              ? "text-base/none"
+              : "text-xs/tight font-bold uppercase text-zinc-400"
           }
-          title={hexColor}
-          style={{ backgroundColor: "#" + pixel.padStart(6, "0") }}
-        />
-        <div className='relative'>
-          <p
-            className={
-              value
-                ? "text-base/none"
-                : "text-xs/tight font-bold uppercase text-zinc-400"
-            }
-          >
-            {value ? value : hexColor}
-          </p>
-          <p className='text-xs/tight font-bold absolute left-0 top-full text-zinc-400'>
-            {value && hexColor}
-          </p>
-        </div>
+        >
+          {value ? value : hexColor}
+        </p>
+        <p className='text-xs/tight font-bold absolute left-0 top-full text-zinc-400'>
+          {value && hexColor}
+        </p>
       </div>
     </div>
   );
