@@ -8,11 +8,11 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   }
 
   const response = await fetch(skinUrl);
-  if (response.ok) {
-    response.headers.set("Cache-Control", "max-age=600");
+  if (!response.ok) {
+    return new Response(null, { status: 400 });
   }
 
-  response.headers.set("Access-Control-Allow-Origin", '*');
-
-  return response;
+  return new Response(response.body, {
+    headers: { "Cache-Control": "max-age=600", "Access-Control-Allow-Origin": "*" },
+  });
 };

@@ -1,5 +1,3 @@
-import { cssBundleHref } from "@remix-run/css-bundle";
-import type { LinksFunction } from "@remix-run/node";
 import {
   Links,
   LiveReload,
@@ -9,29 +7,9 @@ import {
   ScrollRestoration,
 } from "@remix-run/react";
 
-import styles from "./tailwind.css";
-import { useEffect } from "react";
-
-export const links: LinksFunction = () => [
-  ...(cssBundleHref ? [{ rel: "stylesheet", href: cssBundleHref }] : []),
-  { rel: "stylesheet", href: styles },
-];
+import "./tailwind.css";
 
 export default function App() {
-  useEffect(() => {
-    function preventDefault(e: TouchEvent) {
-      e.preventDefault();
-    }
-
-    document.body.addEventListener("touchmove", preventDefault, {
-      passive: false,
-    });
-
-    return () => {
-      document.body.removeEventListener('touchmove', preventDefault)
-    }
-  }, []);
-
   return (
     <html lang='en'>
       <head>

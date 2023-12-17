@@ -1,14 +1,16 @@
-import { useSearchParams, type MetaFunction } from "@remix-run/react";
-import ViewerParametersContext from "~/components/skin-viewer/ViewerParametersContext";
-import { Interface } from "./components/interface/Interface";
-import { Layout } from "./components/Layout";
-import { ViewerErrorMessage } from "./components/ViewerErrrorMessage";
-import { ViewerWrapper } from "./components/ViewerWrapper";
-import PonyPreferencesManager from "~/api/PonyPreferencesManager";
+import type { MetaFunction } from "@remix-run/node";
+import { useEffect, useState } from "react";
+import {
+  StripedContextProvider,
+  StripedViewer,
+} from "~/components/striped-viewer.client";
+import { EditorInterface } from "~/components/EditorInterface";
+import { EditorProvider } from "~/components/EditorContext";
+import { APP_VERSION } from "~/constants";
 
 export const meta: MetaFunction = () => {
   return [
-    { title: "Striped Skins — Mine Little Pony skin viewer" },
+    { title: "Striped Skins - Mine Little Pony skin viewer" },
     {
       name: "description",
       content: "Watch and compare your awesome pony skins!",
@@ -17,47 +19,44 @@ export const meta: MetaFunction = () => {
 };
 
 export default function Index() {
-  const [searchParams] = useSearchParams()
-  const hideHud = searchParams.get("no-hud") !== null;
-
-  if (hideHud) {
-    return (
-      <ViewerParametersContext>
-        <PonyPreferencesManager>
-          <ViewerWrapper />
-        </PonyPreferencesManager>
-      </ViewerParametersContext>
-    );
-  }
-
   return (
-    <Layout>
-      <ViewerParametersContext>
-        <PonyPreferencesManager>
-          <ViewerWrapper />
-          <Interface />
-        </PonyPreferencesManager>
-      </ViewerParametersContext>
-    </Layout>
+    <div className='w-screen h-[100svh] viewer-background relative'>
+      <EditorClientWrapper>
+        <EditorInterface />
+      </EditorClientWrapper>
+
+      <div className='absolute left-0 right-0 bottom-0 pointer-events-none p-4'>
+        <p className='text-zinc-400 text-xs/none font-mono'>
+          {"v" + APP_VERSION}
+        </p>
+      </div>
+    </div>
   );
 }
 
-export function ErrorBoundary() {
-  const [searchParams] = useSearchParams();
-  const hideHud = searchParams.get("no-hud") !== null;
+function EditorClientWrapper({ children }: { children: React.ReactNode }) {
+  const [hydrated, setHydrated] = useState(false);
 
-  if (hideHud) {
-    return <ViewerErrorMessage />;
+  useEffect(() => setHydrated(true), []);
+
+  if (!hydrated) {
+    return <LoadingScreen />;
   }
 
   return (
-    <Layout>
-      <ViewerParametersContext>
-        <PonyPreferencesManager>
-          <ViewerErrorMessage />
-          <Interface />
-        </PonyPreferencesManager>
-      </ViewerParametersContext>
-    </Layout>
+    <StripedContextProvider
+      viewerPreferencesParams={{ defaultSkinUrl: "/steve_pony.png" }}
+    >
+      <StripedViewer.Component />
+      <EditorProvider>{children}</EditorProvider>
+    </StripedContextProvider>
+  );
+}
+
+function LoadingScreen() {
+  return (
+    <div className='w-full h-full grid place-items-center'>
+      <span className='loading-spinner' />
+    </div>
   );
 }

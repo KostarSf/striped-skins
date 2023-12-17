@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Vite App</title>
+  </head>
+  <body>
+    <div id="app" style="width: 500px; height: 500px; background: gray"></div>
+    <script type="module" src="/main.js"></script>
+
+    <script>
+      var onStripedLoaded = () => {
+        StripedViewer.preferences.set({
+          defaultSkinUrl:
+            "https://cdn.discordapp.com/attachments/1027982135635742842/1184605003021832292/a817b8a9-0600-4c9d-b214-f8c4ec573a1f.png?ex=658c9461&is=657a1f61&hm=c04a05e69549a02cb5147101a0a55f76dc3ace9b2828c49f311a1f54df461b46&",
+        });
+
+        StripedViewer.run("#app");
+      };
+    </script>
+  </body>
+</html>

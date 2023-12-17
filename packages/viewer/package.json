@@ -1,0 +1,29 @@
+{
+  "name": "@striped-skins/viewer",
+  "version": "1.0.0",
+  "description": "",
+  "author": "KostarSf",
+  "license": "ISC",
+  "type": "module",
+  "main": "build/cjs/index.js",
+  "exports": "./build/esm/index.js",
+  "types": "./build/types/index.d.ts",
+  "scripts": {
+    "build": "tsc --build ./tsconfig.cjs.json ./tsconfig.esm.json ./tsconfig.types.json"
+  },
+  "dependencies": {
+    "@react-three/drei": "^9.92.1",
+    "@react-three/fiber": "^8.15.12",
+    "@react-three/postprocessing": "^2.15.11",
+    "@striped-skins/api": "^1.0.0",
+    "r3f-perf": "^7.1.2",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "three": "^0.159.0",
+    "zustand": "^4.4.7"
+  },
+  "devDependencies": {
+    "@types/three": "^0.159.0",
+    "typescript": "^5.3.3"
+  }
+}
