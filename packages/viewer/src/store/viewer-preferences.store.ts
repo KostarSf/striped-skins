@@ -62,7 +62,7 @@ export const createViewerPreferencesStore = (
     },
   };
 
-  return createStore<ViewerPreferencesStoreState>()((set, get) => ({
+  const store = createStore<ViewerPreferencesStoreState>()((set, get) => ({
     ...DEFAULT_PROPS,
     ...initProps,
     camera: {
@@ -103,4 +103,18 @@ export const createViewerPreferencesStore = (
     setPerformanceMonitor: (state) =>
       set(() => ({ performanceMonitor: state })),
   }));
+
+  if (initProps?.defaultSkinUrl) {
+    store.getState().setDefaultSkin(initProps.defaultSkinUrl);
+  }
+
+  if (initProps?.firstSkinUrl) {
+    store.getState().setDefaultSkin(initProps.firstSkinUrl);
+  }
+
+  if (initProps?.secondSkinUrl) {
+    store.getState().setDefaultSkin(initProps.secondSkinUrl);
+  }
+
+  return store
 };
