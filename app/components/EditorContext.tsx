@@ -26,17 +26,24 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
   const {
     setFirstSkin: viewerSetFirstSkin,
     setSecondSkin: viewerSetSecondSkin,
+    setMode,
   } = useViewerPreferencesContext((state) => state);
 
   useEffect(() => {
-    setFirstSkinState((oldSkin) => params.get("skin") ?? oldSkin);
-    setSecondSkinState((oldSkin) => params.get("second-skin") ?? oldSkin);
+    setFirstSkinState(params.get("skin"));
+    setSecondSkinState(params.get("second-skin"));
+    viewerSetFirstSkin(proxifySkinLink(params.get("skin")));
+    viewerSetSecondSkin(proxifySkinLink(params.get("second-skin")));
   }, [params]);
 
   useEffect(() => {
-    viewerSetFirstSkin(firstSkin)
-    viewerSetSecondSkin(secondSkin)
-  }, [])
+    viewerSetFirstSkin(proxifySkinLink(firstSkin));
+    viewerSetSecondSkin(proxifySkinLink(secondSkin));
+
+    if (secondSkin) {
+      setMode("side-by-side");
+    }
+  }, []);
 
   const setFirstSkin = (url: string | null) => {
     if (!url) {
@@ -50,7 +57,7 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
     if (url.startsWith("https://") || url.startsWith("http://")) {
       params.set("skin", url);
       setParams(params);
-      viewerSetFirstSkin('/skin-proxy?url=' + url)
+      viewerSetFirstSkin("/skin-proxy?url=" + url);
     } else {
       setFirstSkinState(url);
       viewerSetFirstSkin(url);
@@ -88,4 +95,14 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
       {children}
     </EditorContext.Provider>
   );
+}
+
+function proxifySkinLink(url: string | null) {
+  if (!url) return null;
+
+  if (url.startsWith("https://") || url.startsWith("http://")) {
+    return "/skin-proxy?url=" + url;
+  }
+
+  return url;
 }

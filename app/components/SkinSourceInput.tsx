@@ -1,5 +1,6 @@
 import { FolderIcon, GlobeAltIcon } from "@heroicons/react/24/outline";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { IconButton } from "./IconButton";
 
 type SkinSourceInputProps = {
   defaultFieldValue?: string | null;
@@ -25,6 +26,12 @@ export function SkinSourceInput({
     };
   };
 
+  useEffect(() => {
+    if (urlInputRef.current) {
+      urlInputRef.current.value = defaultFieldValue || "";
+    }
+  }, [defaultFieldValue])
+
   const uploadLocalImageHandle = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.currentTarget.files && e.currentTarget.files[0];
     if (!file) return;
@@ -39,12 +46,14 @@ export function SkinSourceInput({
     setFileName("");
     onInputChange(null);
 
-    if (urlInputRef.current) urlInputRef.current.value = "";
+    if (urlInputRef.current) {
+      urlInputRef.current.value = "";
+    }
   };
 
   return (
     <form
-      className='flex gap-2'
+      className='flex gap-2 flex-1'
       onSubmit={(e) => {
         e.preventDefault();
         const formData = new FormData(e.currentTarget);
@@ -118,40 +127,23 @@ function InputContainer({
   return (
     <div
       className={
-        "px-2 flex items-center rounded-md ring-orange-500 bg-white focus-within:ring transition-all shadow-lg overflow-hidden pointer-events-auto" +
+        "flex items-center rounded-md ring-orange-500 bg-white focus-within:ring transition-all shadow-lg overflow-hidden pointer-events-auto" +
         (active ? " w-full" : " w-14 shrink-0")
       }
     >
-      <IconButton icon={icon} onClick={onButtonClick} disabled={active} />
+      <IconButton
+        icon={
+          icon === "folder" ? (
+            <FolderIcon className='h-6 w-6' />
+          ) : (
+            <GlobeAltIcon className='h-6 w-6' />
+          )
+        }
+        onClick={onButtonClick}
+        disabled={active}
+        shadow={false}
+      />
       {active && children}
     </div>
-  );
-}
-
-function IconButton({
-  icon,
-  onClick,
-  disabled,
-}: {
-  onClick: () => void;
-  icon: "folder" | "globus";
-  disabled?: boolean;
-}) {
-  return (
-    <button
-      className={
-        "px-2 py-2 text-zinc-600 transition shrink-0" +
-        (disabled ? "" : " hover:text-orange-500 ")
-      }
-      type='button'
-      onClick={onClick}
-      disabled={disabled}
-    >
-      {icon === "folder" ? (
-        <FolderIcon className='h-6 w-6' />
-      ) : (
-        <GlobeAltIcon className='h-6 w-6' />
-      )}
-    </button>
   );
 }

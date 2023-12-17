@@ -1,15 +1,16 @@
+import { InformationCircleIcon, XMarkIcon } from "@heroicons/react/24/outline";
 import type { PonySkin } from "@striped-skins/api";
 import { useState } from "react";
 
-type SkinInfoWidgetProps = {
+type PonyInfoWidgetProps = {
   skin: PonySkin;
   defaultOpen?: boolean;
 };
 
-export default function SkinInfoWidget({
+export default function PonyInfoWidget({
   skin,
   defaultOpen,
-}: SkinInfoWidgetProps) {
+}: PonyInfoWidgetProps) {
   const [open, setOpen] = useState(!!defaultOpen);
 
   const { race, snout, tailLength, body, magicGlow, tailShape, wearables } =
@@ -20,47 +21,23 @@ export default function SkinInfoWidget({
       className='px-4 py-2 bg-white rounded-md shadow-lg hover:text-orange-500 transition text-zinc-600 pointer-events-auto'
       onClick={() => setOpen(true)}
     >
-      <svg
-        xmlns='http://www.w3.org/2000/svg'
-        fill='none'
-        viewBox='0 0 24 24'
-        strokeWidth={1.5}
-        stroke='currentColor'
-        className='w-6 h-6'
-      >
-        <path
-          strokeLinecap='round'
-          strokeLinejoin='round'
-          d='M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z'
-        />
-      </svg>
+      <InformationCircleIcon className='w-6 h-6' />
     </button>
   ) : (
-    <div className='rounded-md bg-white shadow-lg inline-block text-left pointer-events-auto'>
-      <div className='flex justify-between'>
-        <p className='font-bold uppercase px-4 py-2'>Skin info</p>
+    <div className='rounded-md bg-white shadow-lg inline-block text-left pointer-events-auto max-h-[60vh] overflow-y-auto relative sm:px-4'>
+      <div className='flex gap-4 justify-between pb-4 pt-4 sticky mx-4 top-0 left-0 bg-white z-10 sm:pt-6'>
+        <p className='font-bold uppercase'>Skin info</p>
+
         <button
-          className='px-4 py-2 hover:text-orange-500 transition text-zinc-600'
+          className='inline-block -m-4 p-4 text-zinc-600'
+          type='button'
           onClick={() => setOpen(false)}
         >
-          <svg
-            xmlns='http://www.w3.org/2000/svg'
-            fill='none'
-            viewBox='0 0 24 24'
-            strokeWidth={1.5}
-            stroke='currentColor'
-            className='w-6 h-6'
-          >
-            <path
-              strokeLinecap='round'
-              strokeLinejoin='round'
-              d='M6 18L18 6M6 6l12 12'
-            />
-          </svg>
+          <XMarkIcon className='h-6 w-6 ' />
         </button>
       </div>
 
-      <div className='flex flex-col px-4 pt-2 pb-6 gap-y-6'>
+      <div className='flex flex-col px-4 pt-2 pb-4 sm:pb-6 gap-y-6'>
         <PixelParameter title='Race' value={race.name} pixel={race.pixel} />
         <PixelParameter title='Body' value={body.name} pixel={body.pixel} />
         <PixelParameter title='Snout' value={snout.name} pixel={snout.pixel} />
@@ -98,7 +75,11 @@ function PixelParameter({
 
   return (
     <div className='flex flex-col sm:flex-row gap-2'>
-      {title && <p className='font-semibold w-24 shrink-0'>{title}</p>}
+      {title && (
+        <p className='font-semibold sm:w-[clamp(6rem,calc(6rem+2.5vw),12rem)] shrink-0'>
+          {title}
+        </p>
+      )}
       <div className='flex items-center gap-2'>
         <div
           className={

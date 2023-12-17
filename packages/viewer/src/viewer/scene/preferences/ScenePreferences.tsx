@@ -4,6 +4,7 @@ import { EffectComposer, SMAA } from "@react-three/postprocessing";
 import { useEffect, type PropsWithChildren } from "react";
 import { getViewerCanvasWrapper } from "../../utils/index.js";
 import { useViewerPreferencesContext } from "../../../store/index.js";
+import { useIsMobileView } from "../../context/MobileViewContext.js";
 
 export function ScenePreferences({ children }: PropsWithChildren) {
   const { mode } = useViewerPreferencesContext((state) => state);
@@ -71,7 +72,7 @@ function SingleModeScenePreferences() {
 }
 
 function SideBySideModeScenePreferences() {
-  const mobileView = false;
+  const mobileView = useIsMobileView();
 
   return (
     <>
