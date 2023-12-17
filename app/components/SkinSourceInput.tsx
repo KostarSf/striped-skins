@@ -5,11 +5,13 @@ import { IconButton } from "./IconButton";
 type SkinSourceInputProps = {
   defaultFieldValue?: string | null;
   onInputChange?: (url: string | null) => void;
+  loading?: boolean;
 };
 
 export function SkinSourceInput({
   defaultFieldValue,
   onInputChange = (url) => {},
+  loading,
 }: SkinSourceInputProps) {
   const [skinInput, setSkinInput] = useState<"file" | "url">(
     defaultFieldValue ? "url" : "file"
@@ -30,7 +32,7 @@ export function SkinSourceInput({
     if (urlInputRef.current) {
       urlInputRef.current.value = defaultFieldValue || "";
     }
-  }, [defaultFieldValue])
+  }, [defaultFieldValue]);
 
   const uploadLocalImageHandle = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.currentTarget.files && e.currentTarget.files[0];
@@ -53,7 +55,7 @@ export function SkinSourceInput({
 
   return (
     <form
-      className='flex gap-2 flex-1'
+      className='flex gap-2 flex-1  [--loading-spinner-color:rgb(249_115_22)]'
       onSubmit={(e) => {
         e.preventDefault();
         const formData = new FormData(e.currentTarget);
@@ -67,7 +69,7 @@ export function SkinSourceInput({
       >
         <label
           className={
-            "px-2 flex-1 cursor-pointer hover:text-orange-500 transition overflow-hidden whitespace-nowrap text-ellipsis w-0" +
+            "flex-1 cursor-pointer hover:text-orange-500 transition overflow-hidden whitespace-nowrap text-ellipsis w-0" +
             (fileName ? " text-zinc-800" : " text-zinc-400")
           }
         >
@@ -88,13 +90,25 @@ export function SkinSourceInput({
         onButtonClick={setSkinInputHandle("url")}
       >
         <input
-          className='flex-1 py-2 px-2 outline-none placeholder:text-zinc-400 min-w-0 w-0'
+          className='flex-1 py-2 outline-none placeholder:text-zinc-400 min-w-0 w-0'
           ref={urlInputRef}
           type='text'
           name='field'
           placeholder='paste link to skin...'
-          defaultValue={defaultFieldValue ?? ''}
+          defaultValue={defaultFieldValue ?? ""}
         />
+        <div
+          className={
+            "inline-block h-6 overflow-hidden " + (loading ? "w-6" : "w-0")
+          }
+        >
+          <span
+            className={
+              "loading-spinner -m-7 transition duration-500 " +
+              (loading ? "scale-[.25]" : "scale-0")
+            }
+          />
+        </div>
         {defaultFieldValue && <ClearButton onClick={clearSkinHandle} />}
       </InputContainer>
     </form>
@@ -104,9 +118,9 @@ export function SkinSourceInput({
 function ClearButton({ onClick }: { onClick: () => void }) {
   return (
     <button
-      className='px-2 py-2 hover:text-orange-500 text-zinc-400 transition'
+      className='pl-2 pr-4 py-2 hover:text-orange-500 text-zinc-400 transition'
       onClick={onClick}
-      type="reset"
+      type='reset'
     >
       clear
     </button>

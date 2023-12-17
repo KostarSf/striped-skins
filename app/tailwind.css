@@ -2,6 +2,10 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --loading-spinner-color: white;
+}
+
 @layer utilities {
   .viewer-background {
     background: rgb(64, 64, 64);
@@ -35,8 +39,9 @@
     height: 64px;
     margin: 8px;
     border-radius: 50%;
-    border: 6px solid white;
-    border-color: white transparent white transparent;
+    border: 6px solid var(--loading-spinner-color);
+    border-color: var(--loading-spinner-color) transparent
+      var(--loading-spinner-color) transparent;
     animation: lds-dual-ring 0.5s linear infinite;
   }
   @keyframes lds-dual-ring {
