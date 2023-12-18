@@ -31,12 +31,8 @@ export default function App() {
       <head>
         <meta charSet='utf-8' />
         <meta name='viewport' content='width=device-width, initial-scale=1' />
-        <meta name='theme-color' content='rgb(51, 51, 51)' />
-        <meta name='msapplication-navbutton-color' content='rgb(51, 51, 51)' />
-        <meta
-          name='apple-mobile-web-app-status-bar-style'
-          content='rgb(51, 51, 51)'
-        />
+
+        <MetaThemeTags />
 
         <meta property='og:image' content='/icon.png' />
         <meta
@@ -51,7 +47,8 @@ export default function App() {
         <Meta />
         <Links />
 
-        <link rel="manifest" href="manifest.json" />
+        <LinkIconsTags />
+        <link rel='manifest' href='manifest.json' />
       </head>
       <body className='overflow-clip'>
         <Outlet />
@@ -60,5 +57,46 @@ export default function App() {
         <LiveReload />
       </body>
     </html>
+  );
+}
+
+function LinkIconsTags() {
+  return (
+    <>
+      <link
+        rel='apple-touch-icon'
+        sizes='180x180'
+        href='/apple-touch-icon.png'
+      />
+      <link
+        rel='icon'
+        type='image/png'
+        sizes='32x32'
+        href='/favicon-32x32.png'
+      />
+      <link
+        rel='icon'
+        type='image/png'
+        sizes='16x16'
+        href='/favicon-16x16.png'
+      />
+      <link rel='mask-icon' href='/safari-pinned-tab.svg' color='#f97316' />
+    </>
+  );
+}
+
+function MetaThemeTags() {
+  return (
+    <>
+      <meta name='apple-mobile-web-app-title' content='Striped Skins' />
+      <meta name='application-name' content='Striped Skins' />
+      <meta name='msapplication-TileColor' content='#da532c' />
+      <meta name='theme-color' content='rgb(51, 51, 51)' />
+      <meta name='msapplication-navbutton-color' content='rgb(51, 51, 51)' />
+      <meta
+        name='apple-mobile-web-app-status-bar-style'
+        content='rgb(51, 51, 51)'
+      />
+    </>
   );
 }

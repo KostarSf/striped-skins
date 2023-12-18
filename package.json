@@ -9,8 +9,9 @@
   "scripts": {
     "build:api": "npm run build --workspace ./packages/api",
     "build:viewer": "npm run build --workspace ./packages/viewer",
+    "build:libs": "run-s build:api build:viewer",
     "build:app": "remix build",
-    "build": "run-s build:*",
+    "build": "run-s build:libs build:app",
     "dist:lib": "npm run build --workspace ./packages/browser-bundle",
     "dev": "remix dev --manual",
     "dev:lib": "npm run dev --workspace ./packages/browser-bundle",
