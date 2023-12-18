@@ -80,6 +80,7 @@ function LinkIconsTags() {
         sizes='16x16'
         href='/favicon-16x16.png'
       />
+      <link rel='icon' type='image/x-icon' href='/favicon.ico' />
       <link rel='mask-icon' href='/safari-pinned-tab.svg' color='#f97316' />
     </>
   );
