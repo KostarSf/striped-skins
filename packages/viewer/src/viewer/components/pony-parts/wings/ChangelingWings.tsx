@@ -46,6 +46,7 @@ export default function ChangelingWings() {
           rotation={[-Math.PI / 2, 0, -Math.PI / 2]}
           scale={[8, 16]}
           doubleSide
+          flipX
         />
       </group>
 
@@ -74,6 +75,7 @@ export default function ChangelingWings() {
           rotation={[-Math.PI / 2, 0, -Math.PI / 2]}
           scale={[8, 16]}
           doubleSide
+          flipX
         />
       </group>
 
