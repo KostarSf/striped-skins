@@ -2,16 +2,18 @@ import { useThree } from "@react-three/fiber";
 import { useEffect, useRef } from "react";
 import { Euler, Vector3, type Group, type Object3DEventMap } from "three";
 import { useViewerPreferencesContext } from "../../../store/viewer-preferences.context.js";
-import { getViewerCanvasWrapper } from "../../utils/index.js";
+import { useThreeCanvas } from "../../context/canvas-ref.context.js";
 
 const xAxis = new Vector3(1, 0, 0);
 const yAxis = new Vector3(0, 1, 0);
 
-export default function () {
+export default function useSideBySideRotation() {
   const { mode } = useViewerPreferencesContext((state) => state);
   const isSideBySideMode = mode === "side-by-side";
 
   const invalidate = useThree((state) => state.invalidate);
+
+  const canvas = useThreeCanvas();
 
   const pony1ref = useRef<Group<Object3DEventMap>>(null);
   const pony2ref = useRef<Group<Object3DEventMap>>(null);
@@ -21,7 +23,6 @@ export default function () {
   const rotatedByPointer = useRef(false);
 
   useEffect(() => {
-    const canvas = getViewerCanvasWrapper();
     if (!canvas) return;
 
     canvas.addEventListener("pointerdown", onPointerDown);
@@ -33,7 +34,7 @@ export default function () {
       canvas.removeEventListener("pointerup", onPointerUp);
       canvas.removeEventListener("pointermove", onPointerMove);
     };
-  }, []);
+  }, [canvas]);
 
   useEffect(() => {
     if (!isSideBySideMode) {
@@ -46,6 +47,7 @@ export default function () {
     if (!isSideBySideMode) return;
     rotatedByPointer.current = true;
   };
+
   const onPointerUp = () => {
     rotatedByPointer.current = false;
     lastCursorPos.current = [0, 0];

@@ -2,28 +2,26 @@ import { CameraControls, PerspectiveCamera } from "@react-three/drei";
 import { useThree } from "@react-three/fiber";
 import { EffectComposer, SMAA } from "@react-three/postprocessing";
 import { useEffect, type PropsWithChildren } from "react";
-import { getViewerCanvasWrapper } from "../../utils/index.js";
 import { useViewerPreferencesContext } from "../../../store/index.js";
-import { useIsMobileView } from "../../context/MobileViewContext.js";
+import { useIsMobileView } from "../../context/mobile-view.context.js";
+import { useThreeCanvas } from "../../context/canvas-ref.context.js";
 
 export function ScenePreferences({ children }: PropsWithChildren) {
-  const { mode } = useViewerPreferencesContext((state) => state);
+  const { mode, userOptions } = useViewerPreferencesContext((state) => state);
 
   const invalidate = useThree((state) => state.invalidate);
+  const canvas = useThreeCanvas();
 
   useEffect(() => {
-    const canvas = getViewerCanvasWrapper();
     if (!canvas) return;
 
-    function unfreezeView() {
-      invalidate();
-    }
+    const unfreezeView = () => invalidate();
 
     canvas.addEventListener("pointerdown", unfreezeView);
     return () => canvas.removeEventListener("pointerdown", unfreezeView);
-  }, []);
+  }, [canvas]);
 
-  const smaa = true;
+  const smaa = userOptions.antialiasing;
 
   return (
     <>
@@ -43,7 +41,9 @@ export function ScenePreferences({ children }: PropsWithChildren) {
 }
 
 function SingleModeScenePreferences() {
-  const camera = useViewerPreferencesContext((state) => state.camera);
+  const { camera, userOptions } = useViewerPreferencesContext((state) => state);
+
+  const smoothTime = userOptions.smoothCamera ? 0.1 : 0
 
   return (
     <>
@@ -52,6 +52,8 @@ function SingleModeScenePreferences() {
           minDistance={camera.minDistance}
           maxDistance={camera.maxDistance}
           distance={camera.distance}
+          smoothTime={smoothTime}
+          draggingSmoothTime={smoothTime}
         />
       )}
       <PerspectiveCamera

@@ -9,7 +9,7 @@ import {
   createPonyStore,
   createViewerPreferencesStore,
 } from "./store/index.js";
-import { Viewer, attach } from "./viewer/index.js";
+import { Viewer, attachStandaloneViewer } from "./viewer/index.js";
 
 export class StripedViewer {
   private viewerRoot: ReactDOM.Root | null = null;
@@ -54,7 +54,7 @@ export class StripedViewer {
       if (this.isAttached) {
         throw new Error(`This skin viewer is already attached to DOM tree`);
       }
-      this.viewerRoot = attach(
+      this.viewerRoot = attachStandaloneViewer(
         this.targetElement,
         this.ponyStore,
         this.viewerPreferencesStore

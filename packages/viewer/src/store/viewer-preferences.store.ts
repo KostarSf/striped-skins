@@ -1,48 +1,11 @@
 import { PonySkin } from "@striped-skins/api";
 import { createStore } from "zustand";
-import type { XyzArray } from "../viewer/components/model-components/types.js";
 import type { PonyStore } from "./index.js";
-
-export type ViewerMode = "first-model" | "second-model" | "side-by-side";
-
-export type ViewerPreferences = {
-  defaultSkinUrl: string;
-  firstSkinUrl: string | null;
-  secondSkinUrl: string | null;
-  performanceMonitor: boolean;
-  mode: ViewerMode;
-  camera: CameraPreferences;
-};
-
-export type CameraPreferences = {
-  static: boolean;
-  distance: number;
-  minDistance: number;
-  maxDistance: number;
-  position: XyzArray;
-  rotation: XyzArray;
-  fov: number;
-};
-
-export type ViewerPreferencesProps = Partial<ViewerPreferences> & {
-  camera?: Partial<CameraPreferences>;
-};
-
-export type ViewerPreferencesStoreState = ViewerPreferences & {
-  loadingDefaultSkin: boolean;
-  loadingFirstSkin: boolean;
-  loadingSecondSkin: boolean;
-  setDefaultSkin: (skinUrl: string) => void;
-  setFirstSkin: (skinUrl: string | null) => void;
-  setSecondSkin: (skinUrl: string | null) => void;
-  setMode: (mode: ViewerMode) => void;
-  setCamera: (preferences: Partial<CameraPreferences>) => void;
-  setPerformanceMonitor: (state: boolean) => void;
-};
-
-export type ViewerPreferencesStore = ReturnType<
-  typeof createViewerPreferencesStore
->;
+import type {
+  ViewerPreferences,
+  ViewerPreferencesProps,
+  ViewerPreferencesStoreState,
+} from "./viewer-preferences.store.types.js";
 
 export const createViewerPreferencesStore = (
   ponyStore: PonyStore,
@@ -63,6 +26,11 @@ export const createViewerPreferencesStore = (
       position: [4, 1, 10],
       rotation: [0, 0, 0],
     },
+    userOptions: {
+      animations: true,
+      antialiasing: true,
+      smoothCamera: true,
+    },
   };
 
   const store = createStore<ViewerPreferencesStoreState>()((set, get) => ({
@@ -71,6 +39,11 @@ export const createViewerPreferencesStore = (
     camera: {
       ...DEFAULT_PROPS.camera,
       ...initProps?.camera,
+    },
+
+    userOptions: {
+      ...DEFAULT_PROPS.userOptions,
+      ...initProps?.userOptions,
     },
 
     loadingDefaultSkin: false,
@@ -124,6 +97,9 @@ export const createViewerPreferencesStore = (
 
     setCamera: (prefs) =>
       set((state) => ({ camera: { ...state.camera, ...prefs } })),
+
+    setUserOptions: (prefs) =>
+      set((state) => ({ userOptions: { ...state.userOptions, ...prefs } })),
 
     setPerformanceMonitor: (state) =>
       set(() => ({ performanceMonitor: state })),

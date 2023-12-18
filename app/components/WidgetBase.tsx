@@ -33,7 +33,7 @@ export function WidgetBase({
             <p className='font-bold uppercase'>{title}</p>
 
             <button
-              className='inline-block -m-4 p-4 text-zinc-600'
+              className='inline-block -m-2 p-2 text-zinc-600'
               type='button'
               onClick={toggleWidgetHandle}
               aria-label={'Close ' + title}

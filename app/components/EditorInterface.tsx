@@ -8,6 +8,7 @@ import {
 import { IconButton } from "./IconButton";
 import { ScaleIcon } from "@heroicons/react/24/outline";
 import { LoadingScreen } from "./LoadingScreen";
+import OptionsWidget from "./OptionsWidget";
 
 export function EditorInterface() {
   const { mode } = useViewerPreferencesContext((state) => state);
@@ -41,12 +42,14 @@ function SingleSkinInterface() {
           loading={loadingFirstSkin}
         />
 
-        <div className='inline-block mt-2 pointer-events-auto'>
+        <div className='mt-2 flex items-start gap-2 justify-between'>
           <IconButton
             icon={<ScaleIcon className='w-6 h-6' />}
             onClick={() => setMode("side-by-side")}
             title='Comparison mode'
           />
+
+          <OptionsWidget />
         </div>
       </div>
 
@@ -88,12 +91,14 @@ function SideBySideSkinInterface() {
           />
         </div>
 
-        <div className='mt-2 max-w-screen-2xl mx-auto'>
+        <div className='mt-2 max-w-screen-2xl mx-auto flex gap-2 items-start justify-between'>
           <IconButton
             icon={<ScaleIcon className='w-6 h-6' />}
             onClick={() => setMode("first-model")}
             title='Comparison mode'
           />
+
+          <OptionsWidget />
         </div>
       </div>
 

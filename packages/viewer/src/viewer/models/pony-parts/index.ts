@@ -1,0 +1,6 @@
+export { default as Body } from './body/Body.js'
+export { default as Head } from './head/Head.js'
+export { default as Legs } from './legs/Legs.js'
+export { default as Tail } from './tail/Tail.js'
+export { default as Wings } from './wings/Wings.js'
+export { default as Neck } from './Neck.js'

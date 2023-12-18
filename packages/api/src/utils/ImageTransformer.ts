@@ -38,8 +38,8 @@ export class ImageTransformer {
       return new OffscreenCanvas(width, height) as unknown as HTMLCanvasElement;
     }
 
-    console.log(
-      "ImageTransformer: Use HTMLCanvasElement instead of OffscreenCanvas"
+    console.warn(
+      "ImageTransformer: Using HTMLCanvasElement instead of OffscreenCanvas"
     );
 
     const canvas = document.createElement("canvas");

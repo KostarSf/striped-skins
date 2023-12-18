@@ -1,16 +1,13 @@
 import { useRef } from "react";
+import type {
+  PonyProps,
+  PonyStore,
+  ViewerPreferencesProps,
+  ViewerPreferencesStore,
+} from "./index.js";
+import { createPonyStore, createViewerPreferencesStore } from "./index.js";
 import { PonyContext } from "./pony.context.js";
-import {
-  createPonyStore,
-  type PonyProps,
-  type PonyStore,
-} from "./pony.store.js";
 import { ViewerPreferencesContext } from "./viewer-preferences.context.js";
-import {
-  createViewerPreferencesStore,
-  type ViewerPreferencesProps,
-  type ViewerPreferencesStore,
-} from "./viewer-preferences.store.js";
 
 type StripedContextProviderProps = React.PropsWithChildren<{
   ponyParams?: PonyProps;

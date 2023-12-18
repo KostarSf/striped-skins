@@ -2,7 +2,7 @@ import {
   usePonyContext,
   useViewerPreferencesContext,
 } from "../../../store/index.js";
-import PonyModel from "./PonyModel.js";
+import { PonyModel } from "../../models/pony/PonyModel.js";
 
 export default function SinglePonyView() {
   const { mode } = useViewerPreferencesContext((state) => state);

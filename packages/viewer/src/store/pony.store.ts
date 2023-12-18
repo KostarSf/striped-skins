@@ -1,24 +1,6 @@
 import { PonySkin } from "@striped-skins/api";
 import { createStore } from "zustand";
-
-type PonyState = {
-  skin: PonySkin;
-  setSkin: (skin: PonySkin) => void;
-};
-
-export type PonyStoreState = {
-  defaultPony: PonyState;
-  firstPony: PonyState;
-  secondPony: PonyState;
-};
-
-export type PonyProps = {
-  defaultPony: PonySkin;
-  firstPony: PonySkin;
-  secondPony: PonySkin;
-};
-
-export type PonyStore = ReturnType<typeof createPonyStore>;
+import type { PonyProps, PonyStoreState } from "./pony.store.types.js";
 
 export const createPonyStore = (initProps?: Partial<PonyProps>) => {
   const defaultProps: PonyProps = {

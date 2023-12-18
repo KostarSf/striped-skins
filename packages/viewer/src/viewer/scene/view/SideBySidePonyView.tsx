@@ -1,6 +1,6 @@
 import { usePonyContext } from "../../../store/pony.context.js";
-import { useIsMobileView } from "../../context/MobileViewContext.js";
-import PonyModel from "./PonyModel.js";
+import { useIsMobileView } from "../../context/mobile-view.context.js";
+import { PonyModel } from "../../models/pony/PonyModel.js";
 import useSideBySideRotation from "./useSideBySideRotation.js";
 
 export default function SideBySidePonyView() {
@@ -17,17 +17,19 @@ export default function SideBySidePonyView() {
 
   return (
     <>
-      <group ref={pony1ref} position={[x, y, 0]} scale={[scale, scale, scale]}>
-        <PonyModel skin={firstPony.skin} />
-      </group>
+      <PonyModel
+        skin={firstPony.skin}
+        ref={pony1ref}
+        position={[x, y, 0]}
+        scale={[scale, scale, scale]}
+      />
 
-      <group
+      <PonyModel
+        skin={secondPony.skin}
         ref={pony2ref}
         position={[-x, -y, 0]}
         scale={[scale, scale, scale]}
-      >
-        <PonyModel skin={secondPony.skin} />
-      </group>
+      />
     </>
   );
 }
