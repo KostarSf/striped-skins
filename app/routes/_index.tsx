@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router";
 import { StripedContextProvider, StripedViewer } from "~/components/striped-viewer.client";
 import { EditorInterface } from "~/components/EditorInterface";
 import { EditorProvider } from "~/components/EditorContext";
@@ -16,6 +17,9 @@ export default function Index() {
 
       <div className="absolute left-0 right-0 bottom-0 pointer-events-none p-4">
         <small className="text-zinc-400 text-xs/none font-mono block">{"v" + APP_VERSION}</small>
+        <Link to="/model-lab" className="pointer-events-auto text-xs text-orange-400">
+          Лаборатория моделей →
+        </Link>
       </div>
     </div>
   );

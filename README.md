@@ -3,6 +3,11 @@
 Mine Little Pony skin viewer, built with React Router Framework Mode, React and Three.js.
 The npm workspace also contains the skin API, React viewer and standalone browser bundle.
 
+The experimental `/model-lab` page previews Earthpony from vendored Mson model
+data, with six sizes, part visibility and shared 2D/3D pixel painting. See
+[the vertical slice guide](docs/model-lab.md) for usage, checks and current scope.
+Normal builds use checked-in generated models and need no MineLittlePony checkout.
+
 ## Requirements
 
 Use Node.js **24.22.1 LTS** (see `.nvmrc` and `.node-version`) and npm.

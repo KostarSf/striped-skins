@@ -1,0 +1,17 @@
+{
+  "name": "@striped-skins/models",
+  "version": "1.0.0",
+  "files": [
+    "build"
+  ],
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./build/index.d.ts",
+      "default": "./build/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc --build"
+  }
+}

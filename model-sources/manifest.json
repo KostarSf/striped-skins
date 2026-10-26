@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "sources": {
+    "minelittlepony": {
+      "repository": "https://github.com/MineLittlePony/MineLittlePony",
+      "revision": "2398b14ac6d728745c5af9384024e235c994f5f8",
+      "minecraft": "1.20.1"
+    },
+    "mson": {
+      "repository": "https://github.com/MineLittlePony/Mson",
+      "revision": "cafaa6ae9a0529defd2b3bf10e3e0c96ef3d283a",
+      "version": "1.9.3+1.20.1"
+    }
+  },
+  "files": {
+    "minelittlepony/LICENSE": "18bbad73bdd7eb92c369a84e3e4334c6b31946556003a717705fa277df1def93",
+    "minelittlepony/behavior/PonyTransformation.java": "bf1162f60caae7867a0536dd7bdd6f1e95e3487680e41313bbeb3a2884f3c054",
+    "minelittlepony/behavior/Sizes.java": "680b57f86bdf0390f839487027fcfbf674d94b3519064748f8dcdf86714fcece",
+    "minelittlepony/behavior/TriggerPixel.java": "70531f525e642276f9ec10951da7a1ce5a213b28d8089ebd04f4b55a8da8adb0",
+    "minelittlepony/models/components/ears.json": "6eae1a17fdeb06d83da4d802a2345acd4766cce111141642fd4946d5837a5563",
+    "minelittlepony/models/components/snout.json": "0c7ba34dad6ede80043e101cf5994798ede49d397e917ae4d864dd9ddf388fb3",
+    "minelittlepony/models/components/tail.json": "f6ff8e6e7fca21086bfbd18dbd1742cd49eb8d36fa68ea0e7213598ff7d575a7",
+    "minelittlepony/models/components/tail_segment.json": "ab1d480a54d73f4b55e84e775ab7538cf701bc3f89328c9056b331359f78a087",
+    "minelittlepony/models/races/alex/earth_pony.json": "fb632cc27c3ddeb1edf591732a3d2477fa15ddfe3b578f89d1df87fb9d8997a8",
+    "minelittlepony/models/races/steve/earth_pony.json": "937fe0be3957b2e7a934b54a21c238ab58b769310912bca51b91f6d5cb7e935c",
+    "minelittlepony/models/steve_pony.json": "b691c7a9550b1a6bc420292de3d3b1e95104ca92b1871c7ff8ffc8eac5bc7e3a",
+    "mson/LICENSE": "18bbad73bdd7eb92c369a84e3e4334c6b31946556003a717705fa277df1def93",
+    "mson/models/biped.json": "aefa4de480a26eaf1a538437ce3b3ff68e6149ff8c841fb2e585cab0376c2e69",
+    "mson/models/steve.json": "7aab2a4a81ed96d3892086cd4b3923e0f51cd4caac68b7988dfb943ec7c84619"
+  }
+}
