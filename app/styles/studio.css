@@ -776,18 +776,6 @@ input[type="color"]::-webkit-color-swatch {
   margin-top: 4px;
   position: relative;
 }
-.rail-color::after {
-  content: "";
-  position: absolute;
-  right: -6px;
-  bottom: -7px;
-  width: 22px;
-  height: 22px;
-  border-radius: 4px;
-  background: var(--studio-bg);
-  border: 2px solid var(--studio-panel);
-  pointer-events: none;
-}
 .rail-color input {
   width: 28px !important;
   height: 28px !important;
@@ -1550,5 +1538,55 @@ input[type="color"]::-webkit-color-swatch {
     top: auto;
     bottom: 8px;
     max-height: 58%;
+  }
+}
+
+.rail-colors {
+  position: relative;
+  width: 38px;
+  height: 40px;
+  flex: none;
+}
+.rail-colors .rail-color {
+  margin-top: 0;
+  position: absolute;
+}
+.rail-colors .primary-color {
+  top: 0;
+  left: 0;
+}
+.rail-colors .secondary-color {
+  bottom: 0;
+  right: 0;
+}
+.palette-entry {
+  position: relative;
+  display: inline-flex;
+  flex: none;
+  padding: 6px 4px;
+}
+.palette-remove {
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  line-height: 12px;
+  font-size: 12px;
+  border: 1px solid var(--studio-border);
+  border-radius: 50%;
+  color: var(--studio-text);
+  background: var(--studio-raised);
+  opacity: 0;
+}
+.palette-entry:hover .palette-remove,
+.palette-entry:focus-within .palette-remove,
+.palette-remove:focus-visible {
+  opacity: 1;
+}
+@media (hover: none) {
+  .palette-remove {
+    opacity: 1;
   }
 }

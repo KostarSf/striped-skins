@@ -134,6 +134,8 @@ test("all races, wing forms and accessories render; returning to Earth releases 
 }) => {
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
+  // Count model resources without postprocessing render targets/passes. SMAA is covered in studio.spec.
+  await page.addInitScript(() => localStorage.setItem("viewer.options.antialiasing", ""));
   await page.goto("/editor");
   await expect(page.getByTestId("skin-texture")).toBeVisible();
   await page.getByLabel("Раса", { exact: true }).selectOption("EARTH");

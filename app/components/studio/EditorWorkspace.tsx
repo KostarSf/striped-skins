@@ -11,7 +11,7 @@ import {
   type PreviewSettings,
 } from "@striped-skins/models";
 import { wearableNames } from "@striped-skins/api";
-import { type PreviewStats } from "@striped-skins/viewer/experimental";
+import { type PreviewStats, type SurfaceHover } from "@striped-skins/viewer/experimental";
 import { ModelViewport } from "./ModelViewport";
 import { SkinSettings } from "./SkinSettings";
 import { TextureEditor, type PaintTool } from "./TextureEditor";
@@ -117,13 +117,29 @@ export default function EditorWorkspace({
     [painting, setPainting] = useState(false),
     [brushSize, setBrushSize] = useState(1),
     [opacity, setOpacity] = useState(100),
-    [hex, setHex] = useState("#d8bb60"),
+    [colors, setColors] = useState({ primary: "#d8bb60", secondary: "#ffffff" }),
+    [hover, setHover] = useState<SurfaceHover | null>(null),
+    [removedColors, setRemovedColors] = useState<ReadonlySet<string>>(() => new Set()),
     [hidden, setHidden] = useState<ReadonlySet<string>>(() => new Set()),
     [activePart, setActivePart] = useState<string | null>(null),
     [lastPixel, setLastPixel] = useState<{ x: number; y: number; part: string } | null>(null),
     [stats, setStats] = useState<PreviewStats | null>(null),
     [customColors, setCustomColors] = useState<string[]>([]),
     [search, setSearch] = useState("");
+  const hex = colors.primary;
+  const setHex = useCallback((primary: string) => setColors((c) => ({ ...c, primary })), []);
+  const swapColors = useCallback(
+    () => setColors((c) => ({ primary: c.secondary, secondary: c.primary })),
+    [],
+  );
+  const addColor = () => {
+    setRemovedColors((v) => {
+      const next = new Set(v);
+      next.delete(hex);
+      return next;
+    });
+    setCustomColors((v) => [...new Set([...v, hex])].slice(-16));
+  };
   const palette = useMemo(() => paletteFor(skin), [skin]);
   const appearance = { ...meta, slim };
   const definition = resolveModel(appearance, preview);
@@ -168,12 +184,16 @@ export default function EditorWorkspace({
       if (e.ctrlKey || e.metaKey || e.altKey) return;
       const tools: Record<string, PaintTool> = { b: "brush", e: "eraser", i: "drop", h: "hand" };
       if (tools[k]) selectTool(tools[k]);
+      if ((k === "x" || e.code === "KeyX") && !e.repeat) {
+        e.preventDefault();
+        swapColors();
+      }
       if (e.key === "[") setBrushSize((v) => Math.max(1, v - 1));
       if (e.key === "]") setBrushSize((v) => Math.min(32, v + 1));
     };
     window.addEventListener("keydown", key);
     return () => window.removeEventListener("keydown", key);
-  }, [skin, selectTool]);
+  }, [skin, selectTool, swapColors]);
   const sample = (pixel: Pixel) => {
     setHex(
       "#" +
@@ -288,19 +308,29 @@ export default function EditorWorkspace({
             </IconButton>
           ))}
           <span className="rail-divider" />
-          <label className="rail-color" title="Цвет кисти">
-            <input
-              type="color"
-              aria-label="Цвет кисти"
-              value={hex}
-              onChange={(e) => setHex(e.target.value)}
-            />
-          </label>
+          <div className="rail-colors">
+            <label className="rail-color secondary-color" title="Дополнительный цвет">
+              <input
+                type="color"
+                aria-label="Дополнительный цвет"
+                value={colors.secondary}
+                onChange={(e) => setColors((c) => ({ ...c, secondary: e.target.value }))}
+              />
+            </label>
+            <label className="rail-color primary-color" title="Цвет кисти">
+              <input
+                type="color"
+                aria-label="Цвет кисти"
+                value={hex}
+                onChange={(e) => setHex(e.target.value)}
+              />
+            </label>
+          </div>
+          <IconButton label="Поменять цвета · X" onClick={swapColors}>
+            ⇄
+          </IconButton>
           <span className="rail-spacer" />
-          <IconButton
-            label="Добавить цвет в палитру"
-            onClick={() => setCustomColors((v) => [...new Set([...v, hex])].slice(-16))}
-          >
+          <IconButton label="Добавить цвет в палитру" onClick={addColor}>
             <DesignIcon name="plus" />
           </IconButton>
         </aside>
@@ -318,6 +348,8 @@ export default function EditorWorkspace({
                 activePart={selected}
                 onSample={tool === "drop" ? sample : undefined}
                 onPaint={onPaint}
+                onHover={setHover}
+                brushPreview={tool === "brush"}
                 onStats={onStats}
                 antialiasing={options.antialiasing}
                 smoothCamera={options.smoothCamera}
@@ -336,6 +368,7 @@ export default function EditorWorkspace({
                 onSample={sample}
                 onPaint={onPaint}
                 guides={quads}
+                hover={hover}
               />
             </div>
           </div>
@@ -355,25 +388,33 @@ export default function EditorWorkspace({
             <div className="skin-palette">
               <small>Палитра скина</small>
               <div>
-                {[...new Set([...palette, ...customColors])].map((c) => (
-                  <button
-                    key={c}
-                    type="button"
-                    aria-label={`Цвет ${c}`}
-                    title={c}
-                    className="palette-swatch"
-                    style={{ background: c }}
-                    onClick={() => {
-                      setHex(c);
-                      setTool("brush");
-                    }}
-                  />
-                ))}
-                <Button
-                  onClick={() => setCustomColors((v) => [...new Set([...v, hex])].slice(-16))}
-                >
-                  + Цвет
-                </Button>
+                {[...new Set([...palette, ...customColors])]
+                  .filter((c) => !removedColors.has(c))
+                  .map((c) => (
+                    <span className="palette-entry" key={c}>
+                      <button
+                        type="button"
+                        aria-label={`Цвет ${c}`}
+                        title={c}
+                        className="palette-swatch"
+                        style={{ background: c }}
+                        onClick={() => {
+                          setHex(c);
+                          setTool("brush");
+                        }}
+                      />
+                      <button
+                        type="button"
+                        className="palette-remove"
+                        aria-label={`Удалить цвет ${c}`}
+                        title="Удалить из палитры"
+                        onClick={() => setRemovedColors((v) => new Set([...v, c]))}
+                      >
+                        ×
+                      </button>
+                    </span>
+                  ))}
+                <Button onClick={addColor}>+ Цвет</Button>
               </div>
             </div>
             <Button
@@ -493,7 +534,8 @@ export default function EditorWorkspace({
           {lastPixel ? ` · ${lastPixel.x}, ${lastPixel.y}` : ""}
         </output>
         <span>
-          Кисть <kbd>B</kbd>　Ластик <kbd>E</kbd>　Пипетка <kbd>I</kbd>　Отмена <kbd>Ctrl Z</kbd>
+          Кисть <kbd>B</kbd>　Ластик <kbd>E</kbd>　Пипетка <kbd>I</kbd>　Цвета <kbd>X</kbd>　Отмена{" "}
+          <kbd>Ctrl Z</kbd>
         </span>
         <span>Служебные пиксели защищены</span>
       </footer>

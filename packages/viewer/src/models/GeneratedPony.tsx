@@ -158,6 +158,7 @@ export function GeneratedPony({
         mesh.name = node.id;
         mesh.userData = {
           partId: node.id,
+          documentId: skinDocument.id,
           surfaceIds: node.quads.map((q) => q.id),
           surfaceUVs: node.quads.map((q) => q.uv),
           editable: gearId === undefined,
@@ -211,7 +212,7 @@ export function GeneratedPony({
       });
     }
     return { root, nodes, meshes, geometries, materials, textures, stages, gear };
-  }, [model, surface, gearKey, invalidate]);
+  }, [model, surface, gearKey, invalidate, skinDocument.id]);
   useEffect(
     () => () => {
       instance.geometries.forEach((g) => g.dispose());

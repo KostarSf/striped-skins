@@ -1,0 +1,132 @@
+import { useEffect, useMemo } from "react";
+import { createPortal, type ThreeEvent } from "@react-three/fiber";
+import {
+  BufferGeometry,
+  Color,
+  DoubleSide,
+  Float32BufferAttribute,
+  Mesh,
+  SRGBColorSpace,
+} from "three";
+import { uvToPixel, type Pixel, type SkinDocument, type PaintBounds } from "@striped-skins/api";
+
+/** Shared hit information for the brush preview and the UV inspector. UVs use Three's V axis. */
+export type SurfaceHover = {
+  x: number;
+  y: number;
+  part: string;
+  surface: string;
+  uv: readonly number[];
+};
+export type SurfaceHit = SurfaceHover & { mesh: Mesh; quad: number; bounds: PaintBounds };
+export function surfaceHit(
+  event: ThreeEvent<PointerEvent>,
+  document: SkinDocument,
+  activePart: string | null,
+): SurfaceHit | null {
+  for (const hit of event.intersections) {
+    const mesh = hit.object;
+    if (
+      !(mesh instanceof Mesh) ||
+      !mesh.visible ||
+      !hit.uv ||
+      !mesh.userData.editable ||
+      mesh.userData.documentId !== document.id
+    )
+      continue;
+    const part = mesh.userData.partId as string;
+    if (!part || (activePart && part !== activePart)) continue;
+    const pixel = uvToPixel(hit.uv.x, hit.uv.y, document.width, document.height);
+    if (!activePart && document.readPixel(pixel.x, pixel.y)[3] < 26) continue;
+    const quad = Math.floor((hit.faceIndex ?? 0) / 2);
+    const uv = mesh.userData.surfaceUVs[quad] as number[];
+    const xs = uv.filter((_, i) => i % 2 === 0).map((u) => u * document.width);
+    const ys = uv.filter((_, i) => i % 2 === 1).map((v) => (1 - v) * document.height);
+    return {
+      ...pixel,
+      part,
+      mesh,
+      quad,
+      uv,
+      surface: mesh.userData.surfaceIds[quad] as string,
+      bounds: {
+        minX: Math.floor(Math.min(...xs)),
+        maxX: Math.ceil(Math.max(...xs)) - 1,
+        minY: Math.floor(Math.min(...ys)),
+        maxY: Math.ceil(Math.max(...ys)) - 1,
+      },
+    };
+  }
+  return null;
+}
+
+/** Map a clipped brush rectangle back onto its quad, including mirrored / rotated UVs. */
+export function brushPatch(hit: SurfaceHit, width: number, height: number, size: number) {
+  const { uv, bounds, mesh, quad, x, y } = hit;
+  const minX = Math.max(0, bounds.minX, x - Math.floor((size - 1) / 2));
+  const minY = Math.max(0, bounds.minY, y - Math.floor((size - 1) / 2));
+  const maxX = Math.min(width, bounds.maxX + 1, x - Math.floor((size - 1) / 2) + size);
+  const maxY = Math.min(height, bounds.maxY + 1, y - Math.floor((size - 1) / 2) + size);
+  const du1 = uv[2] - uv[0],
+    dv1 = uv[3] - uv[1];
+  const du3 = uv[6] - uv[0],
+    dv3 = uv[7] - uv[1];
+  const determinant = du1 * dv3 - du3 * dv1;
+  if (Math.abs(determinant) < 1e-12 || minX >= maxX || minY >= maxY) return [];
+  const positions = mesh.geometry.getAttribute("position");
+  return [
+    [minX, minY],
+    [maxX, minY],
+    [maxX, maxY],
+    [minX, maxY],
+  ].flatMap(([px, py]) => {
+    const u = px / width - uv[0],
+      v = 1 - py / height - uv[1];
+    const a = (u * dv3 - du3 * v) / determinant;
+    const b = (du1 * v - u * dv1) / determinant;
+    return [0, 1, 2].map((axis) => {
+      const p0 = positions.getComponent(quad * 4, axis);
+      return (
+        p0 +
+        a * (positions.getComponent(quad * 4 + 1, axis) - p0) +
+        b * (positions.getComponent(quad * 4 + 3, axis) - p0)
+      );
+    });
+  });
+}
+export function BrushPreview({
+  hit,
+  color,
+  size,
+  document,
+}: {
+  hit: SurfaceHit;
+  color: Pixel;
+  size: number;
+  document: SkinDocument;
+}) {
+  const geometry = useMemo(() => {
+    const geometry = new BufferGeometry();
+    const patch = brushPatch(hit, document.width, document.height, size);
+    geometry.setAttribute("position", new Float32BufferAttribute(patch, 3));
+    geometry.setIndex(patch.length ? [0, 1, 2, 0, 2, 3] : []);
+    return geometry;
+  }, [hit, document, size]);
+  useEffect(() => () => geometry.dispose(), [geometry]);
+  return createPortal(
+    <mesh geometry={geometry} raycast={() => {}} renderOrder={1000}>
+      <meshBasicMaterial
+        color={new Color().setRGB(color[0] / 255, color[1] / 255, color[2] / 255, SRGBColorSpace)}
+        opacity={color[3] / 255}
+        transparent
+        depthWrite={false}
+        side={DoubleSide}
+        polygonOffset
+        polygonOffsetFactor={-1}
+        polygonOffsetUnits={-1}
+        toneMapped={false}
+      />
+    </mesh>,
+    hit.mesh,
+  );
+}

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type PointerEvent } from "react";
 import { type SkinDocument, type Pixel } from "@striped-skins/api";
+import { type SurfaceHover } from "@striped-skins/viewer/experimental";
 import { type ModelQuad } from "@striped-skins/models";
 import { Button, DesignIcon, IconButton } from "./ui";
 export type PaintTool = "brush" | "eraser" | "drop" | "hand";
@@ -11,6 +12,7 @@ export function TextureEditor({
   onSample,
   onPaint,
   guides,
+  hover,
 }: {
   document: SkinDocument;
   color: Pixel;
@@ -19,18 +21,22 @@ export function TextureEditor({
   onSample: (pixel: Pixel) => void;
   onPaint: (p: { x: number; y: number; part: string }) => void;
   guides: ModelQuad[];
+  hover?: SurfaceHover | null;
 }) {
   const canvas = useRef<HTMLCanvasElement>(null),
     area = useRef<HTMLDivElement>(null);
   const mode = useRef<"draw" | "pan" | null>(null),
     origin = useRef({ x: 0, y: 0, px: 0, py: 0 });
   const [size, setSize] = useState({ width: 500, height: 600 }),
-    [zoom, setZoom] = useState(1),
-    [pan, setPan] = useState({ x: 0, y: 0 }),
+    [view, setView] = useState({ zoom: 1, pan: { x: 0, y: 0 } }),
     [grid, setGrid] = useState(true),
     [uv, setUV] = useState(true),
     [space, setSpace] = useState(false),
     [cursor, setCursor] = useState<{ x: number; y: number } | null>(null);
+  const { zoom, pan } = view;
+  const setZoom = (update: (zoom: number) => number) =>
+    setView((v) => ({ ...v, zoom: update(v.zoom) }));
+  const setPan = (pan: { x: number; y: number }) => setView((v) => ({ ...v, pan }));
   const fit = Math.max(
     0.05,
     Math.min((size.width - 64) / skin.width, (size.height - 112) / skin.height),
@@ -60,7 +66,22 @@ export function TextureEditor({
     if (!el) return;
     const wheel = (event: WheelEvent) => {
       event.preventDefault();
-      setZoom((z) => Math.max(0.15, Math.min(32, z * Math.exp(-event.deltaY * 0.002))));
+      const rect = el.getBoundingClientRect();
+      const anchor = {
+        x: event.clientX - rect.left - rect.width / 2,
+        y: event.clientY - rect.top - rect.height / 2,
+      };
+      setView((v) => {
+        const zoom = Math.max(0.15, Math.min(32, v.zoom * Math.exp(-event.deltaY * 0.002)));
+        const ratio = zoom / v.zoom;
+        return {
+          zoom,
+          pan: {
+            x: anchor.x - (anchor.x - v.pan.x) * ratio,
+            y: anchor.y - (anchor.y - v.pan.y) * ratio,
+          },
+        };
+      });
     };
     el.addEventListener("wheel", wheel, { passive: false });
     return () => el.removeEventListener("wheel", wheel);
@@ -74,8 +95,7 @@ export function TextureEditor({
         setSpace(true);
       }
       if (e.key.toLowerCase() === "f") {
-        setZoom(1);
-        setPan({ x: 0, y: 0 });
+        setView({ zoom: 1, pan: { x: 0, y: 0 } });
       }
     };
     const up = () => setSpace(false);
@@ -212,6 +232,59 @@ export function TextureEditor({
           {grid && scale >= 3 ? (
             <div className="pixel-grid" style={{ backgroundSize: `${scale}px ${scale}px` }} />
           ) : null}
+          {uv && hover ? (
+            <svg
+              aria-hidden="true"
+              className="texture-guides uv-hover"
+              viewBox={`0 0 ${skin.width} ${skin.height}`}
+              data-testid="uv-hover"
+              data-surface={hover.surface}
+              data-pixel={`${hover.x},${hover.y}`}
+            >
+              <polygon
+                points={[0, 1, 2, 3]
+                  .map(
+                    (i) =>
+                      `${hover.uv[2 * i] * skin.width},${(1 - hover.uv[2 * i + 1]) * skin.height}`,
+                  )
+                  .join(" ")}
+                fill="var(--studio-accent)"
+                fillOpacity={0.12}
+                stroke="#101014"
+                strokeWidth={4 / scale}
+              />
+              <polygon
+                points={[0, 1, 2, 3]
+                  .map(
+                    (i) =>
+                      `${hover.uv[2 * i] * skin.width},${(1 - hover.uv[2 * i + 1]) * skin.height}`,
+                  )
+                  .join(" ")}
+                fill="none"
+                stroke="var(--studio-accent)"
+                strokeWidth={2 / scale}
+              />
+              <rect
+                x={hover.x}
+                y={hover.y}
+                width={1}
+                height={1}
+                fill="white"
+                fillOpacity={0.5}
+                stroke="#101014"
+                strokeWidth={2 / scale}
+              />
+              <rect
+                x={hover.x}
+                y={hover.y}
+                width={1}
+                height={1}
+                fill="none"
+                stroke="white"
+                strokeWidth={1 / scale}
+              />
+            </svg>
+          ) : null}
           {cursor && tool !== "hand" && !space ? (
             <div
               className="brush-cursor"
@@ -241,8 +314,7 @@ export function TextureEditor({
           <IconButton
             label="Вписать текстуру"
             onClick={() => {
-              setZoom(1);
-              setPan({ x: 0, y: 0 });
+              setView({ zoom: 1, pan: { x: 0, y: 0 } });
             }}
           >
             <DesignIcon name="reset" />

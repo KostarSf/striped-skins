@@ -61,6 +61,19 @@ async function enter(page: Page, path = "/editor") {
   await page.goto(path);
   await expect(page.locator("canvas").first()).toBeVisible();
   await expect(page.locator(".studio-loading-badge")).toHaveCount(0);
+  // Wait for a painted frame without creating the WebGL context ourselves.
+  // Reading getContext('webgl2') before R3F initializes would silently enable default MSAA.
+  await expect
+    .poll(() =>
+      page.locator('section[aria-label="Предпросмотр модели"] canvas').evaluate((c) => {
+        const copy = document.createElement("canvas");
+        copy.width = copy.height = 32;
+        const ctx = copy.getContext("2d")!;
+        ctx.drawImage(c as HTMLCanvasElement, 0, 0, 32, 32);
+        return ctx.getImageData(0, 0, 32, 32).data.some((v, i) => i % 4 === 3 && v > 0);
+      }),
+    )
+    .toBe(true);
 }
 
 test("viewer quick settings are nonmodal, retain all options, and share changes with editor", async ({
@@ -299,4 +312,171 @@ test("3D brush in the redesigned workspace edits the shared texture and remains 
   await expect
     .poll(() => pixel(page, x, y))
     .toEqual(before.slice((y * 64 + x) * 4, (y * 64 + x) * 4 + 4));
+});
+
+test("wheel zoom keeps the pixel under the cursor fixed after panning and at zoom limits", async ({
+  page,
+}) => {
+  await enter(page);
+  await page.getByRole("button", { name: "2D", exact: true }).click();
+  await page.getByRole("button", { name: "Скрыть 3D-превью", exact: true }).click();
+  const area = (await page.locator(".texture-area").boundingBox())!;
+  const center = { x: area.x + area.width / 2, y: area.y + area.height / 2 };
+  await page.mouse.move(center.x, center.y);
+  await page.mouse.down({ button: "right" });
+  await page.mouse.move(center.x + 41, center.y - 27);
+  await page.mouse.up({ button: "right" });
+  const initial = (await tex(page).boundingBox())!;
+  const anchor = {
+    x: Math.round(initial.x + initial.width * 0.23),
+    y: Math.round(initial.y + initial.height * 0.67),
+  };
+  const position = async () => {
+    const r = (await tex(page).boundingBox())!;
+    return { x: (anchor.x - r.x) / r.width, y: (anchor.y - r.y) / r.height, width: r.width };
+  };
+  const expected = await position();
+  await page.mouse.move(anchor.x, anchor.y);
+  for (const delta of [-200, -500, -100000, -100000, 200, 100000, 100000]) {
+    const before = await position();
+    await page.mouse.wheel(0, delta);
+    if (delta === -200)
+      await expect.poll(async () => (await position()).width).toBeGreaterThan(before.width);
+    else await page.waitForTimeout(40);
+    const p = await position();
+    expect(p.x).toBeCloseTo(expected.x, 3);
+    expect(p.y).toBeCloseTo(expected.y, 3);
+  }
+});
+
+test("X swaps primary and secondary colors; removing palette entries leaves document pixels unchanged", async ({
+  page,
+}) => {
+  await enter(page);
+  await page.getByLabel("Цвет кисти", { exact: true }).fill("#123456");
+  await page.getByLabel("Дополнительный цвет", { exact: true }).fill("#abcdef");
+  await page.getByRole("button", { name: "Добавить цвет в палитру", exact: true }).click();
+  const pixels = await tex(page).evaluate((c) => (c as HTMLCanvasElement).toDataURL());
+  await page.getByRole("button", { name: "Цвет #123456", exact: true }).hover();
+  await page.getByRole("button", { name: "Удалить цвет #123456", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Цвет #123456", exact: true })).toHaveCount(0);
+  // Auto-detected entries are removable too, without modifying the skin.
+  const automatic = page.locator(".palette-swatch").first();
+  const name = (await automatic.getAttribute("aria-label"))!.replace("Цвет ", "");
+  await automatic.hover();
+  await page.getByRole("button", { name: `Удалить цвет ${name}`, exact: true }).click();
+  expect(await tex(page).evaluate((c) => (c as HTMLCanvasElement).toDataURL())).toBe(pixels);
+  await expect(page.getByRole("button", { name: "Отменить штрих", exact: true })).toBeDisabled();
+  await page.getByRole("button", { name: "Добавить цвет в палитру", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Цвет #123456", exact: true })).toBeVisible();
+  await page.keyboard.press("x");
+  await expect(page.getByLabel("Цвет кисти", { exact: true })).toHaveValue("#abcdef");
+  await expect(page.getByLabel("Дополнительный цвет", { exact: true })).toHaveValue("#123456");
+  await paint(page);
+  await expect.poll(() => pixel(page)).toEqual([171, 205, 239, 255]);
+  await page.getByRole("button", { name: "Поменять цвета · X", exact: true }).click();
+  await expect(page.getByLabel("Цвет кисти", { exact: true })).toHaveValue("#123456");
+  await page.getByRole("textbox", { name: "HEX цвета кисти", exact: true }).focus();
+  await page.keyboard.press("x");
+  await expect(page.getByLabel("Цвет кисти", { exact: true })).toHaveValue("#123456");
+});
+
+async function opaquePoint(page: Page) {
+  return page.locator('section[aria-label="Предпросмотр модели"] canvas').evaluate((c) => {
+    const canvas = c as HTMLCanvasElement,
+      gl = canvas.getContext("webgl2")!;
+    const data = new Uint8Array(canvas.width * canvas.height * 4);
+    gl.readPixels(0, 0, canvas.width, canvas.height, gl.RGBA, gl.UNSIGNED_BYTE, data);
+    const r = canvas.getBoundingClientRect();
+    for (let y = Math.floor(canvas.height * 0.3); y < canvas.height * 0.7; y += 5)
+      for (let x = Math.floor(canvas.width * 0.3); x < canvas.width * 0.7; x += 5)
+        if (data[((canvas.height - 1 - y) * canvas.width + x) * 4 + 3] > 250)
+          return {
+            x: r.x + ((x + 0.5) * r.width) / canvas.width,
+            y: r.y + ((y + 0.5) * r.height) / canvas.height,
+          };
+    return null;
+  });
+}
+
+test("3D hovering previews brush color and synchronizes UV face/pixel without changing the document", async ({
+  page,
+}) => {
+  const errors: string[] = [];
+  page.on("pageerror", (e) => errors.push(e.message));
+  await enter(page);
+  await page.getByLabel("Цвет кисти", { exact: true }).fill("#ff00ff");
+  const point = { x: 0, y: 0 };
+  await expect
+    .poll(async () => {
+      const hit = await opaquePoint(page);
+      if (hit) Object.assign(point, hit);
+      return !!hit;
+    })
+    .toBe(true);
+  const initial = await image(page);
+  const pixels = await tex(page).evaluate((c) => (c as HTMLCanvasElement).toDataURL());
+  const revision = await page.getByTestId("document-status").getAttribute("data-revision");
+  await page.mouse.move(point.x, point.y);
+  const uv = page.getByTestId("uv-hover");
+  await expect(uv).toBeVisible();
+  const coords = (await uv.getAttribute("data-pixel"))!;
+  const [x, y] = coords.split(",").map(Number);
+  await expect(uv.locator("rect").first()).toHaveAttribute("x", String(x));
+  await expect(uv.locator("rect").first()).toHaveAttribute("y", String(y));
+  await expect(uv.locator("polygon").first()).not.toHaveAttribute("points", "");
+  // Rotation mode inspects UVs, but has no colored brush preview.
+  expect(await image(page)).toBe(initial);
+  await page.getByRole("button", { name: "Режим: вращение", exact: true }).click();
+  await page.mouse.move(point.x, point.y);
+  await expect(uv).toBeVisible();
+  await expect.poll(() => image(page)).not.toBe(initial);
+  expect(await tex(page).evaluate((c) => (c as HTMLCanvasElement).toDataURL())).toBe(pixels);
+  await expect(page.getByTestId("document-status")).toHaveAttribute("data-revision", revision!);
+  await expect(page.getByRole("button", { name: "Отменить штрих", exact: true })).toBeDisabled();
+  // The same picker drives painting, so the pixel under the preview is exactly the painted pixel.
+  await page.mouse.click(point.x, point.y);
+  await expect(page.getByTestId("document-status")).toHaveAttribute("data-pixel", coords);
+  await expect.poll(() => pixel(page, x, y)).toEqual([255, 0, 255, 255]);
+  await page.mouse.move(5, 5);
+  await expect(uv).toHaveCount(0);
+  await page.keyboard.press("Control+z");
+  expect(await tex(page).evaluate((c) => (c as HTMLCanvasElement).toDataURL())).toBe(pixels);
+  await page.getByRole("button", { name: "UV", exact: true }).click();
+  await page.mouse.move(point.x, point.y);
+  await expect(uv).toHaveCount(0);
+  await page.keyboard.press("e");
+  await expect.poll(() => image(page)).toBe(initial);
+  await page.keyboard.press("i");
+  await expect.poll(() => image(page)).toBe(initial);
+  expect(errors).toEqual([]);
+});
+
+test("antialiasing uses screen-space SMAA with no MSAA and survives projection changes", async ({
+  page,
+}) => {
+  const errors: string[] = [];
+  page.on("pageerror", (e) => errors.push(e.message));
+  await enter(page, "/");
+  const contextAA = () =>
+    page
+      .locator('section[aria-label="Предпросмотр модели"] canvas')
+      .evaluate(
+        (c) => (c as HTMLCanvasElement).getContext("webgl2")!.getContextAttributes()!.antialias,
+      );
+  expect(await contextAA()).toBe(false);
+  const smooth = await image(page);
+  await page.locator(".viewer-options summary").click();
+  await page.getByRole("checkbox", { name: "Сглаживание", exact: true }).uncheck();
+  await expect.poll(() => image(page)).not.toBe(smooth);
+  const sharp = await image(page);
+  await page.getByRole("checkbox", { name: "Сглаживание", exact: true }).check();
+  await expect.poll(() => image(page)).not.toBe(sharp);
+  expect(await contextAA()).toBe(false);
+  await page.getByLabel("Ракурс модели").selectOption("orthographic");
+  await expect.poll(() => image(page)).not.toBe(smooth);
+  const ortho = await image(page);
+  await page.getByRole("button", { name: "Приблизить модель", exact: true }).click();
+  await expect.poll(() => image(page)).not.toBe(ortho);
+  expect(errors).toEqual([]);
 });

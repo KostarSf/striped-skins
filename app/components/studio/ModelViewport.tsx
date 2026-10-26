@@ -58,13 +58,7 @@ export function ModelViewport({
       className={`model-viewport ${mini ? "mini-preview" : ""} ${maximized ? "maximized" : ""}`}
       aria-label="Предпросмотр модели"
     >
-      <PonyPreview
-        key={String(props.antialiasing)}
-        {...props}
-        fitKey={fitKey}
-        cameraAction={action}
-        projection={projection}
-      />
+      <PonyPreview {...props} fitKey={fitKey} cameraAction={action} projection={projection} />
       <div className="viewport-heading">
         <h2>{title}</h2>
         {mini && onClose ? (
