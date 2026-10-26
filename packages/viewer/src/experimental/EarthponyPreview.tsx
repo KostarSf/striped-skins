@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import { Canvas, addAfterEffect, useThree, type ThreeEvent } from "@react-three/fiber";
-import { CameraControls } from "@react-three/drei";
+import { PreviewCamera, type PreviewCameraProps } from "./PreviewCamera.js";
+export type { CameraAction } from "./PreviewCamera.js";
 import { Mesh } from "three";
 import { uvToPixel, type SkinDocument, type SkinMetadata, type Pixel } from "@striped-skins/api";
 import { type BodySize, type PreviewSettings, type MotionLayer } from "@striped-skins/models";
@@ -11,7 +12,13 @@ export type PreviewStats = {
   textures: number;
   triangles: number;
 };
-export type PonyPreviewProps = {
+export type PonyPreviewProps = Partial<Omit<PreviewCameraProps, "painting" | "comparison">> & {
+  antialiasing?: boolean;
+  comparison?: {
+    document: SkinDocument;
+    preview?: PreviewSettings;
+    overrides?: Partial<SkinMetadata>;
+  };
   document: SkinDocument;
   overrides?: Partial<SkinMetadata>;
   hidden: ReadonlySet<string>;
@@ -98,7 +105,14 @@ function ModelScene(props: PonyPreviewProps) {
   };
   return (
     <>
-      <CameraControls makeDefault enabled={!painting} minDistance={5} maxDistance={35} />
+      <PreviewCamera
+        painting={painting}
+        cameraAction={props.cameraAction}
+        fitKey={props.fitKey}
+        projection={props.projection}
+        smoothCamera={props.smoothCamera}
+        comparison={!!props.comparison}
+      />
       <group
         onPointerDown={(e) => {
           if (!painting || e.button !== 0) return;
@@ -121,7 +135,19 @@ function ModelScene(props: PonyPreviewProps) {
         }}
         onLostPointerCapture={end}
       >
-        <GeneratedPony {...props} animate={!painting && props.animate} paused={painting} />
+        <group position={props.comparison ? [-3, 0, 0] : [0, 0, 0]}>
+          <GeneratedPony {...props} animate={!painting && props.animate} paused={painting} />
+        </group>
+        {props.comparison ? (
+          <group position={[3, 0, 0]}>
+            <GeneratedPony
+              document={props.comparison.document}
+              preview={props.comparison.preview}
+              overrides={props.comparison.overrides}
+              animate={props.animate}
+            />
+          </group>
+        ) : null}
       </group>
     </>
   );
@@ -131,7 +157,7 @@ export function PonyPreview(props: PonyPreviewProps) {
     <Canvas
       frameloop="demand"
       camera={{ position: [8, 4, 12], fov: 42 }}
-      gl={{ antialias: false }}
+      gl={{ antialias: !!props.antialiasing }}
       aria-label="3D pony preview"
     >
       <ModelScene {...props} />

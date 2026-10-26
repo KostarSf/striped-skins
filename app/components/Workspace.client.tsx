@@ -2,6 +2,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { PonySkin, SkinDocument } from "@striped-skins/api";
 import { StripedContextProvider, usePonyContext } from "./striped-viewer.client";
 import { useLocation } from "react-router";
+import { DocumentSession } from "./studio/DocumentSession";
 import { getSafeSkinUrl } from "../utils";
 const KEY = "striped.editor.documents.v1";
 type Saved = {
@@ -95,8 +96,10 @@ export default function Workspace({ children }: { children: ReactNode }) {
         },
       }}
     >
-      <Autosave />
-      {children}
+      <DocumentSession>
+        <Autosave />
+        {children}
+      </DocumentSession>
     </StripedContextProvider>
   );
 }

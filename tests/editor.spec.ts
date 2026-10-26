@@ -35,6 +35,7 @@ async function edit(page: Page, second = false) {
   await expect(page.getByTestId("skin-texture")).toBeVisible();
 }
 async function paint(page: Page, x = 12, y = 12) {
+  await page.getByLabel("Цвет кисти", { exact: true }).fill("#ff00ff");
   await page.getByTestId("skin-texture").scrollIntoViewIfNeeded();
   const box = (await page.getByTestId("skin-texture").boundingBox())!;
   await page.mouse.click(
@@ -117,7 +118,9 @@ test("local recovery and PNG round-trip retain edited content without reloading 
   await page.getByRole("button", { name: "Скачать PNG" }).click();
   const file = (await (await png).path())!;
   await page.getByLabel("Раса", { exact: true }).selectOption("HUMAN");
+  await page.getByRole("button", { name: "Открыть", exact: true }).click();
   await page.getByLabel("Открыть PNG", { exact: true }).setInputFiles(file);
+  await page.getByRole("button", { name: "Заменить", exact: true }).click();
   await expect(page.getByLabel("Раса", { exact: true })).toHaveValue("KIRIN");
   for (const name of ["Корона", "Маффин", "Stetson"])
     await expect(page.getByRole("checkbox", { name, exact: true })).toBeChecked();
@@ -196,14 +199,16 @@ test("legacy import upgrades to square PNG and a malformed import preserves the 
     ctx.fillRect(0, 0, 64, 32);
     return c.toDataURL().split(",")[1];
   });
+  await page.getByRole("button", { name: "Открыть", exact: true }).click();
   await page.getByLabel("Открыть PNG", { exact: true }).setInputFiles({
     name: "legacy.png",
     mimeType: "image/png",
     buffer: Buffer.from(data, "base64"),
   });
   await expect(page.getByText("Legacy-скин преобразован", { exact: false })).toBeVisible();
-  await expect(page.getByTestId("document-status")).toContainText("64×64");
+  await expect(page.getByTestId("document-status")).toContainText("64 × 64");
   const before = await pixel(page, 12, 12);
+  await page.getByRole("button", { name: "Открыть", exact: true }).click();
   await page
     .getByLabel("Открыть PNG", { exact: true })
     .setInputFiles({ name: "bad.png", mimeType: "image/png", buffer: Buffer.from("broken") });
