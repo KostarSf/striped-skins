@@ -43,9 +43,7 @@ export function Plane({
 
   const edgeOffset = 0;
 
-  const scaledScale = (scale ?? [width, height]).map(
-    (i) => i * SCALE_MULTIPLIER
-  ) as XyArray;
+  const scaledScale = (scale ?? [width, height]).map((i) => i * SCALE_MULTIPLIER) as XyArray;
 
   const geometry = new PlaneGeometry(...scaledScale);
   const guv = geometry.getAttribute("uv");
@@ -60,11 +58,7 @@ export function Plane({
   guv.array[7] = 1 - (normalizedUv + normalizedHeight) + edgeOffset; // Bottom Right Vertical
 
   return (
-    <group
-      position={position}
-      rotation={rotation}
-      scale={[flipX ? -1 : 1, flipY ? -1 : 1, 1]}
-    >
+    <group position={position} rotation={rotation} scale={[flipX ? -1 : 1, flipY ? -1 : 1, 1]}>
       <mesh geometry={geometry}>
         <meshStandardMaterial
           map={texture}

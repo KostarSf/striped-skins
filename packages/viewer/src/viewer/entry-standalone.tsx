@@ -8,10 +8,9 @@ import { Viewer } from "./Viewer.js";
 export function attachStandaloneViewer(
   target: string | HTMLElement,
   ponyStore: PonyStore,
-  viewerPreferencesStore: ViewerPreferencesStore
+  viewerPreferencesStore: ViewerPreferencesStore,
 ) {
-  const domElement =
-    typeof target === "string" ? document.querySelector(target) : target;
+  const domElement = typeof target === "string" ? document.querySelector(target) : target;
 
   if (!domElement) {
     throw new Error(`The DOM element ${domElement} is not accessable`);
@@ -24,7 +23,7 @@ export function attachStandaloneViewer(
       <StandaloneContextProvider {...{ ponyStore, viewerPreferencesStore }}>
         <Viewer />
       </StandaloneContextProvider>
-    </React.StrictMode>
+    </React.StrictMode>,
   );
 
   return root;
@@ -38,9 +37,7 @@ type StandaloneContextProviderProps = {
 
 function StandaloneContextProvider(props: StandaloneContextProviderProps) {
   const ponyRef = useRef<PonyStore>(props.ponyStore);
-  const viewerPreferencesRef = useRef<ViewerPreferencesStore>(
-    props.viewerPreferencesStore
-  );
+  const viewerPreferencesRef = useRef<ViewerPreferencesStore>(props.viewerPreferencesStore);
 
   return (
     <PonyContext.Provider value={ponyRef.current}>

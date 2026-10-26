@@ -28,14 +28,12 @@ export const createPonyStore = (initProps?: Partial<PonyProps>) => {
 
     firstPony: {
       skin: initProps?.firstPony ?? defaultProps.firstPony,
-      setSkin: (skin) =>
-        set((state) => ({ firstPony: { ...state.firstPony, skin } })),
+      setSkin: (skin) => set((state) => ({ firstPony: { ...state.firstPony, skin } })),
     },
 
     secondPony: {
       skin: initProps?.secondPony ?? defaultProps.secondPony,
-      setSkin: (skin) =>
-        set((state) => ({ secondPony: { ...state.secondPony, skin } })),
+      setSkin: (skin) => set((state) => ({ secondPony: { ...state.secondPony, skin } })),
     },
   }));
 };

@@ -1,12 +1,8 @@
 import { createContext, useContext } from "react";
 import { useStore } from "zustand";
-import type {
-  ViewerPreferencesStore,
-  ViewerPreferencesStoreState,
-} from "./index.js";
+import type { ViewerPreferencesStore, ViewerPreferencesStoreState } from "./index.js";
 
-export const ViewerPreferencesContext =
-  createContext<ViewerPreferencesStore | null>(null);
+export const ViewerPreferencesContext = createContext<ViewerPreferencesStore | null>(null);
 
 export type ContextFunSelector<S> = <T>(selector: (state: S) => T) => T;
 export type ContextFunNoSelector = <T>() => T;

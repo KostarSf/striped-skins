@@ -2,7 +2,7 @@ import { Box } from "../../primitives/index.js";
 import type { XyzArray } from "../../primitives/index.js";
 
 export default function BatWings() {
-  const [x, y, z] = [0.92, 0.4 - 0.0225, 0]
+  const [x, y, z] = [0.92, 0.4 - 0.0225, 0];
   const scale = 1.26;
 
   return (
@@ -22,16 +22,12 @@ export default function BatWings() {
 }
 
 type BatWingProps = {
-  position?: XyzArray
-  rotation?: XyzArray
-  scale?: XyzArray
-}
+  position?: XyzArray;
+  rotation?: XyzArray;
+  scale?: XyzArray;
+};
 
-function BatWing({
-  position = [0, 0, 0],
-  rotation = [0, 0, 0],
-  scale = [1, 1, 1],
-}: BatWingProps) {
+function BatWing({ position = [0, 0, 0], rotation = [0, 0, 0], scale = [1, 1, 1] }: BatWingProps) {
   return (
     <group position={position} rotation={rotation} scale={scale}>
       <Box

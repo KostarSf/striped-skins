@@ -30,9 +30,7 @@ export type UserOptionsPreferences = {
   animations: boolean;
 };
 
-export type ViewerPreferencesProps = Partial<
-  Omit<ViewerPreferences, "camera" | "userOptions">
-> & {
+export type ViewerPreferencesProps = Partial<Omit<ViewerPreferences, "camera" | "userOptions">> & {
   camera?: Partial<CameraPreferences>;
   userOptions?: Partial<UserOptionsPreferences>;
 };
@@ -50,6 +48,4 @@ export type ViewerPreferencesStoreState = ViewerPreferences & {
   setUserOptions: (preferences: Partial<UserOptionsPreferences>) => void;
 };
 
-export type ViewerPreferencesStore = ReturnType<
-  typeof createViewerPreferencesStore
->;
+export type ViewerPreferencesStore = ReturnType<typeof createViewerPreferencesStore>;

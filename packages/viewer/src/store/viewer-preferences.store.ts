@@ -9,7 +9,7 @@ import type {
 
 export const createViewerPreferencesStore = (
   ponyStore: PonyStore,
-  initProps?: ViewerPreferencesProps
+  initProps?: ViewerPreferencesProps,
 ) => {
   const DEFAULT_PROPS: ViewerPreferences = {
     defaultSkinUrl: "",
@@ -93,16 +93,14 @@ export const createViewerPreferencesStore = (
         });
     },
 
-    setMode: (mode) => set((state) => ({ mode: mode })),
+    setMode: (mode) => set(() => ({ mode })),
 
-    setCamera: (prefs) =>
-      set((state) => ({ camera: { ...state.camera, ...prefs } })),
+    setCamera: (prefs) => set((state) => ({ camera: { ...state.camera, ...prefs } })),
 
     setUserOptions: (prefs) =>
       set((state) => ({ userOptions: { ...state.userOptions, ...prefs } })),
 
-    setPerformanceMonitor: (state) =>
-      set(() => ({ performanceMonitor: state })),
+    setPerformanceMonitor: (state) => set(() => ({ performanceMonitor: state })),
   }));
 
   if (initProps?.defaultSkinUrl) {

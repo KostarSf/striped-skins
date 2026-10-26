@@ -2,7 +2,7 @@ import { TailLengthPixel } from "../skin-pixels/index.js";
 import type { PixelColorData } from "../utils/index.js";
 import { toHexColor } from "../utils/index.js";
 
-const allTailLengths = new Map<string, TailLength>()
+const allTailLengths = new Map<string, TailLength>();
 
 export type TailSize = 0 | 1 | 2 | 3 | 4;
 
@@ -11,7 +11,7 @@ export class TailLength {
   constructor(
     readonly pixel: TailLengthPixel,
     readonly name: string,
-    readonly size: TailSize
+    readonly size: TailSize,
   ) {}
 
   static fromPixel(color: string | PixelColorData) {
@@ -20,15 +20,11 @@ export class TailLength {
         color = color.substring(1);
       }
 
-      return (
-        allTailLengths.get(color) ?? allTailLengths.get(TailLengthPixel.Full)!
-      );
+      return allTailLengths.get(color) ?? allTailLengths.get(TailLengthPixel.Full)!;
     }
 
     const hexColor = toHexColor(color, false, false);
-    return (
-      allTailLengths.get(hexColor) ?? allTailLengths.get(TailLengthPixel.Full)!
-    );
+    return allTailLengths.get(hexColor) ?? allTailLengths.get(TailLengthPixel.Full)!;
   }
 }
 

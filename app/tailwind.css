@@ -1,6 +1,5 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+@source "./";
 
 :root {
   --loading-spinner-color: white;
@@ -40,8 +39,7 @@
     margin: 8px;
     border-radius: 50%;
     border: 6px solid var(--loading-spinner-color);
-    border-color: var(--loading-spinner-color) transparent
-      var(--loading-spinner-color) transparent;
+    border-color: var(--loading-spinner-color) transparent var(--loading-spinner-color) transparent;
     animation: lds-dual-ring 0.5s linear infinite;
   }
   @keyframes lds-dual-ring {

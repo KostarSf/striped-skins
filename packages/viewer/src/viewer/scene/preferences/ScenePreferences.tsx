@@ -1,7 +1,7 @@
 import { CameraControls, PerspectiveCamera } from "@react-three/drei";
 import { useThree } from "@react-three/fiber";
 import { EffectComposer, SMAA } from "@react-three/postprocessing";
-import { useEffect, type PropsWithChildren } from "react";
+import { useCallback, useEffect, type PropsWithChildren } from "react";
 import { useViewerPreferencesContext } from "../../../store/index.js";
 import { useIsMobileView } from "../../context/mobile-view.context.js";
 import { useThreeCanvas } from "../../context/canvas-ref.context.js";
@@ -12,6 +12,17 @@ export function ScenePreferences({ children }: PropsWithChildren) {
   const invalidate = useThree((state) => state.invalidate);
   const canvas = useThreeCanvas();
 
+  // External store updates must request a frame when the canvas renders on demand.
+  useEffect(() => {
+    invalidate();
+  }, [mode, userOptions, invalidate]);
+
+  // A camera change rebuilds the composer asynchronously. Render its new instance
+  // once the ref is attached, after its render callback and passes are committed.
+  const invalidateComposer = useCallback(() => {
+    invalidate();
+  }, [invalidate]);
+
   useEffect(() => {
     if (!canvas) return;
 
@@ -19,7 +30,7 @@ export function ScenePreferences({ children }: PropsWithChildren) {
 
     canvas.addEventListener("pointerdown", unfreezeView);
     return () => canvas.removeEventListener("pointerdown", unfreezeView);
-  }, [canvas]);
+  }, [canvas, invalidate]);
 
   const smaa = userOptions.antialiasing;
 
@@ -31,7 +42,7 @@ export function ScenePreferences({ children }: PropsWithChildren) {
         <SingleModeScenePreferences />
       )}
 
-      <EffectComposer multisampling={0} enabled={smaa}>
+      <EffectComposer ref={invalidateComposer} multisampling={0} enabled={smaa}>
         <SMAA />
       </EffectComposer>
 
@@ -43,7 +54,7 @@ export function ScenePreferences({ children }: PropsWithChildren) {
 function SingleModeScenePreferences() {
   const { camera, userOptions } = useViewerPreferencesContext((state) => state);
 
-  const smoothTime = userOptions.smoothCamera ? 0.1 : 0
+  const smoothTime = userOptions.smoothCamera ? 0.1 : 0;
 
   return (
     <>
@@ -63,8 +74,8 @@ function SingleModeScenePreferences() {
         fov={camera.fov}
       >
         <hemisphereLight
-          color='#ffffff'
-          groundColor='#666666'
+          color="#ffffff"
+          groundColor="#666666"
           position={[-30, 24, 3]}
           intensity={4}
         />
@@ -78,15 +89,11 @@ function SideBySideModeScenePreferences() {
 
   return (
     <>
-      <PerspectiveCamera
-        makeDefault
-        position={[0, 0, mobileView ? 40 : 25]}
-        fov={20}
-      />
+      <PerspectiveCamera makeDefault position={[0, 0, mobileView ? 40 : 25]} fov={20} />
 
       <hemisphereLight
-        color='#ffffff'
-        groundColor='#666666'
+        color="#ffffff"
+        groundColor="#666666"
         position={[-7, 25, 13]}
         intensity={4}
       />

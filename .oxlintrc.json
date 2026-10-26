@@ -1,0 +1,12 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["typescript", "react", "react-hooks", "jsx-a11y"],
+  "rules": {
+    "react-hooks/rules-of-hooks": "error",
+    "react-hooks/exhaustive-deps": "warn",
+    "react/refs": "off",
+    "react/immutability": "off",
+    "react/set-state-in-effect": "off"
+  },
+  "ignorePatterns": ["**/build/**", "**/dist/**", ".react-router/**"]
+}

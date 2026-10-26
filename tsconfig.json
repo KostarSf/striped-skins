@@ -1,5 +1,5 @@
 {
-  "include": ["remix.env.d.ts", "**/*.ts", "**/*.tsx"],
+  "include": ["app/**/*.ts", "app/**/*.tsx", ".react-router/types/**/*", "*.ts", "tests/**/*.ts"],
   "compilerOptions": {
     "lib": ["DOM", "DOM.Iterable", "ES2022"],
     "isolatedModules": true,
@@ -11,13 +11,12 @@
     "strict": true,
     "allowJs": true,
     "forceConsistentCasingInFileNames": true,
-    "baseUrl": ".",
     "paths": {
       "~/*": ["./app/*"]
     },
-
-    // Remix takes care of building everything in `remix build`.
-    "noEmit": true
-  },
-  "references": [{ "path": "./packages/api" }, { "path": "./packages/viewer" }]
+    "noEmit": true,
+    "types": ["node", "vite/client"],
+    "rootDirs": [".", "./.react-router/types"],
+    "skipLibCheck": true
+  }
 }

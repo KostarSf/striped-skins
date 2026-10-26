@@ -2,7 +2,7 @@ import { SnoutPixel } from "../skin-pixels/index.js";
 import type { PixelColorData } from "../utils/index.js";
 import { toHexColor } from "../utils/index.js";
 
-const allSnouts = new Map<string, Snout>()
+const allSnouts = new Map<string, Snout>();
 
 export class Snout {
   // eslint-disable-next-line no-useless-constructor
@@ -10,7 +10,7 @@ export class Snout {
     readonly pixel: SnoutPixel,
     readonly name: string,
     readonly squared: boolean = false,
-    readonly flat: boolean = false
+    readonly flat: boolean = false,
   ) {}
 
   static fromPixel(color: string | PixelColorData) {
@@ -36,5 +36,5 @@ function addSnouts(...snouts: Snout[]) {
 addSnouts(
   new Snout(SnoutPixel.Rounded, "Rounded"),
   new Snout(SnoutPixel.Squared, "Squared", true),
-  new Snout(SnoutPixel.Flat, "Flat", false, true)
+  new Snout(SnoutPixel.Flat, "Flat", false, true),
 );

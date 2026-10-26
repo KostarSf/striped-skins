@@ -4,9 +4,7 @@ import { useViewerPreferencesContext } from "./striped-viewer.client";
 import { useId } from "react";
 
 export default function OptionsWidget() {
-  const { userOptions, setUserOptions } = useViewerPreferencesContext(
-    (state) => state
-  );
+  const { userOptions, setUserOptions } = useViewerPreferencesContext((state) => state);
 
   const toggleOptionHandle = (option: keyof typeof userOptions) => {
     return (value: boolean) => {
@@ -16,21 +14,21 @@ export default function OptionsWidget() {
   };
 
   return (
-    <WidgetBase title='Options' icon={<Cog6ToothIcon className='w-6 h-6' />}>
+    <WidgetBase title="Options" icon={<Cog6ToothIcon className="w-6 h-6" />}>
       <Option
-        title='Antialiasing'
+        title="Antialiasing"
         value={userOptions.antialiasing}
         onChange={toggleOptionHandle("antialiasing")}
       />
 
       <Option
-        title='Smooth Camera'
+        title="Smooth Camera"
         value={userOptions.smoothCamera}
         onChange={toggleOptionHandle("smoothCamera")}
       />
 
       <Option
-        title='Animations'
+        title="Animations"
         value={userOptions.animations}
         onChange={toggleOptionHandle("animations")}
       />
@@ -48,13 +46,13 @@ function Option({ title, value, onChange }: OptionProps) {
   const id = useId();
 
   return (
-    <div className='flex gap-2 justify-between items-center'>
+    <div className="flex gap-2 justify-between items-center">
       <label htmlFor={id}>{title}</label>
 
       <input
-        className='mx-1'
+        className="mx-1"
         id={id}
-        type='checkbox'
+        type="checkbox"
         checked={value}
         onChange={(e) => onChange(e.target.checked)}
       />

@@ -5,16 +5,16 @@ type StraightTailPartProps = {
   position?: XyzArray;
   drawTop?: boolean;
   drawBottom?: boolean;
-  type: 'topHalf' | 'bottomHalf'
+  type: "topHalf" | "bottomHalf";
 };
 
 export default function StraightTailPart({
   position,
   drawTop,
   drawBottom,
-  type
+  type,
 }: StraightTailPartProps) {
-  const uv = type === 'topHalf' ? 0 : 4
+  const uv = type === "topHalf" ? 0 : 4;
 
   return (
     <group position={position}>

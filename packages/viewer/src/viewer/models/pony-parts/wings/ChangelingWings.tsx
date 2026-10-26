@@ -8,14 +8,10 @@ import { useViewerPreferencesContext } from "../../../../store/viewer-preference
 
 export default function ChangelingWings() {
   const { oldSkinFormat } = useSkinTexture();
-  const animations = useViewerPreferencesContext(
-    (state) => state.userOptions.animations
-  );
+  const animations = useViewerPreferencesContext((state) => state.userOptions.animations);
 
   const outerWingsLayout: LayoutDimensions = [56, 16, 8, 16];
-  const innerWingsLayout: LayoutDimensions = oldSkinFormat
-    ? outerWingsLayout
-    : [56, 32, 8, 16];
+  const innerWingsLayout: LayoutDimensions = oldSkinFormat ? outerWingsLayout : [56, 32, 8, 16];
 
   const outerRightWing = useRef<Group<Object3DEventMap>>(null!);
   const outerLeftWing = useRef<Group<Object3DEventMap>>(null!);
@@ -33,24 +29,20 @@ export default function ChangelingWings() {
 
     innerRightWing.current.rotation.z = -1.1 - angle;
     innerLeftWing.current.rotation.z = 1.1 + angle;
-  }
+  };
 
-  useEffect(() => invalidate(), [animations]);
+  useEffect(() => invalidate(), [animations, invalidate]);
 
   useFrame(({ clock }) => {
-    if (!animations) return
+    if (!animations) return;
 
-    animateWings(clock.elapsedTime)
+    animateWings(clock.elapsedTime);
     invalidate();
   });
 
   return (
     <>
-      <group
-        ref={outerRightWing}
-        position={[-0.75, 0.7, 0.8]}
-        rotation={[-0.3, -0.25, 0]}
-      >
+      <group ref={outerRightWing} position={[-0.75, 0.7, 0.8]} rotation={[-0.3, -0.25, 0]}>
         <Plane
           layout={outerWingsLayout}
           position={[-1.6, 0, 0]}
@@ -61,11 +53,7 @@ export default function ChangelingWings() {
         />
       </group>
 
-      <group
-        ref={outerLeftWing}
-        position={[0.75, 0.7, 0.8]}
-        rotation={[-0.3, 0.25, 0]}
-      >
+      <group ref={outerLeftWing} position={[0.75, 0.7, 0.8]} rotation={[-0.3, 0.25, 0]}>
         <Plane
           layout={outerWingsLayout}
           position={[1.6, 0, 0]}
@@ -75,11 +63,7 @@ export default function ChangelingWings() {
         />
       </group>
 
-      <group
-        ref={innerRightWing}
-        position={[-0.3, 0.7, 0.4]}
-        rotation={[-0.2, -0.1, 0]}
-      >
+      <group ref={innerRightWing} position={[-0.3, 0.7, 0.4]} rotation={[-0.2, -0.1, 0]}>
         <Plane
           layout={innerWingsLayout}
           position={[-1.6, 0, 0]}
@@ -90,11 +74,7 @@ export default function ChangelingWings() {
         />
       </group>
 
-      <group
-        ref={innerLeftWing}
-        position={[0.3, 0.7, 0.4]}
-        rotation={[-0.2, 0.1, 0]}
-      >
+      <group ref={innerLeftWing} position={[0.3, 0.7, 0.4]} rotation={[-0.2, 0.1, 0]}>
         <Plane
           layout={innerWingsLayout}
           position={[1.6, 0, 0]}

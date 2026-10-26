@@ -1,6 +1,7 @@
-import { useSearchParams } from "@remix-run/react";
+import { useSearchParams } from "react-router";
 import { createContext, useContext, useEffect, useState } from "react";
 import { useViewerPreferencesContext } from "./striped-viewer.client";
+import { getSafeSkinUrl } from "../utils";
 
 type EditorState = {
   firstSkin: string | null;
@@ -32,18 +33,14 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     setFirstSkinState(params.get("skin"));
     setSecondSkinState(params.get("second-skin"));
-    viewerSetFirstSkin(proxifySkinLink(params.get("skin")));
-    viewerSetSecondSkin(proxifySkinLink(params.get("second-skin")));
-  }, [params]);
+    viewerSetFirstSkin(getSafeSkinUrl(params.get("skin")));
+    viewerSetSecondSkin(getSafeSkinUrl(params.get("second-skin")));
+  }, [params, viewerSetFirstSkin, viewerSetSecondSkin]);
 
+  const secondSkinParam = params.get("second-skin");
   useEffect(() => {
-    viewerSetFirstSkin(proxifySkinLink(firstSkin));
-    viewerSetSecondSkin(proxifySkinLink(secondSkin));
-
-    if (secondSkin) {
-      setMode("side-by-side");
-    }
-  }, []);
+    if (secondSkinParam) setMode("side-by-side");
+  }, [secondSkinParam, setMode]);
 
   const setFirstSkin = (url: string | null) => {
     if (!url) {
@@ -57,7 +54,7 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
     if (url.startsWith("https://") || url.startsWith("http://")) {
       params.set("skin", url);
       setParams(params);
-      viewerSetFirstSkin("/skin-proxy?url=" + url);
+      viewerSetFirstSkin(getSafeSkinUrl(url));
     } else {
       setFirstSkinState(url);
       viewerSetFirstSkin(url);
@@ -68,7 +65,7 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
     if (!url) {
       params.delete("second-skin");
       setParams(params);
-      setFirstSkinState(null);
+      setSecondSkinState(null);
       viewerSetSecondSkin(null);
       return;
     }
@@ -76,9 +73,9 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
     if (url.startsWith("https://") || url.startsWith("http://")) {
       params.set("second-skin", url);
       setParams(params);
-      viewerSetSecondSkin("/skin-proxy?url=" + url);
+      viewerSetSecondSkin(getSafeSkinUrl(url));
     } else {
-      setFirstSkinState(url);
+      setSecondSkinState(url);
       viewerSetSecondSkin(url);
     }
   };
@@ -95,14 +92,4 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
       {children}
     </EditorContext.Provider>
   );
-}
-
-function proxifySkinLink(url: string | null) {
-  if (!url) return null;
-
-  if (url.startsWith("https://") || url.startsWith("http://")) {
-    return "/skin-proxy?url=" + url;
-  }
-
-  return url;
 }

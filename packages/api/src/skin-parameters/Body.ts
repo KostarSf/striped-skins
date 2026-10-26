@@ -2,11 +2,14 @@ import { BodyPixel } from "../skin-pixels/index.js";
 import type { PixelColorData } from "../utils/index.js";
 import { toHexColor } from "../utils/index.js";
 
-const allBodies = new Map<string, Body>()
+const allBodies = new Map<string, Body>();
 
 export class Body {
   // eslint-disable-next-line no-useless-constructor
-  constructor(readonly pixel: BodyPixel, readonly name: string) {}
+  constructor(
+    readonly pixel: BodyPixel,
+    readonly name: string,
+  ) {}
 
   static fromPixel(color: string | PixelColorData) {
     if (typeof color === "string") {
@@ -34,5 +37,5 @@ addBodies(
   new Body(BodyPixel.Lanky, "Lanky"),
   new Body(BodyPixel.Normal, "Normal"),
   new Body(BodyPixel.Yearling, "Yearling"),
-  new Body(BodyPixel.Foal, "Foal")
+  new Body(BodyPixel.Foal, "Foal"),
 );
