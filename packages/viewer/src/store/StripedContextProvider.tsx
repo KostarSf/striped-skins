@@ -19,8 +19,8 @@ export function StripedContextProvider({
   ponyParams,
   viewerPreferencesParams,
 }: StripedContextProviderProps) {
-  const ponyRef = useRef<PonyStore>();
-  const viewerPreferencesRef = useRef<ViewerPreferencesStore>();
+  const ponyRef = useRef<PonyStore | null>(null);
+  const viewerPreferencesRef = useRef<ViewerPreferencesStore | null>(null);
 
   if (!ponyRef.current) {
     ponyRef.current = createPonyStore(ponyParams);
@@ -29,7 +29,7 @@ export function StripedContextProvider({
   if (!viewerPreferencesRef.current) {
     viewerPreferencesRef.current = createViewerPreferencesStore(
       ponyRef.current,
-      viewerPreferencesParams
+      viewerPreferencesParams,
     );
   }
 

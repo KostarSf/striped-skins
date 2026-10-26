@@ -1,2 +1,2 @@
-export * from './Viewer.js'
-export * from './entry-standalone.js'
+export * from "./Viewer.js";
+export * from "./entry-standalone.js";

@@ -12,13 +12,6 @@ type ThreeCanvasProviderProps = {
   children?: React.ReactNode;
 };
 
-export function ThreeCanvasProvider({
-  canvasRef,
-  children,
-}: ThreeCanvasProviderProps) {
-  return (
-    <ThreeCanvasContext.Provider value={canvasRef}>
-      {children}
-    </ThreeCanvasContext.Provider>
-  );
+export function ThreeCanvasProvider({ canvasRef, children }: ThreeCanvasProviderProps) {
+  return <ThreeCanvasContext.Provider value={canvasRef}>{children}</ThreeCanvasContext.Provider>;
 }

@@ -20,7 +20,7 @@ export class Race {
     readonly fishForm: boolean = false,
     readonly antlers: boolean = false,
     readonly kirinHorn: boolean = false,
-    readonly human: boolean = false
+    readonly human: boolean = false,
   ) {}
 
   static fromPixel(color: string | PixelColorData) {
@@ -58,7 +58,7 @@ addRaces(
     false,
     false,
     false,
-    true
+    true,
   ),
   new Race(RacePixel.Earthpony, "Earthpony"),
   new Race(RacePixel.Pegasus, "Pegasus", false, true),
@@ -78,7 +78,7 @@ addRaces(
     false,
     false,
     false,
-    true
+    true,
   ),
   new Race(RacePixel.Gryphon, "Gryphon", false, true),
   new Race(RacePixel.Hippogriff, "Hippogriff", false, true),
@@ -95,7 +95,7 @@ addRaces(
     true,
     false,
     false,
-    true
+    true,
   ),
   new Race(RacePixel.Batpony, "Batpony", false, true, false, false, true, true),
   new Race(
@@ -109,6 +109,6 @@ addRaces(
     false,
     false,
     false,
-    true
-  )
+    true,
+  ),
 );

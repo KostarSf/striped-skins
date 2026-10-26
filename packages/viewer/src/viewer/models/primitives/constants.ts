@@ -1,1 +1,1 @@
-export const SCALE_MULTIPLIER = 0.2
+export const SCALE_MULTIPLIER = 0.2;

@@ -5,15 +5,12 @@ import type {
   ViewerPreferencesProps,
   ViewerPreferencesStore,
 } from "./store/index.js";
-import {
-  createPonyStore,
-  createViewerPreferencesStore,
-} from "./store/index.js";
+import { createPonyStore, createViewerPreferencesStore } from "./store/index.js";
 import { Viewer, attachStandaloneViewer } from "./viewer/index.js";
 
 export class StripedViewer {
   private viewerRoot: ReactDOM.Root | null = null;
-  private mountTimer?: NodeJS.Timeout;
+  private mountTimer?: ReturnType<typeof setTimeout>;
 
   private ponyStore: PonyStore;
   private viewerPreferencesStore: ViewerPreferencesStore;
@@ -31,10 +28,7 @@ export class StripedViewer {
   }) {
     this.targetElement = targetElement;
     this.ponyStore = createPonyStore(ponyOptions);
-    this.viewerPreferencesStore = createViewerPreferencesStore(
-      this.ponyStore,
-      viewerOptions
-    );
+    this.viewerPreferencesStore = createViewerPreferencesStore(this.ponyStore, viewerOptions);
   }
 
   get pony() {
@@ -57,7 +51,7 @@ export class StripedViewer {
       this.viewerRoot = attachStandaloneViewer(
         this.targetElement,
         this.ponyStore,
-        this.viewerPreferencesStore
+        this.viewerPreferencesStore,
       );
     });
   }

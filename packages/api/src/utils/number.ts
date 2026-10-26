@@ -6,11 +6,7 @@ export function toHexColor(color: PixelColorData, sharp = true, alpha = true) {
     color[0].toString(16).padStart(2, "0") +
     color[1].toString(16).padStart(2, "0") +
     color[2].toString(16).padStart(2, "0") +
-    (!alpha
-      ? ""
-      : color[3] !== 255
-      ? color[3].toString(16).padStart(2, "0")
-      : "")
+    (!alpha ? "" : color[3] !== 255 ? color[3].toString(16).padStart(2, "0") : "")
   );
 }
 

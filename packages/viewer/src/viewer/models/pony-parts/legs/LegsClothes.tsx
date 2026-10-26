@@ -2,7 +2,7 @@ import { Box } from "../../primitives/index.js";
 import type { XyzArray } from "../../primitives/index.js";
 
 type LegsClothesProps = {
-  slim?: boolean
+  slim?: boolean;
 };
 
 export default function LegsClothes({ slim }: LegsClothesProps) {

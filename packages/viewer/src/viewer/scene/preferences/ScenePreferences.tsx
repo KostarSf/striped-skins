@@ -19,7 +19,7 @@ export function ScenePreferences({ children }: PropsWithChildren) {
 
     canvas.addEventListener("pointerdown", unfreezeView);
     return () => canvas.removeEventListener("pointerdown", unfreezeView);
-  }, [canvas]);
+  }, [canvas, invalidate]);
 
   const smaa = userOptions.antialiasing;
 
@@ -43,7 +43,7 @@ export function ScenePreferences({ children }: PropsWithChildren) {
 function SingleModeScenePreferences() {
   const { camera, userOptions } = useViewerPreferencesContext((state) => state);
 
-  const smoothTime = userOptions.smoothCamera ? 0.1 : 0
+  const smoothTime = userOptions.smoothCamera ? 0.1 : 0;
 
   return (
     <>
@@ -63,8 +63,8 @@ function SingleModeScenePreferences() {
         fov={camera.fov}
       >
         <hemisphereLight
-          color='#ffffff'
-          groundColor='#666666'
+          color="#ffffff"
+          groundColor="#666666"
           position={[-30, 24, 3]}
           intensity={4}
         />
@@ -78,15 +78,11 @@ function SideBySideModeScenePreferences() {
 
   return (
     <>
-      <PerspectiveCamera
-        makeDefault
-        position={[0, 0, mobileView ? 40 : 25]}
-        fov={20}
-      />
+      <PerspectiveCamera makeDefault position={[0, 0, mobileView ? 40 : 25]} fov={20} />
 
       <hemisphereLight
-        color='#ffffff'
-        groundColor='#666666'
+        color="#ffffff"
+        groundColor="#666666"
         position={[-7, 25, 13]}
         intensity={4}
       />

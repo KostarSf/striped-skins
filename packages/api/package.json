@@ -2,16 +2,21 @@
   "name": "@striped-skins/api",
   "version": "1.0.0",
   "description": "",
-  "author": "KostarSf",
   "license": "ISC",
+  "author": "KostarSf",
   "type": "module",
-  "main": "build/cjs/index.js",
-  "exports": "./build/esm/index.js",
+  "main": "build/esm/index.js",
   "types": "./build/types/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./build/types/index.d.ts",
+      "default": "./build/esm/index.js"
+    }
+  },
   "scripts": {
-    "build": "tsc --build ./tsconfig.cjs.json ./tsconfig.esm.json ./tsconfig.types.json"
+    "build": "tsc --build ./tsconfig.esm.json ./tsconfig.types.json"
   },
   "devDependencies": {
-    "typescript": "^5.3.3"
+    "typescript": "^7.0.2"
   }
 }

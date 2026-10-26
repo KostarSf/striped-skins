@@ -5,9 +5,7 @@ type StraightTailBeginningProps = {
   position?: XyzArray;
 };
 
-export default function StraightTailBeginning({
-  position,
-}: StraightTailBeginningProps) {
+export default function StraightTailBeginning({ position }: StraightTailBeginningProps) {
   return (
     <group position={position} rotation={[Math.PI / 7, 0, 0]}>
       <Plane // Top

@@ -10,12 +10,10 @@ type SkinSourceInputProps = {
 
 export function SkinSourceInput({
   defaultFieldValue,
-  onInputChange = (url) => {},
+  onInputChange = () => {},
   loading,
 }: SkinSourceInputProps) {
-  const [skinInput, setSkinInput] = useState<"file" | "url">(
-    defaultFieldValue ? "url" : "file"
-  );
+  const [skinInput, setSkinInput] = useState<"file" | "url">(defaultFieldValue ? "url" : "file");
 
   const urlInputRef = useRef<HTMLInputElement>(null);
 
@@ -55,7 +53,7 @@ export function SkinSourceInput({
 
   return (
     <form
-      className='flex gap-2 flex-1  [--loading-spinner-color:rgb(249_115_22)]'
+      className="flex gap-2 flex-1  [--loading-spinner-color:rgb(249_115_22)]"
       onSubmit={(e) => {
         e.preventDefault();
         const formData = new FormData(e.currentTarget);
@@ -64,7 +62,7 @@ export function SkinSourceInput({
     >
       <InputContainer
         active={skinInput === "file"}
-        icon='folder'
+        icon="folder"
         onButtonClick={setSkinInputHandle("file")}
       >
         <label
@@ -75,9 +73,9 @@ export function SkinSourceInput({
         >
           {fileName || "choose skin locally..."}
           <input
-            className='opacity-0 absolute pointer-events-none'
-            type='file'
-            accept='image/png'
+            className="opacity-0 absolute pointer-events-none"
+            type="file"
+            accept="image/png"
             onChange={uploadLocalImageHandle}
           />
         </label>
@@ -86,22 +84,18 @@ export function SkinSourceInput({
 
       <InputContainer
         active={skinInput === "url"}
-        icon='globus'
+        icon="globus"
         onButtonClick={setSkinInputHandle("url")}
       >
         <input
-          className='flex-1 py-2 outline-none placeholder:text-zinc-400 min-w-0 w-0'
+          className="flex-1 py-2 outline-none placeholder:text-zinc-400 min-w-0 w-0"
           ref={urlInputRef}
-          type='text'
-          name='field'
-          placeholder='paste link to skin...'
+          type="text"
+          name="field"
+          placeholder="paste link to skin..."
           defaultValue={defaultFieldValue ?? ""}
         />
-        <div
-          className={
-            "inline-block h-6 overflow-hidden " + (loading ? "w-6" : "w-0")
-          }
-        >
+        <div className={"inline-block h-6 overflow-hidden " + (loading ? "w-6" : "w-0")}>
           <span
             className={
               "loading-spinner -m-7 transition duration-500 " +
@@ -118,9 +112,9 @@ export function SkinSourceInput({
 function ClearButton({ onClick }: { onClick: () => void }) {
   return (
     <button
-      className='pl-2 pr-4 py-2 hover:text-orange-500 text-zinc-400 transition'
+      className="pl-2 pr-4 py-2 hover:text-orange-500 text-zinc-400 transition"
       onClick={onClick}
-      type='reset'
+      type="reset"
     >
       clear
     </button>
@@ -148,9 +142,9 @@ function InputContainer({
       <IconButton
         icon={
           icon === "folder" ? (
-            <FolderIcon className='h-6 w-6' />
+            <FolderIcon className="h-6 w-6" />
           ) : (
-            <GlobeAltIcon className='h-6 w-6' />
+            <GlobeAltIcon className="h-6 w-6" />
           )
         }
         onClick={onButtonClick}

@@ -6,7 +6,7 @@ type EarsProps = {
 };
 
 export default function Ears({ position }: EarsProps) {
-  const [x, y, z] = [0.6, 1, -0.4]
+  const [x, y, z] = [0.6, 1, -0.4];
 
   return (
     <group position={position}>

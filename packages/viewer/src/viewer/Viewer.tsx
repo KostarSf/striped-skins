@@ -8,9 +8,7 @@ import { MobileViewProvider } from "./context/index.js";
 import { ThreeCanvasProvider } from "./context/canvas-ref.context.js";
 
 export function Viewer() {
-  const monitoring = useViewerPreferencesContext(
-    (state) => state.performanceMonitor
-  );
+  const monitoring = useViewerPreferencesContext((state) => state.performanceMonitor);
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
@@ -37,7 +35,7 @@ export function Viewer() {
       >
         <Suspense fallback={null}>
           <ThreeCanvasProvider canvasRef={canvasRef}>
-            {monitoring && <Perf position='bottom-right' />}
+            {monitoring && <Perf position="bottom-right" />}
             <ScenePreferences>
               <SceneView />
             </ScenePreferences>

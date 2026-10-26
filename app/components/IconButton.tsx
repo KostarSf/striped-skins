@@ -3,7 +3,7 @@ export function IconButton({
   onClick,
   disabled,
   shadow = true,
-  title
+  title,
 }: {
   onClick: () => void;
   icon: React.ReactNode;
@@ -18,7 +18,7 @@ export function IconButton({
         (disabled ? "" : " hover:text-orange-500 ") +
         (shadow ? " shadow-lg" : "")
       }
-      type='button'
+      type="button"
       onClick={onClick}
       disabled={disabled}
       title={title}

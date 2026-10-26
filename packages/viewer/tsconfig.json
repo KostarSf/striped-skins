@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
     "target": "ESNext",
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "jsx": "react-jsx",
     "declaration": true,
     "strict": true,
@@ -11,6 +11,7 @@
     "rootDir": "./src",
     "outDir": "./build",
     "composite": true,
-    "incremental": true
+    "incremental": true,
+    "module": "esnext"
   }
 }

@@ -1,11 +1,4 @@
-import {
-  Race,
-  TailLength,
-  Snout,
-  Wearables,
-  TailShape,
-  Body,
-} from "./skin-parameters/index.js";
+import { Race, TailLength, Snout, Wearables, TailShape, Body } from "./skin-parameters/index.js";
 import {
   RacePixel,
   TailLengthPixel,
@@ -26,7 +19,7 @@ export class PonySkin {
     readonly magicGlow: string,
     readonly slim: boolean,
     readonly wearables: Wearables,
-    readonly tailShape: TailShape
+    readonly tailShape: TailShape,
   ) {}
 
   static async fromUrl(imageUrl: string) {
@@ -54,7 +47,7 @@ export class PonySkin {
       14 * multiplier,
       20 * multiplier,
       2 * multiplier,
-      2 * multiplier
+      2 * multiplier,
     );
     const isSlim = averageColor[3] < 10; // average alpha shold be low
 
@@ -67,7 +60,7 @@ export class PonySkin {
       toHexColor(magicGlowPixel, false, false),
       isSlim,
       Wearables.fromPixel(wearablesPixel),
-      TailShape.fromPixel(tailShapePixel)
+      TailShape.fromPixel(tailShapePixel),
     );
   }
 
@@ -80,6 +73,6 @@ export class PonySkin {
     "88caf0",
     false,
     Wearables.fromPixel("000000"),
-    TailShape.fromPixel(TailShapePixel.Straight)
+    TailShape.fromPixel(TailShapePixel.Straight),
   );
 }

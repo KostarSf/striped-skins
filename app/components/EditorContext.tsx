@@ -1,4 +1,4 @@
-import { useSearchParams } from "@remix-run/react";
+import { useSearchParams } from "react-router";
 import { createContext, useContext, useEffect, useState } from "react";
 import { useViewerPreferencesContext } from "./striped-viewer.client";
 
@@ -34,16 +34,8 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
     setSecondSkinState(params.get("second-skin"));
     viewerSetFirstSkin(proxifySkinLink(params.get("skin")));
     viewerSetSecondSkin(proxifySkinLink(params.get("second-skin")));
-  }, [params]);
-
-  useEffect(() => {
-    viewerSetFirstSkin(proxifySkinLink(firstSkin));
-    viewerSetSecondSkin(proxifySkinLink(secondSkin));
-
-    if (secondSkin) {
-      setMode("side-by-side");
-    }
-  }, []);
+    if (params.get("second-skin")) setMode("side-by-side");
+  }, [params, viewerSetFirstSkin, viewerSetSecondSkin, setMode]);
 
   const setFirstSkin = (url: string | null) => {
     if (!url) {
@@ -68,7 +60,7 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
     if (!url) {
       params.delete("second-skin");
       setParams(params);
-      setFirstSkinState(null);
+      setSecondSkinState(null);
       viewerSetSecondSkin(null);
       return;
     }
@@ -78,7 +70,7 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
       setParams(params);
       viewerSetSecondSkin("/skin-proxy?url=" + url);
     } else {
-      setFirstSkinState(url);
+      setSecondSkinState(url);
       viewerSetSecondSkin(url);
     }
   };

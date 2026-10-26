@@ -1,6 +1,4 @@
-export type PixelColorData =
-  | [r: number, g: number, b: number, a: number]
-  | Uint8ClampedArray;
+export type PixelColorData = [r: number, g: number, b: number, a: number] | Uint8ClampedArray;
 
 export class ImageTransformer {
   private _rawImage?: HTMLImageElement;
@@ -38,9 +36,7 @@ export class ImageTransformer {
       return new OffscreenCanvas(width, height) as unknown as HTMLCanvasElement;
     }
 
-    console.warn(
-      "ImageTransformer: Using HTMLCanvasElement instead of OffscreenCanvas"
-    );
+    console.warn("ImageTransformer: Using HTMLCanvasElement instead of OffscreenCanvas");
 
     const canvas = document.createElement("canvas");
     canvas.width = width;
@@ -88,7 +84,7 @@ export class ImageTransformer {
 
     if (x < 0 || y < 0 || x >= this._canvas.width || y >= this._canvas.height) {
       throw new Error(
-        `X or Y is out of picture sizes. Picture sizes: [${this._canvas.width}, ${this._canvas.height}]. Given pixel pos: [${x}, ${y}]`
+        `X or Y is out of picture sizes. Picture sizes: [${this._canvas.width}, ${this._canvas.height}]. Given pixel pos: [${x}, ${y}]`,
       );
     }
 

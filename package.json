@@ -1,48 +1,60 @@
 {
   "name": "striped-skins",
   "private": true,
-  "sideEffects": false,
-  "type": "module",
   "workspaces": [
     "packages/*"
   ],
+  "type": "module",
+  "sideEffects": false,
   "scripts": {
     "build:api": "npm run build --workspace ./packages/api",
     "build:viewer": "npm run build --workspace ./packages/viewer",
-    "build:libs": "run-s build:api build:viewer",
-    "build:app": "remix build",
-    "build": "run-s build:libs build:app",
+    "build:libs": "npm run build:api && npm run build:viewer",
+    "build:app": "react-router build",
+    "build": "npm run build:libs && npm run build:app",
     "dist:lib": "npm run build --workspace ./packages/browser-bundle",
-    "dev": "remix dev --manual",
+    "dev": "react-router dev",
     "dev:lib": "npm run dev --workspace ./packages/browser-bundle",
-    "start": "remix-serve ./build/index.js",
+    "start": "react-router-serve ./build/server/index.js",
     "preview:lib": "npm run preview --workspace ./packages/browser-bundle",
-    "typecheck": "tsc"
+    "typecheck": "react-router typegen && tsc --noEmit",
+    "predev": "npm run build:libs",
+    "lint": "oxlint --deny-warnings",
+    "format": "oxfmt --write .",
+    "format:check": "oxfmt --check .",
+    "check": "npm run lint && npm run format:check && npm run typecheck",
+    "predev:lib": "npm run build:libs",
+    "predist:lib": "npm run build:libs"
   },
   "dependencies": {
-    "@heroicons/react": "^2.0.18",
-    "@remix-run/css-bundle": "^2.4.0",
-    "@remix-run/node": "^2.4.0",
-    "@remix-run/react": "^2.4.0",
-    "@remix-run/serve": "^2.4.0",
+    "@heroicons/react": "^2.2.0",
+    "@react-router/node": "^8.5.0",
+    "@react-router/serve": "^8.5.0",
     "@striped-skins/api": "^1.0.0",
     "@striped-skins/viewer": "^1.0.0",
-    "isbot": "^3.6.8",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+    "isbot": "^5.2.2",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "react-router": "^8.5.0"
   },
   "devDependencies": {
-    "@remix-run/dev": "^2.4.0",
-    "@remix-run/eslint-config": "^2.4.0",
-    "@types/react": "^18.2.20",
-    "@types/react-dom": "^18.2.7",
-    "autoprefixer": "^10.4.16",
-    "eslint": "^8.38.0",
-    "npm-run-all": "^4.1.5",
-    "tailwindcss": "^3.3.6",
-    "typescript": "^5.3.3"
+    "@react-router/dev": "^8.5.0",
+    "@tailwindcss/vite": "^4.3.3",
+    "@types/node": "^24.0.0",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "oxfmt": "^0.74.0",
+    "oxlint": "^1.89.0",
+    "tailwindcss": "^4.3.3",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.5"
+  },
+  "overrides": {
+    "r3f-perf": {
+      "@react-three/drei": "^10.7.9"
+    }
   },
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=24.22.1 <25"
   }
 }

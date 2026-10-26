@@ -24,6 +24,39 @@ export default function useSideBySideRotation() {
 
   useEffect(() => {
     if (!canvas) return;
+    const onPointerDown = () => {
+      if (!isSideBySideMode) return;
+      rotatedByPointer.current = true;
+    };
+
+    const onPointerUp = () => {
+      rotatedByPointer.current = false;
+      lastCursorPos.current = [0, 0];
+    };
+
+    const onPointerMove = (e: PointerEvent) => {
+      if (!rotatedByPointer.current) return;
+
+      if (lastCursorPos.current[0] === 0 && lastCursorPos.current[1] === 0) {
+        lastCursorPos.current = [e.clientX, e.clientY];
+      }
+
+      const movementX = e.clientX - lastCursorPos.current[0];
+      const movementY = e.clientY - lastCursorPos.current[1];
+
+      const rotationXDifference = movementX / 100;
+      const rotationYDifference = movementY / 200;
+
+      lastCursorPos.current = [e.clientX, e.clientY];
+
+      pony1ref.current?.rotateOnWorldAxis(yAxis, rotationXDifference);
+      pony1ref.current?.rotateOnWorldAxis(xAxis, rotationYDifference);
+
+      pony2ref.current?.rotateOnWorldAxis(yAxis, rotationXDifference);
+      pony2ref.current?.rotateOnWorldAxis(xAxis, rotationYDifference);
+
+      invalidate();
+    };
 
     canvas.addEventListener("pointerdown", onPointerDown);
     canvas.addEventListener("pointerup", onPointerUp);
@@ -34,7 +67,7 @@ export default function useSideBySideRotation() {
       canvas.removeEventListener("pointerup", onPointerUp);
       canvas.removeEventListener("pointermove", onPointerMove);
     };
-  }, [canvas]);
+  }, [canvas, isSideBySideMode, invalidate]);
 
   useEffect(() => {
     if (!isSideBySideMode) {
@@ -42,40 +75,6 @@ export default function useSideBySideRotation() {
       pony2ref.current?.setRotationFromEuler(new Euler(0, 0, 0));
     }
   }, [isSideBySideMode]);
-
-  const onPointerDown = () => {
-    if (!isSideBySideMode) return;
-    rotatedByPointer.current = true;
-  };
-
-  const onPointerUp = () => {
-    rotatedByPointer.current = false;
-    lastCursorPos.current = [0, 0];
-  };
-
-  const onPointerMove = (e: PointerEvent) => {
-    if (!rotatedByPointer.current) return;
-
-    if (lastCursorPos.current[0] === 0 && lastCursorPos.current[1] === 0) {
-      lastCursorPos.current = [e.clientX, e.clientY];
-    }
-
-    const movementX = e.clientX - lastCursorPos.current[0];
-    const movementY = e.clientY - lastCursorPos.current[1];
-
-    const rotationXDifference = movementX / 100;
-    const rotationYDifference = movementY / 200;
-
-    lastCursorPos.current = [e.clientX, e.clientY];
-
-    pony1ref.current?.rotateOnWorldAxis(yAxis, rotationXDifference);
-    pony1ref.current?.rotateOnWorldAxis(xAxis, rotationYDifference);
-
-    pony2ref.current?.rotateOnWorldAxis(yAxis, rotationXDifference);
-    pony2ref.current?.rotateOnWorldAxis(xAxis, rotationYDifference);
-
-    invalidate();
-  };
 
   return {
     pony1ref,

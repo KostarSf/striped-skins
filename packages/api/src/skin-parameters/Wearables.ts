@@ -4,7 +4,10 @@ import { toHexColor } from "../utils/index.js";
 
 export class Wearables {
   // eslint-disable-next-line no-useless-constructor
-  constructor(readonly items: WearableItem[], readonly rawPixel: string) {}
+  constructor(
+    readonly items: WearableItem[],
+    readonly rawPixel: string,
+  ) {}
 
   static fromPixel(color: string | PixelColorData) {
     let hexColor = "";
@@ -16,11 +19,7 @@ export class Wearables {
       hexColor = toHexColor(color, false, false);
     }
 
-    const colors = [
-      hexColor.substring(0, 2),
-      hexColor.substring(2, 4),
-      hexColor.substring(4, 6),
-    ];
+    const colors = [hexColor.substring(0, 2), hexColor.substring(2, 4), hexColor.substring(4, 6)];
 
     const wearablesItems = new Set<WearableItem>();
 
@@ -39,7 +38,10 @@ const allWearablesItems = new Map<string, WearableItem>();
 
 class WearableItem {
   // eslint-disable-next-line no-useless-constructor
-  constructor(readonly pixel: string, readonly name: string) {}
+  constructor(
+    readonly pixel: string,
+    readonly name: string,
+  ) {}
 }
 
 function addWearablesItems(...items: WearableItem[]) {

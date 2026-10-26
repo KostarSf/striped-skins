@@ -7,7 +7,7 @@ export default function RegularWings() {
 
   return (
     <>
-      <RegularClosedWing position={[-1, 0, -0.2]} texture='right-wing' />
+      <RegularClosedWing position={[-1, 0, -0.2]} texture="right-wing" />
       <RegularClosedWing
         position={[1, 0, -0.2]}
         texture={oldSkinFormat ? "right-wing" : "left-wing"}
@@ -23,11 +23,7 @@ type RegularClosedWingProps = {
   mirrored?: boolean;
 };
 
-export function RegularClosedWing({
-  position,
-  mirrored,
-  texture,
-}: RegularClosedWingProps) {
+export function RegularClosedWing({ position, mirrored, texture }: RegularClosedWingProps) {
   const uvOrigin: XyArray = texture === "right-wing" ? [56, 16] : [56, 32];
 
   return (
