@@ -26,7 +26,15 @@ npm run check
 
 `check` runs Oxlint, Oxfmt's formatting check, React Router route type generation
 and TypeScript. Use `npm run format` to format the repository. CI also builds the
-production application and standalone browser bundle.
+production application and standalone browser bundle, then runs Chromium regression
+checks for comparison rendering and skin URL state.
+
+To run the browser checks locally after `npm run build`:
+
+```sh
+npx playwright install chromium
+npm run test:e2e
+```
 
 ## Production
 

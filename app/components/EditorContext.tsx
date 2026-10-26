@@ -34,8 +34,12 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
     setSecondSkinState(params.get("second-skin"));
     viewerSetFirstSkin(proxifySkinLink(params.get("skin")));
     viewerSetSecondSkin(proxifySkinLink(params.get("second-skin")));
-    if (params.get("second-skin")) setMode("side-by-side");
-  }, [params, viewerSetFirstSkin, viewerSetSecondSkin, setMode]);
+  }, [params, viewerSetFirstSkin, viewerSetSecondSkin]);
+
+  const secondSkinParam = params.get("second-skin");
+  useEffect(() => {
+    if (secondSkinParam) setMode("side-by-side");
+  }, [secondSkinParam, setMode]);
 
   const setFirstSkin = (url: string | null) => {
     if (!url) {
