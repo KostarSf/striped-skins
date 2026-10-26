@@ -70,3 +70,51 @@ test("changing the first skin preserves an explicit exit from comparison mode", 
   await expect(page.locator("form")).toHaveCount(1);
   expect(new URL(page.url()).searchParams.get("second-skin")).toBe("/steve_pony.png");
 });
+
+test("signed skin URLs retain every query parameter on submit and reload", async ({
+  page,
+  baseURL,
+}) => {
+  const firstSkin = `${baseURL}/steve_pony.png?ex=6ae05cc7&is=6adf0b47&hm=first+signature%2F%3D`;
+  const secondSkin = `${baseURL}/steve_pony.png?ex=6ae05cc7&is=6adf0b47&hm=second%26signature`;
+  let proxyRequests: URL[] = [];
+  page.on("request", (request) => {
+    const url = new URL(request.url());
+    if (url.pathname === "/skin-proxy") proxyRequests.push(url);
+  });
+
+  await page.goto("/");
+  await waitForSkin(page);
+  await page.locator("form").first().locator("button").nth(1).click();
+  await page.getByPlaceholder("paste link to skin...").fill(firstSkin);
+  await page.getByPlaceholder("paste link to skin...").press("Enter");
+  await expect
+    .poll(() => proxyRequests.map((url) => url.searchParams.get("url")))
+    .toContain(firstSkin);
+  await waitForSkin(page);
+
+  await page.getByTitle("Comparison mode").click();
+  await expect(page.locator("form")).toHaveCount(2);
+  await page.locator("form").nth(1).locator("button").nth(1).click();
+  await page.getByPlaceholder("paste link to skin...").nth(1).fill(secondSkin);
+  await page.getByPlaceholder("paste link to skin...").nth(1).press("Enter");
+  await expect
+    .poll(() => proxyRequests.map((url) => url.searchParams.get("url")))
+    .toContain(secondSkin);
+  await waitForSkin(page);
+
+  const query = new URL(page.url()).searchParams;
+  expect(query.get("skin")).toBe(firstSkin);
+  expect(query.get("second-skin")).toBe(secondSkin);
+
+  proxyRequests = [];
+  await page.reload();
+  await expect
+    .poll(() => proxyRequests.map((url) => url.searchParams.get("url")))
+    .toEqual(expect.arrayContaining([firstSkin, secondSkin]));
+  await waitForSkin(page);
+  for (const request of proxyRequests) {
+    expect([...request.searchParams.keys()]).toEqual(["url"]);
+    expect([firstSkin, secondSkin]).toContain(request.searchParams.get("url"));
+  }
+});
