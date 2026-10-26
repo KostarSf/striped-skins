@@ -1,3 +1,4 @@
+import { registerPose } from "@striped-skins/models";
 import type ReactDOM from "react-dom/client";
 import type {
   PonyProps,
@@ -9,6 +10,7 @@ import { createPonyStore, createViewerPreferencesStore } from "./store/index.js"
 import { Viewer, attachStandaloneViewer } from "./viewer/index.js";
 
 export class StripedViewer {
+  static registerPose = registerPose;
   private viewerRoot: ReactDOM.Root | null = null;
   private mountTimer?: ReturnType<typeof setTimeout>;
 

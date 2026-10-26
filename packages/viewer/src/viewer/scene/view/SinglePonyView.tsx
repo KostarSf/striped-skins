@@ -7,5 +7,12 @@ export default function SinglePonyView() {
 
   const activePony = mode === "second-model" ? secondPony : firstPony;
 
-  return <PonyModel skin={activePony.skin} />;
+  return (
+    <PonyModel
+      skin={activePony.skin}
+      preview={activePony.preview}
+      hidden={activePony.hidden}
+      motionLayers={activePony.motionLayers}
+    />
+  );
 }

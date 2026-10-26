@@ -13,5 +13,8 @@
   },
   "scripts": {
     "build": "tsc --build"
+  },
+  "dependencies": {
+    "@striped-skins/api": "^1.0.0"
   }
 }

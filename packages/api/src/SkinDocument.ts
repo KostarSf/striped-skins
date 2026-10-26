@@ -1,8 +1,11 @@
+export type PaintBounds = { minX: number; minY: number; maxX: number; maxY: number };
 export type Pixel = readonly [number, number, number, number];
 type Change = { index: number; before: Pixel; after: Pixel };
+let documentSequence = 0;
 
 /** One editable RGBA document shared by the 2D and 3D views; no DOM dependency. */
 export class SkinDocument {
+  readonly id = ++documentSequence;
   readonly pixels: Uint8ClampedArray;
   private listeners = new Set<() => void>();
   private revision = 0;
@@ -15,6 +18,7 @@ export class SkinDocument {
     readonly width: number,
     readonly height: number,
     pixels: ArrayLike<number>,
+    readonly sourceFormat: "modern" | "legacy" = "modern",
   ) {
     if (
       !Number.isInteger(width) ||
@@ -46,6 +50,46 @@ export class SkinDocument {
   get isDrawing() {
     return this.stroke !== null;
   }
+  editPixels(changes: { x: number; y: number; color: Pixel }[]) {
+    this.beginStroke();
+    for (const { x, y, color } of changes) {
+      if (
+        !Number.isInteger(x) ||
+        !Number.isInteger(y) ||
+        x < 0 ||
+        y < 0 ||
+        x >= this.width ||
+        y >= this.height
+      )
+        continue;
+      const index = (y * this.width + x) * 4;
+      this.stroke!.set(index, { index, before: this.readPixel(x, y), after: [...color] });
+      this.pixels.set(color, index);
+    }
+    this.endStroke();
+  }
+  snapshot() {
+    return {
+      version: 1,
+      width: this.width,
+      height: this.height,
+      pixels: Array.from(this.pixels),
+      sourceFormat: this.sourceFormat,
+    };
+  }
+  clone() {
+    return new SkinDocument(this.width, this.height, this.pixels, this.sourceFormat);
+  }
+  static restore(snapshot: ReturnType<SkinDocument["snapshot"]>) {
+    if (snapshot.version !== 1 || snapshot.width > 2048 || snapshot.height > 2048)
+      throw new Error("Unsupported document snapshot");
+    return new SkinDocument(
+      snapshot.width,
+      snapshot.height,
+      snapshot.pixels,
+      snapshot.sourceFormat,
+    );
+  }
   readPixel(x: number, y: number): Pixel {
     const i = (y * this.width + x) * 4;
     return [this.pixels[i], this.pixels[i + 1], this.pixels[i + 2], this.pixels[i + 3]];
@@ -58,9 +102,17 @@ export class SkinDocument {
   breakStroke() {
     this.lastPoint = null;
   }
-  paint(x: number, y: number, color: Pixel, surface = "texture") {
+  paint(
+    x: number,
+    y: number,
+    color: Pixel,
+    surface = "texture",
+    brushSize = 1,
+    bounds?: PaintBounds,
+  ) {
     if (!this.stroke) return;
     if (!Number.isFinite(x) || !Number.isFinite(y)) return;
+    brushSize = Math.max(1, Math.min(64, Math.floor(brushSize) || 1));
     x = Math.floor(x);
     y = Math.floor(y);
     if (x < 0 || y < 0 || x >= this.width || y >= this.height) {
@@ -71,17 +123,32 @@ export class SkinDocument {
     const steps = Math.max(Math.abs(x - previous.x), Math.abs(y - previous.y), 1);
     let changed = false;
     for (let step = 0; step <= steps; step++) {
-      const px = Math.round(previous.x + ((x - previous.x) * step) / steps);
-      const py = Math.round(previous.y + ((y - previous.y) * step) / steps);
-      // Fixed MLP trigger coordinates, independent of texture resolution.
-      if (px < 4 && py < 2) continue;
-      const index = (py * this.width + px) * 4;
-      const before = this.readPixel(px, py);
-      if (before.every((v, i) => v === color[i])) continue;
-      const first = this.stroke.get(index)?.before ?? before;
-      this.stroke.set(index, { index, before: first, after: [...color] });
-      this.pixels.set(color, index);
-      changed = true;
+      for (let by = 0; by < brushSize; by++)
+        for (let bx = 0; bx < brushSize; bx++) {
+          const px =
+            Math.round(previous.x + ((x - previous.x) * step) / steps) +
+            bx -
+            Math.floor((brushSize - 1) / 2);
+          const py =
+            Math.round(previous.y + ((y - previous.y) * step) / steps) +
+            by -
+            Math.floor((brushSize - 1) / 2);
+          if (px < 0 || py < 0 || px >= this.width || py >= this.height) continue;
+          if (
+            bounds &&
+            (px < bounds.minX || px > bounds.maxX || py < bounds.minY || py > bounds.maxY)
+          )
+            continue;
+          // Fixed MLP trigger coordinates, independent of texture resolution.
+          if (px < 4 && py < 2) continue;
+          const index = (py * this.width + px) * 4;
+          const before = this.readPixel(px, py);
+          if (before.every((v, i) => v === color[i])) continue;
+          const first = this.stroke.get(index)?.before ?? before;
+          this.stroke.set(index, { index, before: first, after: [...color] });
+          this.pixels.set(color, index);
+          changed = true;
+        }
     }
     this.lastPoint = { x, y, surface };
     if (changed) this.emit();

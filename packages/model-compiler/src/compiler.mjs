@@ -22,6 +22,11 @@ const implementations = new Set([
   "com.minelittlepony.client.model.part.PonyEars",
   "com.minelittlepony.client.model.part.PonyTail",
   "com.minelittlepony.client.model.part.PonyTail$Segment",
+  "com.minelittlepony.client.model.part.UnicornHorn",
+  "com.minelittlepony.client.model.part.LionTail",
+  "com.minelittlepony.client.model.part.SeaponyTail",
+  "com.minelittlepony.client.model.part.PonyWings",
+  "com.minelittlepony.client.model.part.PonyWings$Wing",
 ]);
 
 export function evaluate(value, locals, stack = []) {
@@ -32,6 +37,9 @@ export function evaluate(value, locals, stack = []) {
     if (stack.includes(key)) throw new Error(`Cyclic local: ${[...stack, key].join(" -> ")}`);
     if (!(key in locals)) throw new Error(`Unknown local: ${key}`);
     result = evaluate(locals[key], locals, [...stack, key]);
+  } else if (typeof value === "string") {
+    // Mson 1.9.3 Local.ref treats non-reference strings (including "0.05") as zero.
+    result = 0;
   } else if (Array.isArray(value) && value.length === 3) {
     const a = evaluate(value[0], locals, stack);
     const b = evaluate(value[2], locals, stack);
@@ -109,7 +117,20 @@ export function compileModel(modelId, resolve) {
   };
   const root = load(modelId);
   const slotStack = [];
+  const linkStack = [];
   const compile = (raw, id, context) => {
+    if (typeof raw === "string") {
+      if (!raw.startsWith("#")) return compile({ type: "mson:import", data: raw }, id, context);
+      const name = raw.slice(1),
+        key = `${context.scope}:${name}`;
+      if (linkStack.includes(key)) throw new Error(`Cyclic component link: ${name}`);
+      const target = context.named?.[name];
+      if (!target) throw new Error(`Missing component link: ${name} at ${id}`);
+      linkStack.push(key);
+      const result = { ...compile(target, id, context), aliasOf: name };
+      linkStack.pop();
+      return result;
+    }
     if (!raw || typeof raw !== "object" || Array.isArray(raw))
       throw new Error(`Unsupported component: ${id}`);
     checkKeys(
@@ -136,27 +157,40 @@ export function compileModel(modelId, resolve) {
       throw new Error(`Unsupported implementation ${raw.implementation} at ${id}`);
     if (raw.data !== undefined) {
       checkKeys(raw, ["type", "name", "implementation", "data", "locals", "texture"], id);
-      if (raw.type && raw.type !== "mson:slot")
+      if (raw.type && !["mson:slot", "mson:import"].includes(raw.type))
         throw new Error(`Unsupported slot type ${raw.type} at ${id}`);
       const ref = raw.data;
-      if (typeof ref !== "string" || ref.startsWith("#"))
+      if ((!ref || typeof ref !== "object") && (typeof ref !== "string" || ref.startsWith("#")))
         throw new Error(`Unsupported slot reference at ${id}`);
-      if (slotStack.includes(ref)) throw new Error(`Cyclic slot: ${ref}`);
-      slotStack.push(ref);
-      const imported = load(ref);
+      const key = typeof ref === "string" ? ref : id;
+      if (slotStack.includes(key)) throw new Error(`Cyclic slot: ${key}`);
+      slotStack.push(key);
+      const imported = typeof ref === "string" ? load(ref) : { locals: {}, texture: {}, data: ref };
       const bound = Object.fromEntries(
         Object.entries(raw.locals ?? {}).map(([k, v]) => [k, evaluate(v, context.locals)]),
       );
       const locals = { ...context.locals, ...imported.locals, ...bound };
       const texture = { ...context.texture, ...imported.texture, ...raw.texture };
+      const scope = { locals, texture, dilate: [0, 0, 0], named: imported.data, scope: id };
+      if (raw.type === "mson:import") {
+        const parts = Object.values(imported.data);
+        if (parts.length !== 1) throw new Error(`Import must define exactly one part: ${id}`);
+        const result = compile(parts[0], id, scope);
+        slotStack.pop();
+        return result;
+      }
       const node = {
         id,
+        implementation: raw.implementation,
+        locals: Object.fromEntries(
+          Object.keys(locals).map((name) => [name, evaluate(`#${name}`, locals)]),
+        ),
         pivot: [0, 0, 0],
         rotation: [0, 0, 0],
         visible: true,
         quads: [],
         children: Object.entries(imported.data).map(([name, part]) =>
-          compile(part, `${id}/${name}`, { locals, texture, dilate: [0, 0, 0] }),
+          compile(part, `${id}/${name}`, scope),
         ),
       };
       slotStack.pop();
@@ -168,11 +202,10 @@ export function compileModel(modelId, resolve) {
     if (raw.locals) throw new Error(`locals outside slot at ${id}`);
     if (
       raw.mirror &&
+      typeof raw.mirror !== "boolean" &&
       (!Array.isArray(raw.mirror) ||
         raw.mirror.length !== 3 ||
-        raw.mirror.some((v) => typeof v !== "boolean") ||
-        raw.mirror[1] ||
-        raw.mirror[2])
+        raw.mirror.some((v) => typeof v !== "boolean"))
     )
       throw new Error(`Unsupported compound mirror at ${id}`);
     const locals = context.locals;
@@ -248,7 +281,7 @@ export function compileModel(modelId, resolve) {
       const cubeType = cube.type ?? "mson:box";
       checkKeys(
         cube,
-        ["type", "texture", "from", "position", "size", "dilate", "mirror", "face"],
+        ["type", "texture", "from", "position", "size", "dilate", "mirror", "face", "taper"],
         `${id}/cube`,
       );
       const tex = { ...texture, ...cube.texture };
@@ -262,14 +295,15 @@ export function compileModel(modelId, resolve) {
           cube.mirror ?? [],
           d,
         );
-      } else if (cubeType === "mson:box") {
+      } else if (cubeType === "mson:box" || cubeType === "mson:cone") {
         if (cube.mirror !== undefined && typeof cube.mirror !== "boolean")
           throw new Error(`Invalid box mirror at ${id}`);
         const pos = vector(cube.from, 3, locals),
           size = vector(cube.size, 3, locals);
         const min = pos.map((v, i) => v - d[i]),
           max = pos.map((v, i) => v + size[i] + d[i]);
-        const mirror = cube.mirror ?? raw.mirror?.[0] ?? false;
+        const mirror =
+          cube.mirror ?? (typeof raw.mirror === "boolean" ? raw.mirror : raw.mirror?.[0]) ?? false;
         if (mirror) [min[0], max[0]] = [max[0], min[0]];
         const [x, y, z] = size,
           { u, v } = tex;
@@ -285,6 +319,15 @@ export function compileModel(modelId, resolve) {
           const vertices = indices
             .slice(0, 4)
             .map((index) => corners[index].map((c, i) => (c ? max[i] : min[i])));
+          if (cubeType === "mson:cone") {
+            const taper = evaluate(cube.taper ?? 0, locals);
+            vertices.forEach((v) => {
+              if (v[1] === min[1]) {
+                v[0] += (v[0] === min[0] ? 1 : -1) * size[0] * taper;
+                v[2] += (v[2] === min[2] ? 1 : -1) * size[2] * taper;
+              }
+            });
+          }
           quads.push(quad(vertices, ...layouts[face], tex, mirror));
         }
       } else throw new Error(`Unsupported cube type ${cubeType} at ${id}`);
@@ -296,14 +339,26 @@ export function compileModel(modelId, resolve) {
       visible: raw.visible ?? true,
       quads: quads.map((q, i) => ({ ...q, id: `${id}/surface-${i}` })),
       children: Object.entries(raw.children ?? {}).map(([name, part]) =>
-        compile(part, `${id}/${name}`, { locals, texture, dilate: dilation }),
+        compile(part, `${id}/${name}`, {
+          ...context,
+          locals,
+          texture,
+          dilate: dilation,
+          named: { ...context.named, ...raw.children },
+        }),
       ),
     };
   };
   return {
     id: modelId,
     nodes: Object.entries(root.data).map(([name, part]) =>
-      compile(part, name, { locals: root.locals, texture: root.texture, dilate: [0, 0, 0] }),
+      compile(part, name, {
+        locals: root.locals,
+        texture: root.texture,
+        dilate: [0, 0, 0],
+        named: root.data,
+        scope: modelId,
+      }),
     ),
   };
 }

@@ -1,4 +1,4 @@
-import generated from "./generated/earthpony.json" with { type: "json" };
+import generated from "./generated/catalog.json" with { type: "json" };
 
 export type Vec3 = [number, number, number];
 export type ModelQuad = { id: string; positions: number[]; uv: number[] };
@@ -9,9 +9,12 @@ export type ModelNode = {
   visible: boolean;
   quads: ModelQuad[];
   children: ModelNode[];
+  implementation?: string;
+  locals?: Record<string, number>;
+  aliasOf?: string;
 };
 export type ModelDefinition = { id: string; nodes: ModelNode[] };
-export const earthponyModels = generated.models as unknown as Record<
+export const earthponyModels = generated.models.earth_pony as unknown as Record<
   "steve" | "alex",
   ModelDefinition
 >;
@@ -89,9 +92,18 @@ export function stageFor(id: string): Stage {
   if (root === "head" || root === "hat") return "HEAD";
   if (root === "neck") return "NECK";
   // EarthPonyModel adds the tail to bodyRenderList, inheriting BODY stage.
-  if (root === "body" || root === "jacket" || root === "tail") return "BODY";
+  if (
+    root === "body" ||
+    root === "jacket" ||
+    root === "tail" ||
+    root === "wings" ||
+    root.includes("fin")
+  )
+    return "BODY";
   return "LEGS";
 }
+export * from "./appearance.js";
+export * from "./motion.js";
 
 export function modelParts(
   definition: ModelDefinition,

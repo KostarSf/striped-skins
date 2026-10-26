@@ -36,6 +36,9 @@ export type ViewerPreferencesProps = Partial<Omit<ViewerPreferences, "camera" | 
 };
 
 export type ViewerPreferencesStoreState = ViewerPreferences & {
+  defaultSkinError: string | null;
+  firstSkinError: string | null;
+  secondSkinError: string | null;
   loadingDefaultSkin: boolean;
   loadingFirstSkin: boolean;
   loadingSecondSkin: boolean;

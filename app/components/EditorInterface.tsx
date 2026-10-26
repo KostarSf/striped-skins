@@ -6,12 +6,38 @@ import { IconButton } from "./IconButton";
 import { ScaleIcon } from "@heroicons/react/24/outline";
 import { LoadingScreen } from "./LoadingScreen";
 import OptionsWidget from "./OptionsWidget";
+import { Link, useLocation } from "react-router";
 
+function EditLink({ slot }: { slot: "first" | "second" }) {
+  const location = useLocation();
+  const params = new URLSearchParams(location.search);
+  params.set("slot", slot);
+  return (
+    <Link
+      className="pointer-events-auto rounded bg-orange-500 px-3 py-2 text-sm text-white shadow"
+      to={`/editor?${params}`}
+    >
+      {slot === "second" ? "Редактировать второй" : "Редактировать"}
+    </Link>
+  );
+}
+
+function LoadErrors() {
+  const errors = useViewerPreferencesContext((s) =>
+    [s.defaultSkinError, s.firstSkinError, s.secondSkinError].filter(Boolean).join("; "),
+  );
+  return errors ? (
+    <p role="alert" className="pointer-events-auto rounded bg-red-950 p-3 text-sm text-red-100">
+      Не удалось открыть скин: {errors}
+    </p>
+  ) : null;
+}
 export function EditorInterface() {
   const { mode } = useViewerPreferencesContext((state) => state);
 
   return (
     <div className="absolute left-0 right-0 top-0 bottom-0 flex flex-col pointer-events-none pt-4 pb-9 px-4">
+      <LoadErrors />
       {mode === "side-by-side" ? <SideBySideSkinInterface /> : <SingleSkinInterface />}
     </div>
   );
@@ -44,6 +70,7 @@ function SingleSkinInterface() {
           />
 
           <OptionsWidget />
+          <EditLink slot="first" />
         </div>
       </div>
 
@@ -93,6 +120,8 @@ function SideBySideSkinInterface() {
           />
 
           <OptionsWidget />
+          <EditLink slot="first" />
+          <EditLink slot="second" />
         </div>
       </div>
 

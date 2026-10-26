@@ -1,39 +1,29 @@
-# Earthpony vertical slice
+# Model editor and regression lab
 
-The agreed product flow and remaining work are tracked in [the editor roadmap](editor-roadmap.md).
+The main viewer `/` now uses the generated renderer and offers **Редактировать**
+for each skin. `/editor` edits the same document and returns its result to the
+viewer. See [the implementation status and motion contract](editor-roadmap.md).
 
-Open `/model-lab`, or use “Лаборатория моделей” on the existing viewer. Start with
-`npm ci` and `npm run dev`; no adjacent repository is required. The original viewer
-and its standalone entry remain available with their existing behavior.
+`/model-lab` remains an isolated Earthpony regression page. Its size/slim controls
+are preview overrides; the document preserves its real metadata. On `/editor`,
+race, size, snout, tail and wearables are actual undoable PNG metadata edits.
+Wing/form/slim controls and geometry visibility affect only the preview.
 
-The slice implements:
+Use **Режим: кисть** to paint in 3D; the 2D texture always accepts a brush. Choose
+an explicit part to paint transparent pixels, or use the nearest opaque editable
+surface. Accessory textures are visible but not brush targets. Select a part to
+see its UV outline. Scroll the 2D pane after zooming. Parent geometry and child
+geometry have independent checkboxes; **Скрыть ветку** hides both.
 
-- Vendored, hash-verified MLP 1.20.1 + Mson 1.9.3 model sources and generated data.
-- A private, build-time Mson compiler and a browser-safe `@striped-skins/models` package.
-- Earthpony Steve/Alex, the six standing size presets, and independent geometry visibility.
-- A DOM-independent `SkinDocument`, protected trigger pixels and a pure metadata decoder.
-- One-pixel 2D/3D brush, eraser, per-stroke undo/redo, PNG import/export.
-- Selection of visible opaque surfaces, or an explicit part to paint empty overlay pixels.
-- One texture per document/preview, shared material, geometry per part, resource disposal,
-  on-demand frames and coalesced GPU texture uploads.
-
-Use “Режим: кисть” for 3D painting; the 2D texture always accepts the brush. The
-layer selector allows painting transparent regions of a chosen visible part.
-Hiding the skull preserves its ears; the checkboxes hide geometry, not transform
-groups. Preview size/slim settings never rewrite metadata in the exported PNG.
-The document still preserves the skin's original race even though this page
-always previews Earthpony. Each import constructs a fresh independent document.
-
-This page is an experimental integration surface, not a complete editor. It
-accepts modern square 64×64 and HD PNGs up to 2048×2048. Legacy 64×32 normalization,
-other races, accessories, animated poses, non-straight tail shape rules and
-continuous brush transfer across UV seams are follow-up work. It uses an unlit
-cutout material for editing, without partial-alpha blending. It does not claim
-pixel-perfect parity with a running Minecraft instance.
-
-Verification commands:
+Modern square and legacy half-height PNGs, including HD up to 2048 pixels, are
+accepted. Legacy imports are upgraded to modern square PNG on export. Trigger
+coordinates remain physical pixels at the atlas origin. The brush protects them;
+metadata controls change them explicitly. Local recovery preserves pixels but
+starts a fresh history after a page reload; route changes preserve history.
 
 ```sh
+npm ci
+npm run dev
 npm run models:check
 npm run build
 npm run check
@@ -43,15 +33,12 @@ npx playwright install chromium
 npm run test:e2e
 ```
 
-The unit suite checks component replacement, local resolution, literal UVs,
-unsupported constructs, reproducible output, slim dimensions, size rules,
-document isolation, metadata alpha semantics and stroke history. Browser tests
-cover all six sizes, independent visibility, 2D→3D and 3D→2D painting, PNG
-round-trip, protected metadata, ignored hidden meshes, and resource stability
-after repeatedly changing variant. Existing comparison/URL tests also run.
+No neighboring repository is needed. Source maintenance instructions and
+attribution are in [model-sources](../model-sources/README.md).
 
-The initial default-skin scene has 28 draw calls, 304 triangles, 28 uploaded
-geometries and one texture. The page shows live `renderer.info` counters. These
-counts describe the tested scene; they are not an FPS benchmark or proof of
-parity with Minecraft. Hidden/unavailable parts can retain CPU geometry without
-uploading it to the GPU until first rendered.
+The default lab Earthpony has 28 draw calls, 304 triangles, 28 uploaded geometries
+and one texture. The normal default skin is Pegasus and additionally draws wings.
+Counters describe these scenes, not an FPS benchmark. Hidden/unavailable geometry
+can remain on the CPU and is uploaded only when rendered. Materials are unlit,
+alpha-tested with partial-alpha blending; visual parity with a running Minecraft
+instance still needs comparison.

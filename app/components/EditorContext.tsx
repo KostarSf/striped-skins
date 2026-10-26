@@ -1,6 +1,7 @@
 import { useSearchParams } from "react-router";
 import { createContext, useContext, useEffect, useState } from "react";
-import { useViewerPreferencesContext } from "./striped-viewer.client";
+import { useViewerPreferencesContext, usePonyContext } from "./striped-viewer.client";
+import { PonySkin } from "@striped-skins/api";
 import { getSafeSkinUrl } from "../utils";
 
 type EditorState = {
@@ -29,13 +30,35 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
     setSecondSkin: viewerSetSecondSkin,
     setMode,
   } = useViewerPreferencesContext((state) => state);
+  const firstLoaded = useViewerPreferencesContext((s) => s.firstSkinUrl);
+  const secondLoaded = useViewerPreferencesContext((s) => s.secondSkinUrl);
+  const firstPony = usePonyContext((s) => s.firstPony.skin);
+  const secondPony = usePonyContext((s) => s.secondPony.skin);
 
   useEffect(() => {
     setFirstSkinState(params.get("skin"));
     setSecondSkinState(params.get("second-skin"));
-    viewerSetFirstSkin(getSafeSkinUrl(params.get("skin")));
-    viewerSetSecondSkin(getSafeSkinUrl(params.get("second-skin")));
-  }, [params, viewerSetFirstSkin, viewerSetSecondSkin]);
+    const first = getSafeSkinUrl(params.get("skin")),
+      second = getSafeSkinUrl(params.get("second-skin"));
+    if (
+      firstPony === PonySkin.DEFAULT ||
+      (first && first !== firstLoaded && first !== firstPony.sourceUrl)
+    )
+      viewerSetFirstSkin(first);
+    if (
+      secondPony === PonySkin.DEFAULT ||
+      (second && second !== secondLoaded && second !== secondPony.sourceUrl)
+    )
+      viewerSetSecondSkin(second);
+  }, [
+    params,
+    viewerSetFirstSkin,
+    viewerSetSecondSkin,
+    firstPony,
+    secondPony,
+    firstLoaded,
+    secondLoaded,
+  ]);
 
   const secondSkinParam = params.get("second-skin");
   useEffect(() => {

@@ -1,31 +1,35 @@
 # Local model sources
 
-These files are a small, pinned snapshot of MineLittlePony for Minecraft 1.20.1
-and Mson 1.9.3+1.20.1. Both upstream projects use MIT; their license notices are
-included in the respective directories. `manifest.json` records exact Git
-revisions and SHA-256 hashes. Model JSON and Java reference files are kept byte
-for byte, so formatters exclude this directory.
+Pinned MineLittlePony for Minecraft 1.20.1 (`2398b14a`) and Mson 1.9.3+1.20.1
+(`cafaa6ae`), including all twelve pony races, both arm variants, six accessory
+models and their texture dependencies. Both projects use MIT; license notices
+are included. Java files record the behavior ported into TypeScript; Java is
+never compiled or run here. Source bytes remain unchanged by formatters.
 
-Only the Earthpony dependency closure is included in this slice. The Java files
-document the provenance of metadata and standing size rules; Java is never run
-as part of this project. `packages/models/src/index.ts` explicitly ports the
-standing transformations, and the viewer supplies the standing leg pivots.
+`minecraft/textures/witch.png` is the original Minecraft 1.20.1 witch atlas used
+by MLP's witch hat. It belongs to Mojang Studios, not the MIT projects. Its official
+client URL, archive SHA-1, resource path and extracted SHA-256 are recorded in the
+manifest. No Minecraft client executable is included.
 
-Normal builds consume checked-in generated data, need no upstream checkout,
-and make no requests to either upstream repository. Regenerate locally with:
+Normal builds use checked-in generated data and need neither neighboring
+repositories nor network access. To regenerate and verify:
 
 ```sh
 npm run models:generate
 npm run models:check
 ```
 
-To restore this exact snapshot from optional checkouts, explicitly run:
+Restore this exact snapshot from optional checkouts:
 
 ```sh
 npm run models:import -- --mlp /path/to/mlp --mson /path/to/mson
 ```
 
-This maintenance command verifies both commits and file hashes before writing
-anything. To update to a new upstream version, review the changed source files,
-update revisions and reviewed hashes in the manifest, reimport, regenerate, and
-run the unit/browser checks. Do not run the importer from `build` or `postinstall`.
+The importer verifies commits and every source hash before writing. The Minecraft
+texture is verified in place; to re-extract it, optionally add
+`--minecraft-client /path/to/1.20.1-client.jar` (requires `unzip`). The archive hash
+must match the manifest. Nothing is downloaded automatically.
+
+For an upstream upgrade, explicitly review and update revisions, source paths
+and hashes in `manifest.json`, reimport, regenerate, and run unit/browser checks.
+Never invoke the importer from `build` or `postinstall`.

@@ -9,10 +9,14 @@ const manifest = JSON.parse(readFileSync(new URL("manifest.json", root), "utf8")
 const args = process.argv.slice(2);
 const paths = {};
 for (let i = 0; i < args.length; i += 2) {
-  const namespace = { "--mlp": "minelittlepony", "--mson": "mson" }[args[i]];
+  const namespace = {
+    "--mlp": "minelittlepony",
+    "--mson": "mson",
+    "--minecraft-client": "minecraft",
+  }[args[i]];
   if (!namespace || !args[i + 1])
     throw new Error(
-      "Usage: npm run models:import -- --mlp /path/to/checkout --mson /path/to/checkout",
+      "Usage: npm run models:import -- --mlp /path/to/checkout --mson /path/to/checkout [--minecraft-client /path/to/client.jar]",
     );
   paths[namespace] = resolve(args[i + 1]);
 }
@@ -29,8 +33,25 @@ for (const namespace of ["minelittlepony", "mson"]) {
 }
 for (const name of Object.keys(manifest.files)) {
   const [namespace, category, ...rest] = name.split("/");
+  if (namespace === "minecraft") {
+    // Optional official client archive; absent means verify and keep the vendored texture.
+    let data = readFileSync(new URL(name, root));
+    if (paths.minecraft) {
+      const archive = readFileSync(paths.minecraft);
+      if (
+        createHash("sha1").update(archive).digest("hex") !== manifest.sources.minecraft.clientSha1
+      )
+        throw new Error("Minecraft client SHA-1 does not match manifest");
+      data = execFileSync("unzip", ["-p", paths.minecraft, manifest.sources.minecraft.resource]);
+    }
+    if (createHash("sha256").update(data).digest("hex") !== manifest.files[name])
+      throw new Error(`Source hash differs for ${name}`);
+    writes.push([new URL(name, root), data]);
+    continue;
+  }
   let source;
-  if (category === "LICENSE") source = "LICENSE";
+  if (manifest.sourcePaths?.[name]) source = manifest.sourcePaths[name];
+  else if (category === "LICENSE") source = "LICENSE";
   else if (category === "models")
     source = `src/main/resources/assets/${namespace}/models/entity/${rest.join("/")}`;
   else if (category === "behavior" && namespace === "minelittlepony")
