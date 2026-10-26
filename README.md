@@ -39,6 +39,15 @@ Deploy `build/`, `public/`, the workspace packages (including their `build/`
 directories), package manifests and production dependencies. The Node server entry
 is `build/server/index.js`; client assets are in `build/client/`.
 
+## Vercel
+
+`vercel.json` selects the React Router framework explicitly, overriding a legacy
+Remix framework selection in the Vercel project. It uses `npm ci` and
+`npm run build` so the API and viewer workspaces compile before the application.
+Keep the project's Root Directory at the repository root and clear any legacy
+Output Directory override; React Router's builder handles the SSR server and
+client assets. Use Node.js 24.x in the Vercel project settings.
+
 ## Standalone browser bundle
 
 ```sh
