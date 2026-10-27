@@ -97,6 +97,41 @@ function quad(vertices, u, v, w, h, texture, mirror = false) {
   };
 }
 
+const planeAxis = (face) =>
+  ["east", "west"].includes(face) ? 0 : ["up", "down"].includes(face) ? 1 : 2;
+function planeSize(face, dimensions) {
+  const axis = planeAxis(face);
+  return axis === 0
+    ? [0, dimensions[1], dimensions[0]]
+    : axis === 1
+      ? [dimensions[0], 0, dimensions[1]]
+      : [dimensions[0], dimensions[1], 0];
+}
+function planarFixtures(face, planes) {
+  const locked = [new Set(), new Set(), new Set()];
+  const sizes = planes.map((p) => planeSize(face, p.slice(3, 5)));
+  // Mson JsonPlanar.Fixtures probes each corner 0.5 units outwards along
+  // one tangential axis. Merely touching another rectangle does not lock it.
+  for (let axis = 0; axis < 3; axis++) {
+    if (axis === planeAxis(face)) continue;
+    planes.forEach((plane, index) => {
+      for (const corner of corners) {
+        const normal = plane.slice(0, 3).map((v, i) => v + sizes[index][i] * corner[i]);
+        const stretched = normal.map((v, i) => v + (i === axis ? (corner[i] ? 0.5 : -0.5) : 0));
+        if (
+          planes.some(
+            (other, j) =>
+              j !== index &&
+              stretched.every((v, i) => v >= other[i] && v <= other[i] + sizes[j][i]),
+          )
+        )
+          locked[axis].add(normal.join(","));
+      }
+    });
+  }
+  return locked;
+}
+
 export function compileModel(modelId, resolve) {
   const active = [];
   const load = (id) => {
@@ -212,36 +247,19 @@ export function compileModel(modelId, resolve) {
     const texture = { ...context.texture, ...raw.texture };
     const dilation = vector(raw.dilate, 3, locals).map((v, i) => v + context.dilate[i]);
     const quads = [];
-    const plane = (face, position, dimensions, tex, mirror, dilate, siblings = []) => {
+    const plane = (face, position, dimensions, tex, mirror, dilate, fixtures = []) => {
       if (!(face in faces)) throw new Error(`Unsupported face ${face} at ${id}`);
-      const size = ["east", "west"].includes(face)
-        ? [0, dimensions[1], dimensions[0]]
-        : ["up", "down"].includes(face)
-          ? [dimensions[0], 0, dimensions[1]]
-          : [dimensions[0], dimensions[1], 0];
-      const axis = ["east", "west"].includes(face) ? 0 : ["up", "down"].includes(face) ? 1 : 2;
+      const size = planeSize(face, dimensions);
+      const axis = planeAxis(face);
       const min = [...position],
         max = position.map((v, i) => v + size[i]);
-      // Planar fixtures reverse dilation at edges shared by coplanar rectangles.
-      const fixed = (point, coordinate) =>
-        coordinate !== axis &&
-        siblings.some((s) => {
-          const extent =
-            axis === 0 ? [0, s[4], s[3]] : axis === 1 ? [s[3], 0, s[4]] : [s[3], s[4], 0];
-          return point.every((v, i) => v >= s[i] && v <= s[i] + extent[i]);
-        });
+      const fixed = (point, coordinate) => fixtures[coordinate]?.has(point.join(","));
       for (let i = 0; i < 3; i++) {
         const sign = axis === 1 && i === 1 ? -1 : 1;
         const lo = dilate[i] * sign * (fixed(position, i) ? -1 : 1);
-        const hi =
-          dilate[i] *
-          sign *
-          (fixed(
-            position.map((v, j) => v + size[j]),
-            i,
-          )
-            ? -1
-            : 1);
+        // QuadsBuilder.plane updates xMax, then yMax, then zMax. Later fixture
+        // lookups observe those updates; reusing the original corner opens seams.
+        const hi = dilate[i] * sign * (fixed(max, i) ? -1 : 1);
         min[i] -= lo;
         max[i] += hi;
       }
@@ -262,6 +280,7 @@ export function compileModel(modelId, resolve) {
       if (type !== "mson:planar") throw new Error(`Planar face on ${type} at ${id}`);
       const list = Array.isArray(raw[face][0]) ? raw[face] : [raw[face]];
       const evaluated = list.map((p) => p.slice(0, 7).map((v) => evaluate(v, locals)));
+      const fixtures = planarFixtures(face, evaluated);
       list.forEach((p, i) => {
         if (![5, 7, 9].includes(p.length)) throw new Error(`Invalid planar face at ${id}/${face}`);
         const values = evaluated[i];
@@ -272,7 +291,7 @@ export function compileModel(modelId, resolve) {
           { ...texture, u: values[5] ?? texture.u, v: values[6] ?? texture.v },
           p.slice(7, 9),
           dilation,
-          evaluated.filter((_, j) => j !== i),
+          fixtures,
         );
       });
       void indices;
