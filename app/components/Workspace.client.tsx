@@ -93,6 +93,7 @@ export default function Workspace({ children }: { children: ReactNode }) {
           animations: !!(localStorage.getItem("viewer.options.animations") ?? true),
           antialiasing: !!(localStorage.getItem("viewer.options.antialiasing") ?? true),
           smoothCamera: !!(localStorage.getItem("viewer.options.smoothCamera") ?? true),
+          groundGrid: !!(localStorage.getItem("viewer.options.groundGrid") ?? true),
         },
       }}
     >

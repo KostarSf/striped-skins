@@ -71,6 +71,7 @@ export function textureSurfaceHits(
   pixel: { x: number; y: number },
   activePart: string | null,
   size = 1,
+  clip?: PaintBounds,
 ): SurfaceHit[] {
   if (pixel.x < 0 || pixel.y < 0 || pixel.x >= document.width || pixel.y >= document.height)
     return [];
@@ -81,15 +82,25 @@ export function textureSurfaceHits(
   root.traverseVisible((mesh) => {
     if (
       !(mesh instanceof Mesh) ||
-      !mesh.userData.editable ||
+      (!mesh.userData.editable && mesh.userData.textureDocumentId !== document.id) ||
       mesh.userData.documentId !== document.id
     )
       return;
     const part = mesh.userData.partId as string;
     if (activePart && part !== activePart) return;
     (mesh.userData.surfaceUVs as number[][]).forEach((uv, quad) => {
-      const bounds = boundsForUV(uv, document.width, document.height);
+      const face = boundsForUV(uv, document.width, document.height);
+      const bounds = clip
+        ? {
+            minX: Math.max(face.minX, clip.minX),
+            maxX: Math.min(face.maxX, clip.maxX),
+            minY: Math.max(face.minY, clip.minY),
+            maxY: Math.min(face.maxY, clip.maxY),
+          }
+        : face;
       if (
+        bounds.minX > bounds.maxX ||
+        bounds.minY > bounds.maxY ||
         minX > bounds.maxX ||
         minY > bounds.maxY ||
         minX + size <= bounds.minX ||
@@ -117,6 +128,7 @@ export function TextureBrushPreview({
   size,
   activePart,
   contextKey,
+  clip,
 }: {
   pixel: { x: number; y: number };
   document: SkinDocument;
@@ -124,16 +136,17 @@ export function TextureBrushPreview({
   size: number;
   activePart: string | null;
   contextKey: string;
+  clip?: PaintBounds;
 }) {
   const scene = useThree((s) => s.scene);
   const [hits, setHits] = useState<SurfaceHit[]>([]);
   useEffect(() => {
     // Wait until GeneratedPony has committed its instances, visibility and rig transforms.
     const frame = requestAnimationFrame(() =>
-      setHits(textureSurfaceHits(scene, document, pixel, activePart, size)),
+      setHits(textureSurfaceHits(scene, document, pixel, activePart, size, clip)),
     );
     return () => cancelAnimationFrame(frame);
-  }, [scene, document, pixel, activePart, size, contextKey]);
+  }, [scene, document, pixel, activePart, size, contextKey, clip]);
   return hits.map((hit) => (
     <BrushPreview
       key={`${hit.mesh.uuid}/${hit.quad}`}

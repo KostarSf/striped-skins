@@ -14,6 +14,8 @@ export function TextureEditor({
   guides,
   hover,
   onHover,
+  showUV: uv,
+  onShowUV,
 }: {
   document: SkinDocument;
   color: Pixel;
@@ -24,6 +26,8 @@ export function TextureEditor({
   guides: ModelQuad[];
   hover?: SurfaceHover | null;
   onHover?: (pixel: { x: number; y: number } | null) => void;
+  showUV: boolean;
+  onShowUV: (visible: boolean) => void;
 }) {
   const canvas = useRef<HTMLCanvasElement>(null),
     area = useRef<HTMLDivElement>(null);
@@ -32,7 +36,6 @@ export function TextureEditor({
   const [size, setSize] = useState({ width: 500, height: 600 }),
     [view, setView] = useState({ zoom: 1, pan: { x: 0, y: 0 } }),
     [grid, setGrid] = useState(true),
-    [uv, setUV] = useState(true),
     [space, setSpace] = useState(false),
     [cursor, storeCursor] = useState<{ x: number; y: number } | null>(null);
   const setCursor = useCallback((pixel: { x: number; y: number } | null) => {
@@ -151,7 +154,7 @@ export function TextureEditor({
       <div className="viewport-heading">
         <h2>2D-текстура</h2>
         <div className="inline-controls">
-          <Button aria-pressed={uv} onClick={() => setUV((v) => !v)}>
+          <Button aria-pressed={uv} onClick={() => onShowUV(!uv)}>
             UV
           </Button>
           <Button aria-pressed={grid} onClick={() => setGrid((v) => !v)}>

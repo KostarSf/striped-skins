@@ -134,10 +134,15 @@ test("all races, wing forms and accessories render; returning to Earth releases 
 }) => {
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
-  // Count model resources without postprocessing render targets/passes. SMAA is covered in studio.spec.
-  await page.addInitScript(() => localStorage.setItem("viewer.options.antialiasing", ""));
+  // Count model resources without optional stage/UV overlays or postprocessing passes.
+  // Their rendering and toggles are covered in studio.spec.
+  await page.addInitScript(() => {
+    localStorage.setItem("viewer.options.antialiasing", "");
+    localStorage.setItem("viewer.options.groundGrid", "");
+  });
   await page.goto("/editor");
   await expect(page.getByTestId("skin-texture")).toBeVisible();
+  await page.getByRole("button", { name: "UV", exact: true }).click();
   await page.getByLabel("Раса", { exact: true }).selectOption("EARTH");
   const stats = page.getByTestId("render-stats");
   await expect.poll(() => stats.getAttribute("data-calls")).toBe("28");

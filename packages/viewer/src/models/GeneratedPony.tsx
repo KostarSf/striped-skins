@@ -14,6 +14,7 @@ import {
   type Texture,
 } from "three";
 import { decodeSkinMetadata, type SkinDocument, type SkinMetadata } from "@striped-skins/api";
+import { UVOutlines } from "./UVOutlines.js";
 import {
   resolveModel,
   resolveWearables,
@@ -42,6 +43,7 @@ export type GeneratedPonyProps = {
   animate?: boolean;
   paused?: boolean;
   motionLayers?: readonly MotionLayer[];
+  showUV?: boolean;
 };
 export function geometryFor(quads: ModelQuad[]) {
   const geometry = new BufferGeometry(),
@@ -86,6 +88,7 @@ export function GeneratedPony({
   animate = false,
   paused = false,
   motionLayers = EMPTY_LAYERS,
+  showUV = false,
 }: GeneratedPonyProps) {
   const revision = useSyncExternalStore(
     skinDocument.subscribe,
@@ -159,6 +162,7 @@ export function GeneratedPony({
         mesh.userData = {
           partId: node.id,
           documentId: skinDocument.id,
+          textureDocumentId: material === surface.material ? skinDocument.id : null,
           surfaceIds: node.quads.map((q) => q.id),
           surfaceUVs: node.quads.map((q) => q.uv),
           editable: gearId === undefined,
@@ -305,5 +309,10 @@ export function GeneratedPony({
     )
       invalidate();
   });
-  return <primitive object={instance.root} dispose={null} />;
+  return (
+    <>
+      <primitive object={instance.root} dispose={null} />
+      {showUV ? <UVOutlines meshes={instance.meshes} /> : null}
+    </>
+  );
 }

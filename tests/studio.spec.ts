@@ -5,6 +5,8 @@ test.beforeEach(async ({ page }) => {
   await page.addInitScript(() => {
     localStorage.setItem("viewer.options.animations", "");
     localStorage.setItem("viewer.options.smoothCamera", "");
+    if (localStorage.getItem("viewer.options.groundGrid") === null)
+      localStorage.setItem("viewer.options.groundGrid", "");
     const original = HTMLCanvasElement.prototype.getContext;
     HTMLCanvasElement.prototype.getContext = function (this: HTMLCanvasElement, type, options) {
       return original.call(this, type, {
@@ -466,6 +468,8 @@ test("3D hovering previews brush color and synchronizes UV face/pixel without ch
   await page.getByRole("button", { name: "UV", exact: true }).click();
   await page.mouse.move(point.x, point.y);
   await expect(uv).toHaveCount(0);
+  // Restore UV borders before comparing with the original frame.
+  await page.getByRole("button", { name: "UV", exact: true }).click();
   await page.keyboard.press("e");
   await expect.poll(() => image(page)).toBe(initial);
   await page.keyboard.press("i");
@@ -499,6 +503,83 @@ test("antialiasing uses screen-space SMAA with no MSAA and survives projection c
   const ortho = await image(page);
   await page.getByRole("button", { name: "Приблизить модель", exact: true }).click();
   await expect.poll(() => image(page)).not.toBe(ortho);
+  expect(errors).toEqual([]);
+});
+
+test("3D brush preview matches every shared UV target shown by the 2D brush", async ({ page }) => {
+  await enter(page);
+  await page.getByLabel("Цвет кисти", { exact: true }).fill("#ff00ff");
+  await page.getByRole("button", { name: "Режим: вращение", exact: true }).click();
+  await page.mouse.move(5, 5);
+  const initial = await image(page);
+  const rect = (await page.locator(".model-viewport canvas").boundingBox())!;
+  // The folded wing reuses these atlas pixels on several quads.
+  await page.mouse.move(rect.x + rect.width * 0.6, rect.y + rect.height * 0.5);
+  const hover = page.getByTestId("uv-hover");
+  await expect(hover).toHaveAttribute("data-surface", /wings\//);
+  await expect.poll(() => image(page)).not.toBe(initial);
+  await page.locator(".model-viewport canvas").screenshot();
+  const from3D = await image(page);
+  const [x, y] = (await hover.getAttribute("data-pixel"))!.split(",").map(Number);
+  const pixels = await tex(page).evaluate((c) => (c as HTMLCanvasElement).toDataURL());
+  const atlas = (await tex(page).boundingBox())!;
+  await page.mouse.move(
+    atlas.x + ((x + 0.5) * atlas.width) / 64,
+    atlas.y + ((y + 0.5) * atlas.height) / 64,
+  );
+  await expect(hover).toHaveCount(0);
+  await expect.poll(() => image(page)).toBe(from3D);
+  expect(await tex(page).evaluate((c) => (c as HTMLCanvasElement).toDataURL())).toBe(pixels);
+  await expect(page.getByRole("button", { name: "Отменить штрих", exact: true })).toBeDisabled();
+});
+
+test("ground grid toggles without changing camera scale and persists across modes and reload", async ({
+  page,
+}) => {
+  const errors: string[] = [];
+  page.on("pageerror", (e) => errors.push(e.message));
+  await enter(page, "/");
+  const initial = await image(page);
+  const scale = await page.getByTestId("model-scale").textContent();
+  await page.locator(".view-options summary").click();
+  await page.getByRole("checkbox", { name: "Сетка под моделью", exact: true }).check();
+  await expect.poll(() => image(page)).not.toBe(initial);
+  await expect(page.getByTestId("model-scale")).toHaveText(scale!);
+  await page.getByRole("checkbox", { name: "Сетка под моделью", exact: true }).uncheck();
+  await expect.poll(() => image(page)).toBe(initial);
+  await page.getByRole("checkbox", { name: "Сетка под моделью", exact: true }).check();
+  await page.keyboard.press("Escape");
+  await page.getByRole("link", { name: "Редактировать", exact: true }).click();
+  await expect(tex(page)).toBeVisible();
+  await page.locator(".view-options summary").click();
+  await expect(
+    page.getByRole("checkbox", { name: "Сетка под моделью", exact: true }),
+  ).toBeChecked();
+  await page.reload();
+  await expect(tex(page)).toBeVisible();
+  await page.locator(".view-options summary").click();
+  await expect(
+    page.getByRole("checkbox", { name: "Сетка под моделью", exact: true }),
+  ).toBeChecked();
+  expect(errors).toEqual([]);
+});
+
+test("UV toggle controls the model's quad borders together with the atlas guides", async ({
+  page,
+}) => {
+  const errors: string[] = [];
+  page.on("pageerror", (e) => errors.push(e.message));
+  await enter(page);
+  await page.mouse.move(5, 5);
+  const initial = await image(page);
+  const pixels = await tex(page).evaluate((c) => (c as HTMLCanvasElement).toDataURL());
+  await page.getByRole("button", { name: "UV", exact: true }).click();
+  await expect(page.locator(".texture-guides")).toHaveCount(0);
+  await expect.poll(() => image(page)).not.toBe(initial);
+  await page.getByRole("button", { name: "UV", exact: true }).click();
+  await expect(page.locator(".texture-guides")).toBeVisible();
+  await expect.poll(() => image(page)).toBe(initial);
+  expect(await tex(page).evaluate((c) => (c as HTMLCanvasElement).toDataURL())).toBe(pixels);
   expect(errors).toEqual([]);
 });
 
@@ -595,6 +676,7 @@ test("editor view options share preferences, tool order and smaller foreground s
   await page.keyboard.press("Escape");
   await expect(page.locator(".view-options")).not.toHaveAttribute("open", "");
   await page.getByRole("link", { name: "← Просмотрщик", exact: true }).click();
+  await expect(tex(page)).toHaveCount(0);
   await page.locator(".view-options summary").click();
   await expect(page.getByRole("checkbox", { name: "Сглаживание", exact: true })).not.toBeChecked();
   await expect(page.getByRole("checkbox", { name: "Плавная камера", exact: true })).toBeChecked();

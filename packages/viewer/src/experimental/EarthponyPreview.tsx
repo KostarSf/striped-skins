@@ -4,7 +4,6 @@ import { PreviewCamera, type PreviewCameraProps } from "./PreviewCamera.js";
 export type { CameraAction } from "./PreviewCamera.js";
 import { EffectComposer, SMAA } from "@react-three/postprocessing";
 import {
-  BrushPreview,
   TextureBrushPreview,
   surfaceHit,
   type SurfaceHit,
@@ -14,6 +13,7 @@ export type { SurfaceHover } from "./SurfaceHover.js";
 import { type SkinDocument, type SkinMetadata, type Pixel } from "@striped-skins/api";
 import { type BodySize, type PreviewSettings, type MotionLayer } from "@striped-skins/models";
 import { GeneratedPony } from "../models/GeneratedPony.js";
+import { GroundGrid } from "./GroundGrid.js";
 export type PreviewStats = {
   calls: number;
   geometries: number;
@@ -22,6 +22,8 @@ export type PreviewStats = {
 };
 export type PonyPreviewProps = Partial<Omit<PreviewCameraProps, "painting" | "comparison">> & {
   antialiasing?: boolean;
+  groundGrid?: boolean;
+  showUV?: boolean;
   comparison?: {
     document: SkinDocument;
     preview?: PreviewSettings;
@@ -134,6 +136,15 @@ function ModelScene(props: PonyPreviewProps) {
       skinDocument.endStroke();
     }
   };
+  const brushHover = props.textureHover ?? (painting ? hover : null);
+  const hoverClip = props.textureHover ? undefined : hover?.bounds;
+  const contextKey = JSON.stringify([
+    skinDocument.id,
+    props.fitKey,
+    overrideKey,
+    props.preview,
+    [...props.hidden],
+  ]);
   return (
     <>
       <PreviewCamera
@@ -150,17 +161,16 @@ function ModelScene(props: PonyPreviewProps) {
           <SMAA />
         </EffectComposer>
       ) : null}
-      {hover && painting && props.brushPreview !== false && !onSample && color[3] > 0 ? (
-        <BrushPreview hit={hover} color={color} size={brushSize} document={skinDocument} />
-      ) : null}
-      {props.textureHover && props.brushPreview !== false && !onSample && color[3] > 0 ? (
+      {props.groundGrid ? <GroundGrid contextKey={contextKey} /> : null}
+      {brushHover && props.brushPreview !== false && !onSample && color[3] > 0 ? (
         <TextureBrushPreview
-          pixel={props.textureHover}
+          pixel={brushHover}
           document={skinDocument}
           color={color}
           size={brushSize}
-          activePart={activePart}
-          contextKey={JSON.stringify([overrideKey, props.preview, [...props.hidden]])}
+          activePart={null}
+          clip={hoverClip}
+          contextKey={contextKey}
         />
       ) : null}
       <group
@@ -198,6 +208,7 @@ function ModelScene(props: PonyPreviewProps) {
               preview={props.comparison.preview}
               overrides={props.comparison.overrides}
               animate={props.animate}
+              showUV={props.showUV}
             />
           </group>
         ) : null}

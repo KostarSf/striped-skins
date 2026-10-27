@@ -37,6 +37,7 @@ export function ViewOptions() {
             ["animations", "Анимации"],
             ["antialiasing", "Сглаживание"],
             ["smoothCamera", "Плавная камера"],
+            ["groundGrid", "Сетка под моделью"],
           ] as const
         ).map(([id, label]) => (
           <Toggle

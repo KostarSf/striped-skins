@@ -70,6 +70,7 @@ test("reverse UV lookup returns every shared surface, filtering hidden parts and
   const hidden = add("hidden");
   hidden.visible = false;
   add("accessory", { editable: false });
+  add("embedded-accessory", { editable: false, textureDocumentId: doc.id });
   add("comparison", { documentId: doc.id + 1 });
   const hiddenParent = new Group();
   hiddenParent.visible = false;
@@ -78,7 +79,7 @@ test("reverse UV lookup returns every shared surface, filtering hidden parts and
   // Transparent texels still have a preview: a 2D stroke can make them visible.
   assert.deepEqual(
     textureSurfaceHits(root, doc, { x: 10, y: 20 }, null).map((h) => h.part),
-    ["left", "right"],
+    ["left", "right", "embedded-accessory"],
   );
   assert.deepEqual(
     textureSurfaceHits(root, doc, { x: 10, y: 20 }, "right").map((h) => h.part),
@@ -86,7 +87,44 @@ test("reverse UV lookup returns every shared surface, filtering hidden parts and
   );
   assert.equal(textureSurfaceHits(root, doc, { x: 30, y: 30 }, null).length, 0);
   assert.equal(textureSurfaceHits(root, doc, { x: -1, y: 20 }, null).length, 0);
-  assert.equal(textureSurfaceHits(root, doc, { x: 7, y: 20 }, null, 3).length, 2);
+  assert.equal(textureSurfaceHits(root, doc, { x: 7, y: 20 }, null, 3).length, 3);
+});
+test("shared 3D brush previews clip every target to the source face's paint bounds", async () => {
+  const { Group } = await import("three");
+  const { SkinDocument } = await import("../../packages/api/build/esm/index.js");
+  const { textureSurfaceHits } =
+    await import("../../packages/viewer/build/esm/experimental/SurfaceHover.js");
+  const doc = new SkinDocument(64, 64, new Uint8ClampedArray(64 * 64 * 4));
+  const root = new Group();
+  const mesh = hit(uv).mesh;
+  mesh.userData = {
+    editable: true,
+    documentId: doc.id,
+    partId: "mirrored-target",
+    surfaceIds: ["target/face"],
+    surfaceUVs: [uv],
+  };
+  root.add(mesh);
+  const clip = { minX: 10, maxX: 12, minY: 20, maxY: 21 };
+  const [target] = textureSurfaceHits(root, doc, { x: 10, y: 20 }, null, 5, clip);
+  assert.deepEqual(target.bounds, clip);
+  assert.deepEqual(brushPatch(target, 64, 64, 5), [2, 4, 1, 5, 4, 2.5, 5, 6, 2.5, 2, 6, 1]);
+  assert.equal(
+    textureSurfaceHits(root, doc, { x: 10, y: 20 }, null, 5, { ...clip, minX: 30, maxX: 31 })
+      .length,
+    0,
+  );
+});
+test("3D UV outlines contain four quad borders without triangle diagonals", async () => {
+  const { uvOutlineGeometry } =
+    await import("../../packages/viewer/build/esm/models/UVOutlines.js");
+  const mesh = hit(uv).mesh;
+  const geometry = uvOutlineGeometry(mesh.geometry);
+  assert.deepEqual(
+    Array.from(geometry.getAttribute("position").array),
+    [0, 0, 0, 8, 0, 4, 8, 0, 4, 8, 8, 4, 8, 8, 4, 0, 8, 0, 0, 8, 0, 0, 0, 0],
+  );
+  geometry.dispose();
 });
 test("reverse hover clips fractional UV edges instead of extending past the face", () => {
   const fractional = hit(uv.map((v, i) => (i % 2 === 0 ? v + 0.5 / 64 : v)));

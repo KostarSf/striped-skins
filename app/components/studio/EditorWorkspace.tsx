@@ -111,6 +111,7 @@ export default function EditorWorkspace({
   const meta = decodeSkinMetadata(skin),
     options = useViewerPreferencesContext((s) => s.userOptions);
   const [showMini, setShowMini] = useState(true);
+  const [showUV, setShowUV] = useState(true);
   const [slim, setSlim] = useState(meta.slim),
     [layout, setLayout] = useState<"3d" | "split" | "2d">("split"),
     [tool, setTool] = useState<PaintTool>("brush"),
@@ -361,6 +362,8 @@ export default function EditorWorkspace({
                 onPaint={onPaint}
                 onHover={setHover}
                 textureHover={textureHover}
+                showUV={showUV}
+                groundGrid={options.groundGrid}
                 brushPreview={tool === "brush"}
                 onStats={onStats}
                 animate={options.animations}
@@ -381,6 +384,8 @@ export default function EditorWorkspace({
                 onSample={sample}
                 onPaint={onPaint}
                 guides={quads}
+                showUV={showUV}
+                onShowUV={setShowUV}
                 hover={hover}
                 onHover={setTextureHover}
               />
