@@ -15,6 +15,7 @@ import { skinName, useDocumentInfo } from "./DocumentSession";
 import { ModelViewport } from "./ModelViewport";
 import { SkinSettings } from "./SkinSettings";
 import { Button, PanelHeading } from "./ui";
+import { StudioSkeleton } from "./StudioSkeleton";
 const EditorWorkspace = lazy(() => import("./EditorWorkspace"));
 const empty = new Set<string>();
 export default function Studio({ mode }: { mode: "viewer" | "editor" }) {
@@ -125,6 +126,12 @@ export default function Studio({ mode }: { mode: "viewer" | "editor" }) {
     }
   };
   const loading = pending > 0 || pony.skin === PonySkin.DEFAULT || preferences.loadingDefaultSkin;
+  const [hasLoaded, setHasLoaded] = useState(() => pony.skin !== PonySkin.DEFAULT);
+  useEffect(() => {
+    if (!loading) setHasLoaded(true);
+  }, [loading]);
+  if (!hasLoaded && loading && !error && !preferences.defaultSkinError)
+    return <StudioSkeleton mode={mode} />;
   return (
     <main className={`studio-app ${mode === "editor" ? "editor-app" : "viewer-app"}`}>
       <StudioHeader
@@ -142,7 +149,7 @@ export default function Studio({ mode }: { mode: "viewer" | "editor" }) {
         </div>
       ) : null}
       {mode === "editor" ? (
-        <Suspense fallback={<div className="studio-loading">Загрузка редактора…</div>}>
+        <Suspense fallback={<StudioSkeleton mode="editor" bodyOnly />}>
           <EditorWorkspace
             key={document.id}
             document={document}

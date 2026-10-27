@@ -1727,3 +1727,216 @@ input[type="color"]::-webkit-color-swatch {
     display: none;
   }
 }
+
+.studio-skeleton .skeleton-bone {
+  display: inline-block;
+  flex: none;
+  max-width: 100%;
+  border-radius: 5px;
+  background: linear-gradient(105deg, #34363f 25%, #41444f 45%, #34363f 65%);
+  background-size: 250% 100%;
+  animation: skeleton-shimmer 2s ease-in-out infinite;
+}
+.skeleton-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+.skeleton-control {
+  height: 36px;
+  max-width: 100%;
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 7px;
+  background: var(--studio-raised);
+}
+.skeleton-tab {
+  min-width: 108px;
+  padding: 9px 14px;
+  text-align: center;
+  background: var(--studio-raised);
+  border-radius: 7px;
+  font-size: 12px;
+  font-weight: 500;
+}
+.skeleton-tab[data-active="true"] {
+  background: var(--studio-accent-bg);
+  color: var(--studio-accent);
+}
+.skeleton-document {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.studio-skeleton .file-actions .skeleton-export {
+  background: var(--studio-accent-bg);
+}
+.skeleton-viewport {
+  position: relative;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  border-radius: 10px;
+  background: #27292f;
+}
+.skeleton-viewport-top,
+.skeleton-viewport-bottom {
+  position: absolute;
+  z-index: 1;
+  left: 20px;
+  right: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.skeleton-viewport-top {
+  top: 14px;
+}
+.skeleton-viewport-top > .inline-controls {
+  min-width: 0;
+}
+.skeleton-viewport-top > .inline-controls > .skeleton-control:first-child {
+  flex-shrink: 1;
+}
+.skeleton-viewport-bottom {
+  bottom: 18px;
+}
+.skeleton-viewer-bottom {
+  left: 24px;
+  right: 24px;
+  bottom: 20px;
+  justify-content: center;
+}
+.skeleton-viewer-bottom > .skeleton-bone {
+  position: absolute;
+  left: 0;
+  bottom: 10px;
+}
+.skeleton-viewer-bottom > .skeleton-control {
+  position: absolute;
+  right: 0;
+}
+.skeleton-viewer-controls {
+  top: 22px;
+  left: 24px;
+  right: 24px;
+}
+.skeleton-tool {
+  display: grid;
+  place-items: center;
+}
+.skeleton-settings {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-block: 20px;
+}
+.skeleton-settings .skeleton-control {
+  width: 100% !important;
+}
+.skeleton-accessories {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+.skeleton-accessories .skeleton-control {
+  height: 32px;
+}
+.studio-skeleton .inspector > .skeleton-bone {
+  display: block;
+  margin: 5px 0 9px;
+}
+.studio-skeleton .brush-color > .skeleton-bone,
+.studio-skeleton .skin-palette > .skeleton-bone {
+  display: block;
+  margin-bottom: 9px;
+}
+.studio-skeleton .skin-palette > div {
+  gap: 8px;
+}
+.studio-skeleton .studio-status > .skeleton-bone {
+  min-width: 0;
+  flex-shrink: 1;
+}
+@keyframes skeleton-shimmer {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: -100% 0;
+  }
+}
+@media (max-width: 1200px) {
+  .skeleton-tab {
+    min-width: 90px;
+  }
+  .skeleton-viewport-top,
+  .skeleton-viewport-bottom {
+    left: 14px;
+    right: 14px;
+  }
+}
+@media (max-width: 600px) {
+  .skeleton-tab {
+    min-width: 82px;
+    padding: 7px 12px;
+  }
+  .skeleton-viewer-controls {
+    top: 64px;
+    left: 16px;
+    right: 16px;
+    align-items: flex-start;
+  }
+  .skeleton-viewer-controls > .inline-controls:last-child {
+    position: absolute;
+    right: 0;
+    top: -50px;
+  }
+  .skeleton-viewer-controls > .inline-controls:last-child .skeleton-control:first-child {
+    width: 32px !important;
+  }
+  .skeleton-viewer-controls > .inline-controls:last-child .skeleton-control:last-child {
+    width: 145px !important;
+  }
+  .studio-skeleton .inline-field > span {
+    display: inline-flex;
+  }
+  .studio-skeleton .brush-toolbar .skeleton-control {
+    height: 30px;
+  }
+  .studio-skeleton .brush-toolbar > .inline-controls:not(.layout-tabs) .skeleton-control {
+    width: 30px !important;
+  }
+  .studio-skeleton .skeleton-size-field .skeleton-control {
+    width: 40px !important;
+  }
+  .studio-skeleton .current-tool {
+    min-width: 62px;
+  }
+  .studio-skeleton .current-tool > .skeleton-bone:last-child {
+    width: 38px !important;
+  }
+  .studio-skeleton .layout-tabs .skeleton-control {
+    width: 42px !important;
+  }
+  .skeleton-viewport-bottom > .skeleton-bone {
+    display: none;
+  }
+  .skeleton-viewport-bottom > .inline-controls {
+    margin-left: auto;
+  }
+  .skeleton-viewer-bottom > .inline-controls {
+    margin-left: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .studio-skeleton .skeleton-bone {
+    animation: none;
+  }
+}

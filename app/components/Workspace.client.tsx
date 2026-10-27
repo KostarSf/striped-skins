@@ -7,6 +7,7 @@ import { getSafeSkinUrl } from "../utils";
 import { XMarkIcon } from "@heroicons/react/24/outline";
 import { IconButton } from "./studio/ui";
 import { readSavedDocuments, recoverySnapshot, saveDocuments } from "../document-recovery";
+import { StudioSkeleton } from "./studio/StudioSkeleton";
 async function restore() {
   const saved = await readSavedDocuments();
   const params = new URLSearchParams(location.search);
@@ -91,6 +92,7 @@ function Autosave() {
   ) : null;
 }
 export default function Workspace({ children }: { children: ReactNode }) {
+  const location = useLocation();
   const [initial, setInitial] = useState<Awaited<ReturnType<typeof restore>> | null>(null);
   useEffect(() => {
     let active = true;
@@ -101,7 +103,8 @@ export default function Workspace({ children }: { children: ReactNode }) {
       active = false;
     };
   }, []);
-  if (!initial) return <output className="studio-loading-badge">Восстановление скина…</output>;
+  if (!initial)
+    return <StudioSkeleton mode={location.pathname.startsWith("/editor") ? "editor" : "viewer"} />;
   return (
     <StripedContextProvider
       ponyParams={initial}
