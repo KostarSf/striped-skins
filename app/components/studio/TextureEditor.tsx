@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type PointerEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type PointerEvent } from "react";
 import { type SkinDocument, type Pixel } from "@striped-skins/api";
 import { type SurfaceHover } from "@striped-skins/viewer/experimental";
 import { type ModelQuad } from "@striped-skins/models";
@@ -13,6 +13,7 @@ export function TextureEditor({
   onPaint,
   guides,
   hover,
+  onHover,
 }: {
   document: SkinDocument;
   color: Pixel;
@@ -22,6 +23,7 @@ export function TextureEditor({
   onPaint: (p: { x: number; y: number; part: string }) => void;
   guides: ModelQuad[];
   hover?: SurfaceHover | null;
+  onHover?: (pixel: { x: number; y: number } | null) => void;
 }) {
   const canvas = useRef<HTMLCanvasElement>(null),
     area = useRef<HTMLDivElement>(null);
@@ -32,7 +34,21 @@ export function TextureEditor({
     [grid, setGrid] = useState(true),
     [uv, setUV] = useState(true),
     [space, setSpace] = useState(false),
-    [cursor, setCursor] = useState<{ x: number; y: number } | null>(null);
+    [cursor, storeCursor] = useState<{ x: number; y: number } | null>(null);
+  const setCursor = useCallback((pixel: { x: number; y: number } | null) => {
+    storeCursor((old) => (old?.x === pixel?.x && old?.y === pixel?.y ? old : pixel));
+  }, []);
+  useEffect(() => {
+    onHover?.(tool === "brush" && !space ? cursor : null);
+  }, [cursor, tool, space, onHover]);
+  useEffect(() => {
+    const clear = () => setCursor(null);
+    window.addEventListener("blur", clear);
+    return () => {
+      window.removeEventListener("blur", clear);
+      onHover?.(null);
+    };
+  }, [skin, onHover, setCursor]);
   const { zoom, pan } = view;
   const setZoom = (update: (zoom: number) => number) =>
     setView((v) => ({ ...v, zoom: update(v.zoom) }));
@@ -149,6 +165,7 @@ export function TextureEditor({
         onContextMenu={(e) => e.preventDefault()}
         onPointerDown={(e) => {
           if (e.button === 2 || e.button === 1 || space || tool === "hand") {
+            setCursor(null);
             mode.current = "pan";
             origin.current = { x: e.clientX, y: e.clientY, px: pan.x, py: pan.y };
             e.currentTarget.setPointerCapture(e.pointerId);
@@ -187,6 +204,7 @@ export function TextureEditor({
         onPointerCancel={() => {
           skin.cancelStroke();
           mode.current = null;
+          setCursor(null);
         }}
         onLostPointerCapture={end}
         onPointerLeave={() => setCursor(null)}

@@ -321,11 +321,20 @@ test("wheel zoom keeps the pixel under the cursor fixed after panning and at zoo
   await page.getByRole("button", { name: "2D", exact: true }).click();
   await page.getByRole("button", { name: "Скрыть 3D-превью", exact: true }).click();
   const area = (await page.locator(".texture-area").boundingBox())!;
+  const fitWidth = Math.min(area.width - 64, area.height - 112);
+  await expect.poll(async () => (await tex(page).boundingBox())!.width).toBeCloseTo(fitWidth, 1);
+  const beforePan = (await tex(page).boundingBox())!;
   const center = { x: area.x + area.width / 2, y: area.y + area.height / 2 };
   await page.mouse.move(center.x, center.y);
   await page.mouse.down({ button: "right" });
   await page.mouse.move(center.x + 41, center.y - 27);
   await page.mouse.up({ button: "right" });
+  await expect
+    .poll(async () => (await tex(page).boundingBox())!.x)
+    .toBeCloseTo(beforePan.x + 41, 1);
+  await expect
+    .poll(async () => (await tex(page).boundingBox())!.y)
+    .toBeCloseTo(beforePan.y - 27, 1);
   const initial = (await tex(page).boundingBox())!;
   const anchor = {
     x: Math.round(initial.x + initial.width * 0.23),
@@ -337,12 +346,11 @@ test("wheel zoom keeps the pixel under the cursor fixed after panning and at zoo
   };
   const expected = await position();
   await page.mouse.move(anchor.x, anchor.y);
+  let zoom = 1;
   for (const delta of [-200, -500, -100000, -100000, 200, 100000, 100000]) {
-    const before = await position();
+    zoom = Math.max(0.15, Math.min(32, zoom * Math.exp(-delta * 0.002)));
     await page.mouse.wheel(0, delta);
-    if (delta === -200)
-      await expect.poll(async () => (await position()).width).toBeGreaterThan(before.width);
-    else await page.waitForTimeout(40);
+    await expect.poll(async () => (await position()).width).toBeCloseTo(fitWidth * zoom, 1);
     const p = await position();
     expect(p.x).toBeCloseTo(expected.x, 3);
     expect(p.y).toBeCloseTo(expected.y, 3);
@@ -478,5 +486,69 @@ test("antialiasing uses screen-space SMAA with no MSAA and survives projection c
   const ortho = await image(page);
   await page.getByRole("button", { name: "Приблизить модель", exact: true }).click();
   await expect.poll(() => image(page)).not.toBe(ortho);
+  expect(errors).toEqual([]);
+});
+
+test("2D brush hover highlights the same 3D texel without painting, and clears on tool/pan/leave", async ({
+  page,
+}) => {
+  const errors: string[] = [];
+  page.on("pageerror", (e) => errors.push(e.message));
+  await enter(page);
+  await page.getByLabel("Цвет кисти", { exact: true }).fill("#ff00ff");
+  // Find a visible texel using the existing forward picker, then hover that texel in the atlas.
+  await page.getByLabel("Цвет кисти", { exact: true }).blur();
+  const point = { x: 0, y: 0 };
+  await expect
+    .poll(async () => {
+      const p = await opaquePoint(page);
+      if (p) Object.assign(point, p);
+      return !!p;
+    })
+    .toBe(true);
+  await page.mouse.move(point.x, point.y);
+  await expect(page.getByTestId("uv-hover")).toBeVisible();
+  const [x, y] = (await page.getByTestId("uv-hover").getAttribute("data-pixel"))!
+    .split(",")
+    .map(Number);
+  await page.mouse.move(5, 5);
+  await expect(page.getByTestId("uv-hover")).toHaveCount(0);
+  const initial = await image(page);
+  const pixels = await tex(page).evaluate((c) => (c as HTMLCanvasElement).toDataURL());
+  const revision = await page.getByTestId("document-status").getAttribute("data-revision");
+  const hoverPixel = async () => {
+    const box = (await tex(page).boundingBox())!;
+    await page.mouse.move(
+      box.x + ((x + 0.5) * box.width) / 64,
+      box.y + ((y + 0.5) * box.height) / 64,
+    );
+    await expect.poll(() => image(page)).not.toBe(initial);
+  };
+  await hoverPixel();
+  expect(await tex(page).evaluate((c) => (c as HTMLCanvasElement).toDataURL())).toBe(pixels);
+  await expect(page.getByTestId("document-status")).toHaveAttribute("data-revision", revision!);
+  await expect(page.getByRole("button", { name: "Отменить штрих", exact: true })).toBeDisabled();
+  await page.mouse.move(5, 5);
+  await expect.poll(() => image(page)).toBe(initial);
+  await hoverPixel();
+  await page.keyboard.press("e");
+  await expect.poll(() => image(page)).toBe(initial);
+  await page.keyboard.press("b");
+  await expect.poll(() => image(page)).not.toBe(initial);
+  await page.keyboard.down("Space");
+  await expect.poll(() => image(page)).toBe(initial);
+  await page.keyboard.up("Space");
+  await hoverPixel();
+  await page.mouse.down({ button: "right" });
+  await expect.poll(() => image(page)).toBe(initial);
+  await page.mouse.up({ button: "right" });
+  await page.mouse.move(5, 5);
+  await page.getByRole("button", { name: "2D", exact: true }).click();
+  await page.locator(".mini-preview canvas").screenshot();
+  const miniInitial = await image(page);
+  await hoverPixel();
+  await expect.poll(() => image(page)).not.toBe(miniInitial);
+  await page.mouse.move(5, 5);
+  await expect.poll(() => image(page)).toBe(miniInitial);
   expect(errors).toEqual([]);
 });

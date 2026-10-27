@@ -3,7 +3,13 @@ import { Canvas, addAfterEffect, useThree, type ThreeEvent } from "@react-three/
 import { PreviewCamera, type PreviewCameraProps } from "./PreviewCamera.js";
 export type { CameraAction } from "./PreviewCamera.js";
 import { EffectComposer, SMAA } from "@react-three/postprocessing";
-import { BrushPreview, surfaceHit, type SurfaceHit, type SurfaceHover } from "./SurfaceHover.js";
+import {
+  BrushPreview,
+  TextureBrushPreview,
+  surfaceHit,
+  type SurfaceHit,
+  type SurfaceHover,
+} from "./SurfaceHover.js";
 export type { SurfaceHover } from "./SurfaceHover.js";
 import { type SkinDocument, type SkinMetadata, type Pixel } from "@striped-skins/api";
 import { type BodySize, type PreviewSettings, type MotionLayer } from "@striped-skins/models";
@@ -36,6 +42,7 @@ export type PonyPreviewProps = Partial<Omit<PreviewCameraProps, "painting" | "co
   onSample?: (pixel: Pixel) => void;
   onHover?: (hit: SurfaceHover | null) => void;
   brushPreview?: boolean;
+  textureHover?: { x: number; y: number } | null;
 };
 export type EarthponyPreviewProps = Omit<PonyPreviewProps, "overrides"> & {
   size: BodySize;
@@ -144,6 +151,16 @@ function ModelScene(props: PonyPreviewProps) {
       ) : null}
       {hover && painting && props.brushPreview !== false && !onSample && color[3] > 0 ? (
         <BrushPreview hit={hover} color={color} size={brushSize} document={skinDocument} />
+      ) : null}
+      {props.textureHover && props.brushPreview !== false && !onSample && color[3] > 0 ? (
+        <TextureBrushPreview
+          pixel={props.textureHover}
+          document={skinDocument}
+          color={color}
+          size={brushSize}
+          activePart={activePart}
+          contextKey={JSON.stringify([overrideKey, props.preview, [...props.hidden]])}
+        />
       ) : null}
       <group
         onPointerOut={() => updateHover(null)}

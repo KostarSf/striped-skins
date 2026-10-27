@@ -119,6 +119,7 @@ export default function EditorWorkspace({
     [opacity, setOpacity] = useState(100),
     [colors, setColors] = useState({ primary: "#d8bb60", secondary: "#ffffff" }),
     [hover, setHover] = useState<SurfaceHover | null>(null),
+    [textureHover, setTextureHover] = useState<{ x: number; y: number } | null>(null),
     [removedColors, setRemovedColors] = useState<ReadonlySet<string>>(() => new Set()),
     [hidden, setHidden] = useState<ReadonlySet<string>>(() => new Set()),
     [activePart, setActivePart] = useState<string | null>(null),
@@ -349,6 +350,7 @@ export default function EditorWorkspace({
                 onSample={tool === "drop" ? sample : undefined}
                 onPaint={onPaint}
                 onHover={setHover}
+                textureHover={textureHover}
                 brushPreview={tool === "brush"}
                 onStats={onStats}
                 antialiasing={options.antialiasing}
@@ -369,6 +371,7 @@ export default function EditorWorkspace({
                 onPaint={onPaint}
                 guides={quads}
                 hover={hover}
+                onHover={setTextureHover}
               />
             </div>
           </div>
