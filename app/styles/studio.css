@@ -1566,15 +1566,15 @@ input[type="color"]::-webkit-color-swatch {
   left: 0;
 }
 .rail-colors .secondary-color {
-  bottom: 0;
+  bottom: -3px;
   right: 0;
   z-index: 1;
   border: 2px solid var(--studio-panel);
   border-radius: 5px;
 }
 .rail-colors .secondary-color input {
-  width: 20px !important;
-  height: 20px !important;
+  width: 18px !important;
+  height: 18px !important;
 }
 .palette-entry {
   position: relative;
