@@ -15,7 +15,7 @@ export function ModelViewport({
   children,
   ...props
 }: PonyPreviewProps & {
-  title?: string;
+  title?: string | null;
   mini?: boolean;
   onClose?: () => void;
   children?: React.ReactNode;
@@ -72,7 +72,7 @@ export function ModelViewport({
         onScale={reportScale}
       />
       <div className="viewport-heading">
-        <h2>{title}</h2>
+        {title ? <h2>{title}</h2> : null}
         <div className="viewport-heading-actions">
           {mini && onClose ? (
             <IconButton label="Скрыть 3D-превью" onClick={onClose}>

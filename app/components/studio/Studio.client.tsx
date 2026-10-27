@@ -13,7 +13,7 @@ import { StudioHeader } from "./StudioHeader";
 import { ImportDialog } from "./ImportDialog";
 import { skinName, useDocumentInfo } from "./DocumentSession";
 import { ModelViewport } from "./ModelViewport";
-import { SkinSettings, raceNames } from "./SkinSettings";
+import { SkinSettings } from "./SkinSettings";
 import { Button, PanelHeading } from "./ui";
 const EditorWorkspace = lazy(() => import("./EditorWorkspace"));
 const empty = new Set<string>();
@@ -153,7 +153,6 @@ export default function Studio({ mode }: { mode: "viewer" | "editor" }) {
       ) : (
         <ViewerWorkspace
           document={document}
-          name={info.name}
           isSecond={isSecond}
           setSlot={(value) => {
             const next = new URLSearchParams(params);
@@ -185,14 +184,12 @@ export default function Studio({ mode }: { mode: "viewer" | "editor" }) {
 }
 function ViewerWorkspace({
   document: skin,
-  name,
   isSecond,
   setSlot,
   onImport,
   onExport,
 }: {
   document: SkinDocument;
-  name: string;
   isSecond: boolean;
   setSlot: (slot: "first" | "second") => void;
   onImport: () => void;
@@ -243,13 +240,8 @@ function ViewerWorkspace({
           animate={prefs.userOptions.animations}
           antialiasing={prefs.userOptions.antialiasing}
           smoothCamera={prefs.userOptions.smoothCamera}
-          title={comparison ? "Сравнение скинов" : name.replace(/\.[^.]+$/, "")}
+          title={null}
         >
-          <div className="viewer-description">
-            {comparison
-              ? "Два независимых документа"
-              : `${raceNames[meta.race]} · Minecraft 1.20.1`}
-          </div>
           <div className="viewer-top-actions">
             <Button
               title="Comparison mode"

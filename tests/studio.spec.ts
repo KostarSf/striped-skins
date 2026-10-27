@@ -764,3 +764,26 @@ test("viewport headings stay inside panels, texture covers the panel, and 3D rep
     expect(area.height).toBeCloseTo(texturePanel.height, 1);
   }
 });
+
+test("viewer camera controls replace the title overlay and the view popup stays inside the panel", async ({
+  page,
+}) => {
+  await enter(page, "/");
+  const panel = page.getByRole("region", { name: "Предпросмотр модели", exact: true });
+  await expect(panel.locator(".viewport-heading h2")).toHaveCount(0);
+  await expect(panel.locator(".viewer-description")).toHaveCount(0);
+  await expect(panel.getByText(/Minecraft 1\.20\.1/)).toHaveCount(0);
+  for (const width of [1440, 700, 390]) {
+    await page.setViewportSize({ width, height: 960 });
+    await page.keyboard.press("Escape");
+    await page.locator(".view-options summary").click();
+    const host = (await panel.boundingBox())!;
+    const projection = (await page.getByLabel("Ракурс модели").boundingBox())!;
+    const popup = (await page.locator(".view-options > div").boundingBox())!;
+    expect(projection.x - host.x).toBeLessThanOrEqual(24);
+    expect(projection.y - host.y).toBeLessThanOrEqual(64);
+    expect(popup.x).toBeGreaterThanOrEqual(host.x + 8);
+    expect(popup.x + popup.width).toBeLessThanOrEqual(host.x + host.width - 8);
+    await expect(page.getByRole("checkbox", { name: "Сглаживание", exact: true })).toBeVisible();
+  }
+});

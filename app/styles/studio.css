@@ -328,26 +328,22 @@ button:disabled {
   top: 22px;
   left: 24px;
   right: auto;
-  display: block;
-}
-.viewer-content .viewport-heading h2 {
-  font-size: 17px;
-  max-width: 300px;
-  font-weight: 600;
+  width: 230px;
+  max-width: calc(100% - 48px);
 }
 .viewer-content .viewport-heading-actions {
-  margin-top: 55px;
+  margin-top: 0;
+}
+.viewer-content .view-options {
+  position: static;
+}
+.viewer-content .view-options > div {
+  left: 0;
+  right: auto;
+  max-width: 100%;
 }
 .viewer-content .viewport-heading select {
   width: 164px;
-}
-.viewer-description {
-  position: absolute;
-  pointer-events: none;
-  top: 50px;
-  left: 24px;
-  color: var(--studio-muted);
-  font-size: 11px;
 }
 .viewer-top-actions {
   display: flex;
@@ -1341,20 +1337,8 @@ input[type="color"]::-webkit-color-swatch {
     top: 64px;
     left: 16px;
   }
-  .viewer-content .viewport-heading h2 {
-    font-size: 15px;
-    max-width: 200px;
-  }
-  .viewer-content .viewport-heading-actions {
-    margin-top: 40px;
-  }
   .viewer-content .viewport-heading select {
     width: 140px;
-  }
-  .viewer-description {
-    top: 90px;
-    left: 16px;
-    font-size: 10px;
   }
   .viewer-content .viewport-footer {
     bottom: 16px;
@@ -1530,9 +1514,6 @@ input[type="color"]::-webkit-color-swatch {
   flex: 1;
   min-width: 0;
   max-width: none;
-}
-.viewer-content .viewport-heading h2 {
-  max-width: 300px;
 }
 
 .studio-app .model-viewport.maximized {
