@@ -28,6 +28,7 @@ export type UserOptionsPreferences = {
   antialiasing: boolean;
   smoothCamera: boolean;
   animations: boolean;
+  groundGrid: boolean;
 };
 
 export type ViewerPreferencesProps = Partial<Omit<ViewerPreferences, "camera" | "userOptions">> & {

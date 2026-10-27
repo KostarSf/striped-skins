@@ -30,6 +30,7 @@ export const createViewerPreferencesStore = (
       animations: true,
       antialiasing: true,
       smoothCamera: true,
+      groundGrid: true,
     },
   };
 

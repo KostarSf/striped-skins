@@ -7,9 +7,9 @@ import { GeneratedPony } from "../../../models/GeneratedPony.js";
 import { useViewerPreferencesContext } from "../../../store/viewer-preferences.context.js";
 export const PonyModel = forwardRef<
   Group,
-  { skin: PonySkin } & Pick<GeneratedPonyProps, "preview" | "hidden" | "motionLayers"> &
+  { skin: PonySkin } & Pick<GeneratedPonyProps, "preview" | "hidden" | "motionLayers" | "shading"> &
     ThreeElements["group"]
->(function PonyModel({ skin, preview, hidden, motionLayers, ...props }, ref) {
+>(function PonyModel({ skin, preview, hidden, motionLayers, shading = "studio", ...props }, ref) {
   const animations = useViewerPreferencesContext((s) => s.userOptions.animations);
   return (
     <group ref={ref} {...props}>
@@ -19,6 +19,7 @@ export const PonyModel = forwardRef<
         preview={preview}
         hidden={hidden}
         motionLayers={motionLayers}
+        shading={shading}
       />
     </group>
   );

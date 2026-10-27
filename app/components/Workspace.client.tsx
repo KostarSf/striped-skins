@@ -6,48 +6,54 @@ import {
   useViewerPreferencesContext,
 } from "./striped-viewer.client";
 import { useLocation } from "react-router";
+import {
+  DocumentSession,
+  markRecoveredDirty,
+  useDocumentInfo,
+  skinName,
+} from "./studio/DocumentSession";
 import { getSafeSkinUrl } from "../utils";
-const KEY = "striped.editor.documents.v1";
-type Saved = {
-  first: null | { url: string | null; document: ReturnType<SkinDocument["snapshot"]> };
-  second: null | { url: string | null; document: ReturnType<SkinDocument["snapshot"]> };
-};
-function restore() {
-  try {
-    const text = localStorage.getItem(KEY);
-    if (!text) return;
-    const saved = JSON.parse(text) as Saved,
-      params = new URLSearchParams(location.search);
-    const first =
-        saved.first?.url === params.get("skin")
-          ? PonySkin.fromDocument(SkinDocument.restore(saved.first.document))
-          : PonySkin.DEFAULT,
-      second =
-        saved.second?.url === params.get("second-skin")
-          ? PonySkin.fromDocument(SkinDocument.restore(saved.second.document))
-          : PonySkin.DEFAULT;
-    if (first !== PonySkin.DEFAULT)
-      first.sourceUrl = getSafeSkinUrl(params.get("skin")) ?? undefined;
-    if (second !== PonySkin.DEFAULT)
-      second.sourceUrl = getSafeSkinUrl(params.get("second-skin")) ?? undefined;
-    return { defaultPony: PonySkin.DEFAULT, firstPony: first, secondPony: second };
-  } catch {
-    return;
-  }
+import { XMarkIcon } from "@heroicons/react/24/outline";
+import { IconButton } from "./studio/ui";
+import { readSavedDocuments, recoverySnapshot, saveDocuments } from "../document-recovery";
+import { StudioSkeleton } from "./studio/StudioSkeleton";
+async function restore() {
+  const saved = await readSavedDocuments();
+  const params = new URLSearchParams(location.search);
+  const slot = (key: "first" | "second", param: string) => {
+    try {
+      const value = saved?.[key];
+      if (!value || value.url !== params.get(param)) return PonySkin.DEFAULT;
+      const skin = PonySkin.fromDocument(SkinDocument.restore(value.document));
+      skin.sourceUrl = getSafeSkinUrl(params.get(param)) ?? undefined;
+      // Old snapshots have no dirty flag; protect them conservatively until exported.
+      if (value.dirty !== false) markRecoveredDirty(skin.document);
+      return skin;
+    } catch {
+      return PonySkin.DEFAULT;
+    }
+  };
+  return {
+    defaultPony: PonySkin.DEFAULT,
+    firstPony: slot("first", "skin"),
+    secondPony: slot("second", "second-skin"),
+  };
 }
 function Autosave() {
   const [warning, setWarning] = useState(false);
+  const [dismissed, setDismissed] = useState(false);
   const first = usePonyContext((s) => s.firstPony.skin),
     second = usePonyContext((s) => s.secondPony.skin),
     route = useLocation();
   const defaultURL = useViewerPreferencesContext((s) => s.defaultSkinUrl);
+  const firstInfo = useDocumentInfo(first.document, skinName(first.sourceUrl));
+  const secondInfo = useDocumentInfo(second.document, skinName(second.sourceUrl));
   useEffect(() => {
     if (first === PonySkin.DEFAULT && second === PonySkin.DEFAULT) return;
     const params = new URLSearchParams(route.search);
-    const snapshot = (skin: PonySkin, key: string) => {
+    const snapshot = (skin: PonySkin, key: string, dirty: boolean) => {
       const url = params.get(key);
       if (skin === PonySkin.DEFAULT || (url && skin.sourceUrl !== getSafeSkinUrl(url))) return null;
-      // A removed URL can render once before its default replacement finishes loading.
       if (
         !url &&
         skin.sourceUrl &&
@@ -55,21 +61,24 @@ function Autosave() {
         !skin.sourceUrl.startsWith("blob:")
       )
         return null;
-      return { url, document: skin.document.snapshot() };
+      return { url, dirty, document: recoverySnapshot(skin.document) };
     };
+    let active = true;
     const save = () => {
-      try {
-        localStorage.setItem(
-          KEY,
-          JSON.stringify({
-            first: snapshot(first, "skin"),
-            second: snapshot(second, "second-skin"),
-          }),
-        );
-        setWarning(false);
-      } catch {
-        setWarning(true);
-      }
+      // Copy pixels now; later edits must not alter a queued recovery write.
+      void saveDocuments({
+        first: snapshot(first, "skin", firstInfo.dirty),
+        second: snapshot(second, "second-skin", secondInfo.dirty),
+      })
+        .then(() => {
+          if (active) {
+            setWarning(false);
+            setDismissed(false);
+          }
+        })
+        .catch(() => {
+          if (active) setWarning(true);
+        });
     };
     let timer: ReturnType<typeof setTimeout> | undefined;
     const schedule = () => {
@@ -78,24 +87,45 @@ function Autosave() {
     };
     const a = first.document.subscribe(schedule),
       b = second.document.subscribe(schedule);
+    const background = () => {
+      if (document.visibilityState === "hidden") save();
+    };
     window.addEventListener("pagehide", save);
+    document.addEventListener("visibilitychange", background);
     schedule();
     return () => {
       a();
       b();
       clearTimeout(timer);
       window.removeEventListener("pagehide", save);
+      document.removeEventListener("visibilitychange", background);
       save();
+      active = false;
     };
-  }, [first, second, route.search, defaultURL]);
-  return warning ? (
-    <p role="alert" className="fixed bottom-0 left-0 z-50 bg-amber-950 p-3 text-sm text-amber-100">
-      Браузер не смог сохранить локальную копию. Скачайте PNG в редакторе перед закрытием страницы.
-    </p>
+  }, [first, second, route.search, defaultURL, firstInfo.dirty, secondInfo.dirty]);
+  return warning && !dismissed ? (
+    <section role="alert" className="recovery-warning">
+      <p>Браузер не смог сохранить локальную копию. Скачайте PNG перед закрытием страницы.</p>
+      <IconButton label="Закрыть предупреждение о сохранении" onClick={() => setDismissed(true)}>
+        <XMarkIcon />
+      </IconButton>
+    </section>
   ) : null;
 }
 export default function Workspace({ children }: { children: ReactNode }) {
-  const [initial] = useState(restore);
+  const location = useLocation();
+  const [initial, setInitial] = useState<Awaited<ReturnType<typeof restore>> | null>(null);
+  useEffect(() => {
+    let active = true;
+    void restore().then((value) => {
+      if (active) setInitial(value);
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
+  if (!initial)
+    return <StudioSkeleton mode={location.pathname.startsWith("/editor") ? "editor" : "viewer"} />;
   return (
     <StripedContextProvider
       ponyParams={initial}
@@ -105,11 +135,14 @@ export default function Workspace({ children }: { children: ReactNode }) {
           animations: !!(localStorage.getItem("viewer.options.animations") ?? true),
           antialiasing: !!(localStorage.getItem("viewer.options.antialiasing") ?? true),
           smoothCamera: !!(localStorage.getItem("viewer.options.smoothCamera") ?? true),
+          groundGrid: !!(localStorage.getItem("viewer.options.groundGrid") ?? true),
         },
       }}
     >
-      <Autosave />
-      {children}
+      <DocumentSession>
+        <Autosave />
+        {children}
+      </DocumentSession>
     </StripedContextProvider>
   );
 }

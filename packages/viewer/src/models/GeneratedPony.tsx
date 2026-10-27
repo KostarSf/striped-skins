@@ -3,17 +3,18 @@ import { useFrame, useThree } from "@react-three/fiber";
 import {
   BufferGeometry,
   CanvasTexture,
-  DoubleSide,
   Float32BufferAttribute,
   Group,
   Mesh,
-  MeshBasicMaterial,
   NearestFilter,
   SRGBColorSpace,
   TextureLoader,
   type Texture,
 } from "three";
 import { decodeSkinMetadata, type SkinDocument, type SkinMetadata } from "@striped-skins/api";
+import { UVOutlines } from "./UVOutlines.js";
+import { updateSurfaceVisibility } from "./SurfaceVisibility.js";
+import { skinMaterial, type SkinMaterial, type ModelShading } from "./SkinMaterial.js";
 import {
   resolveModel,
   resolveWearables,
@@ -42,6 +43,8 @@ export type GeneratedPonyProps = {
   animate?: boolean;
   paused?: boolean;
   motionLayers?: readonly MotionLayer[];
+  showUV?: boolean;
+  shading?: ModelShading;
 };
 export function geometryFor(quads: ModelQuad[]) {
   const geometry = new BufferGeometry(),
@@ -67,16 +70,6 @@ function configureTexture(texture: Texture) {
   texture.colorSpace = SRGBColorSpace;
   return texture;
 }
-function skinMaterial(texture: Texture) {
-  return new MeshBasicMaterial({
-    map: texture,
-    side: DoubleSide,
-    alphaTest: 0.1,
-    transparent: true,
-    forceSinglePass: true,
-    toneMapped: false,
-  });
-}
 
 export function GeneratedPony({
   document: skinDocument,
@@ -86,6 +79,8 @@ export function GeneratedPony({
   animate = false,
   paused = false,
   motionLayers = EMPTY_LAYERS,
+  showUV = false,
+  shading = "flat",
 }: GeneratedPonyProps) {
   const revision = useSyncExternalStore(
     skinDocument.subscribe,
@@ -100,8 +95,8 @@ export function GeneratedPony({
     canvas.width = skinDocument.width;
     canvas.height = skinDocument.height;
     const texture = configureTexture(new CanvasTexture(canvas));
-    return { canvas, texture, material: skinMaterial(texture) };
-  }, [skinDocument]);
+    return { canvas, texture, material: skinMaterial(texture, shading) };
+  }, [skinDocument, shading]);
   useEffect(() => {
     let pending: number | null = null;
     const update = () => {
@@ -142,10 +137,10 @@ export function GeneratedPony({
       nodes = new Map<string, Group>(),
       meshes: Mesh[] = [],
       geometries: BufferGeometry[] = [],
-      materials: MeshBasicMaterial[] = [],
+      materials: SkinMaterial[] = [],
       textures: Texture[] = [],
       stages: { id: string; group: Group; stage: Stage }[] = [];
-    const create = (node: ModelNode, material: MeshBasicMaterial, gearId?: number): Group => {
+    const create = (node: ModelNode, material: SkinMaterial, gearId?: number): Group => {
       const group = new Group();
       group.name = node.id;
       group.position.fromArray(node.pivot);
@@ -158,7 +153,11 @@ export function GeneratedPony({
         mesh.name = node.id;
         mesh.userData = {
           partId: node.id,
-          surfaceIds: node.quads.map((q) => q.id),
+          documentId: skinDocument.id,
+          textureDocumentId: material === surface.material ? skinDocument.id : null,
+          surfaceIds: node.quads.map((q) =>
+            gearId === undefined ? q.id : `gear/${gearId}/${q.id}`,
+          ),
           surfaceUVs: node.quads.map((q) => q.uv),
           editable: gearId === undefined,
           gearId,
@@ -195,7 +194,7 @@ export function GeneratedPony({
         if (!url) throw new Error(`Missing accessory texture: ${item.texture}`);
         const texture = configureTexture(new TextureLoader().load(url, () => invalidate()));
         textures.push(texture);
-        material = skinMaterial(texture);
+        material = skinMaterial(texture, shading);
         materials.push(material);
       }
       const attachment = new Group();
@@ -211,7 +210,7 @@ export function GeneratedPony({
       });
     }
     return { root, nodes, meshes, geometries, materials, textures, stages, gear };
-  }, [model, surface, gearKey, invalidate]);
+  }, [model, surface, gearKey, invalidate, skinDocument.id, shading]);
   useEffect(
     () => () => {
       instance.geometries.forEach((g) => g.dispose());
@@ -248,7 +247,8 @@ export function GeneratedPony({
       instance.root.position.set(0, 2, 1.2);
       for (const mesh of instance.meshes) {
         const id = mesh.userData.partId as string;
-        let visible = !hidden.has(id) && partAvailable(id, metadata, preview);
+        const hasSurfaces = updateSurfaceVisibility(mesh, hidden);
+        let visible = !hidden.has(id) && hasSurfaces && partAvailable(id, metadata, preview);
         const item = instance.gear.find((g) => g.id === mesh.userData.gearId);
         if (item?.side) {
           if (id.endsWith("strap")) visible &&= item.side === "both";
@@ -257,7 +257,7 @@ export function GeneratedPony({
         }
         mesh.visible = visible;
         if (mesh.userData.gearId === 150) {
-          (mesh.material as MeshBasicMaterial).color.set(
+          (mesh.material as SkinMaterial).color.set(
             `#${metadata.glow === "000000" ? "ffffff" : metadata.glow}`,
           );
           const joint = mesh.parent!;
@@ -304,5 +304,10 @@ export function GeneratedPony({
     )
       invalidate();
   });
-  return <primitive object={instance.root} dispose={null} />;
+  return (
+    <>
+      <primitive object={instance.root} dispose={null} />
+      {showUV ? <UVOutlines meshes={instance.meshes} hidden={hidden} /> : null}
+    </>
+  );
 }

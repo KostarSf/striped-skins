@@ -38,13 +38,13 @@ test("comparison changes the rendered image in both directions without touching 
   const single = await image();
 
   await page.getByTitle("Comparison mode").click();
-  await expect(page.locator("form")).toHaveCount(2);
+  await expect(page.getByRole("button", { name: "Скин 2", exact: true })).toBeVisible();
   await expect.poll(image).not.toBe(single);
   await page.waitForTimeout(500);
   const comparison = await image();
 
   await page.getByTitle("Comparison mode").click();
-  await expect(page.locator("form")).toHaveCount(1);
+  await expect(page.getByRole("button", { name: "Скин 2", exact: true })).toHaveCount(0);
   await expect.poll(image).not.toBe(comparison);
 });
 
@@ -53,21 +53,19 @@ test("changing the first skin preserves an explicit exit from comparison mode", 
 }) => {
   await page.goto("/?skin=/steve_pony.png&second-skin=/steve_pony.png");
   await waitForSkin(page);
-  await expect(page.locator("form")).toHaveCount(2);
+  await expect(page.getByRole("button", { name: "Скин 2", exact: true })).toBeVisible();
   await page.getByTitle("Comparison mode").click();
-  await expect(page.locator("form")).toHaveCount(1);
+  await expect(page.getByRole("button", { name: "Скин 2", exact: true })).toHaveCount(0);
 
-  await page.getByRole("button", { name: "clear", exact: true }).click();
+  await page.getByRole("button", { name: "Открыть", exact: true }).click();
+  await page.getByRole("button", { name: "Использовать пример скина" }).click();
   await expect(page).not.toHaveURL(/[?&]skin=/);
-  await expect(page.locator("form")).toHaveCount(1);
-
+  await expect(page.getByRole("button", { name: "Скин 2", exact: true })).toHaveCount(0);
   const firstSkin = "http://127.0.0.1:3100/steve_pony.png";
-  const input = page.getByPlaceholder("paste link to skin...");
-  await input.fill(firstSkin);
-  await input.press("Enter");
+  await openURL(page, firstSkin);
   await expect(page).toHaveURL(new RegExp("[?&]skin="));
   await waitForSkin(page);
-  await expect(page.locator("form")).toHaveCount(1);
+  await expect(page.getByRole("button", { name: "Скин 2", exact: true })).toHaveCount(0);
   expect(new URL(page.url()).searchParams.get("second-skin")).toBe("/steve_pony.png");
 });
 
@@ -85,19 +83,16 @@ test("signed skin URLs retain every query parameter on submit and reload", async
 
   await page.goto("/");
   await waitForSkin(page);
-  await page.locator("form").first().locator("button").nth(1).click();
-  await page.getByPlaceholder("paste link to skin...").fill(firstSkin);
-  await page.getByPlaceholder("paste link to skin...").press("Enter");
+  await openURL(page, firstSkin);
   await expect
     .poll(() => proxyRequests.map((url) => url.searchParams.get("url")))
     .toContain(firstSkin);
   await waitForSkin(page);
 
   await page.getByTitle("Comparison mode").click();
-  await expect(page.locator("form")).toHaveCount(2);
-  await page.locator("form").nth(1).locator("button").nth(1).click();
-  await page.getByPlaceholder("paste link to skin...").nth(1).fill(secondSkin);
-  await page.getByPlaceholder("paste link to skin...").nth(1).press("Enter");
+  await expect(page.getByRole("button", { name: "Скин 2", exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Скин 2", exact: true }).click();
+  await openURL(page, secondSkin);
   await expect
     .poll(() => proxyRequests.map((url) => url.searchParams.get("url")))
     .toContain(secondSkin);
@@ -109,7 +104,10 @@ test("signed skin URLs retain every query parameter on submit and reload", async
 
   proxyRequests = [];
   // This case verifies URL decoding on a fresh load; editor restoration has a separate test.
-  await page.addInitScript(() => localStorage.removeItem("striped.editor.documents.v1"));
+  await page.addInitScript(() => {
+    localStorage.removeItem("striped.editor.documents.v1");
+    indexedDB.deleteDatabase("striped.editor");
+  });
   await page.reload();
   await expect
     .poll(() => proxyRequests.map((url) => url.searchParams.get("url")))
@@ -120,3 +118,10 @@ test("signed skin URLs retain every query parameter on submit and reload", async
     expect([firstSkin, secondSkin]).toContain(request.searchParams.get("url"));
   }
 });
+
+async function openURL(page: Page, url: string) {
+  await page.getByRole("button", { name: "Открыть", exact: true }).click();
+  await page.getByLabel("Ссылка на скин").fill(url);
+  await page.getByRole("button", { name: "Открыть по ссылке", exact: true }).click();
+  await expect(page.getByRole("dialog")).not.toBeVisible();
+}
