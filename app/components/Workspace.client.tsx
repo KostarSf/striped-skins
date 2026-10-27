@@ -1,6 +1,10 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { PonySkin, SkinDocument } from "@striped-skins/api";
-import { StripedContextProvider, usePonyContext } from "./striped-viewer.client";
+import {
+  StripedContextProvider,
+  usePonyContext,
+  useViewerPreferencesContext,
+} from "./striped-viewer.client";
 import { useLocation } from "react-router";
 import { getSafeSkinUrl } from "../utils";
 const KEY = "striped.editor.documents.v1";
@@ -36,12 +40,21 @@ function Autosave() {
   const first = usePonyContext((s) => s.firstPony.skin),
     second = usePonyContext((s) => s.secondPony.skin),
     route = useLocation();
+  const defaultURL = useViewerPreferencesContext((s) => s.defaultSkinUrl);
   useEffect(() => {
     if (first === PonySkin.DEFAULT && second === PonySkin.DEFAULT) return;
     const params = new URLSearchParams(route.search);
     const snapshot = (skin: PonySkin, key: string) => {
       const url = params.get(key);
       if (skin === PonySkin.DEFAULT || (url && skin.sourceUrl !== getSafeSkinUrl(url))) return null;
+      // A removed URL can render once before its default replacement finishes loading.
+      if (
+        !url &&
+        skin.sourceUrl &&
+        skin.sourceUrl !== defaultURL &&
+        !skin.sourceUrl.startsWith("blob:")
+      )
+        return null;
       return { url, document: skin.document.snapshot() };
     };
     const save = () => {
@@ -74,7 +87,7 @@ function Autosave() {
       window.removeEventListener("pagehide", save);
       save();
     };
-  }, [first, second, route.search]);
+  }, [first, second, route.search, defaultURL]);
   return warning ? (
     <p role="alert" className="fixed bottom-0 left-0 z-50 bg-amber-950 p-3 text-sm text-amber-100">
       Браузер не смог сохранить локальную копию. Скачайте PNG в редакторе перед закрытием страницы.
