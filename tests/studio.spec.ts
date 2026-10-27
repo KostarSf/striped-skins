@@ -710,18 +710,31 @@ for (const route of ["/", "/editor"]) {
     page,
   }) => {
     await enter(page, route);
+    const antialiased = await image(page);
     await page.locator(".view-options summary").click();
     await page.getByRole("checkbox", { name: "Сглаживание", exact: true }).uncheck();
     await page.keyboard.press("Escape");
-    // Exclude the model, including its translucent edges, from the grid measurements.
+    await expect.poll(() => image(page)).not.toBe(antialiased);
+    // SMAA can extend the model silhouette into previously transparent pixels.
+    // Keep a guard band around the model so those pixels cannot be counted as grid.
     const mask = await page.locator(".model-viewport canvas").evaluateHandle((c) => {
       const canvas = c as HTMLCanvasElement,
         gl = canvas.getContext("webgl2")!;
       const pixels = new Uint8Array(canvas.width * canvas.height * 4);
       gl.readPixels(0, 0, canvas.width, canvas.height, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
-      return Uint8Array.from({ length: pixels.length / 4 }, (_, i) =>
-        pixels[i * 4 + 3] === 0 ? 1 : 0,
-      );
+      const mask = new Uint8Array(pixels.length / 4).fill(1);
+      for (let y = 0; y < canvas.height; y++)
+        for (let x = 0; x < canvas.width; x++) {
+          if (pixels[(y * canvas.width + x) * 4 + 3] === 0) continue;
+          for (let dy = -3; dy <= 3; dy++)
+            for (let dx = -3; dx <= 3; dx++) {
+              const nx = x + dx,
+                ny = y + dy;
+              if (nx >= 0 && nx < canvas.width && ny >= 0 && ny < canvas.height)
+                mask[ny * canvas.width + nx] = 0;
+            }
+        }
+      return mask;
     });
     await page.locator(".view-options summary").click();
     await page.getByRole("checkbox", { name: "Сетка под моделью", exact: true }).check();
