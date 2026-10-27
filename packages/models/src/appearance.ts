@@ -53,7 +53,8 @@ export function partAvailable(
     id === "ear" ||
     id === "cloak" ||
     id.startsWith("head/nose") ||
-    id.startsWith("neck/mane") ||
+    (id.startsWith("neck/mane") && metadata.race !== "KIRIN") ||
+    /^(left_cast|right_cast)(\/|$)/.test(id) ||
     id.includes("/corona")
   )
     return false;

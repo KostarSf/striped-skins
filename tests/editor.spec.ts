@@ -339,3 +339,50 @@ test("failed recovery is dismissible, leaves the footer clear and does not reope
   await expect(warning).toHaveCount(0);
   await expect.poll(() => pixel(page, 12, 12)).toEqual([255, 0, 255, 255]);
 });
+
+test("recovered edits stay dirty until exported and require confirmation before replacement", async ({
+  page,
+}) => {
+  const savedDirty = () =>
+    page.evaluate(
+      () =>
+        new Promise<boolean | undefined>((resolve, reject) => {
+          const request = indexedDB.open("striped.editor", 1);
+          request.onerror = () => reject(request.error);
+          request.onsuccess = () => {
+            const db = request.result;
+            const tx = db.transaction("documents", "readonly");
+            const result = tx.objectStore("documents").get("session");
+            tx.oncomplete = () => {
+              resolve(result.result?.first?.dirty);
+              db.close();
+            };
+            tx.onabort = () => {
+              reject(tx.error);
+              db.close();
+            };
+          };
+        }),
+    );
+  await page.goto("/editor");
+  await expect(page.getByTestId("skin-texture")).toBeVisible();
+  await paint(page);
+  await expect.poll(savedDirty).toBe(true);
+  await page.reload();
+  await expect(page.getByTestId("skin-texture")).toBeVisible();
+  await expect.poll(() => pixel(page, 12, 12)).toEqual([255, 0, 255, 255]);
+  await expect(page.getByText("Есть изменения", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Открыть", exact: true }).click();
+  await page.getByRole("button", { name: "Использовать пример скина" }).click();
+  await expect(page.getByRole("heading", { name: "В текущем скине есть изменения" })).toBeVisible();
+  await page.getByRole("button", { name: "Отмена", exact: true }).click();
+  await page.keyboard.press("Escape");
+  const download = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Скачать PNG" }).click();
+  await download;
+  await expect.poll(savedDirty).toBe(false);
+  await page.reload();
+  await expect(page.getByTestId("skin-texture")).toBeVisible();
+  await expect(page.getByText("Есть изменения", { exact: true })).toHaveCount(0);
+  await expect.poll(() => pixel(page, 12, 12)).toEqual([255, 0, 255, 255]);
+});

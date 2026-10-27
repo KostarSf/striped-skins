@@ -197,11 +197,15 @@ test("camera zoom, presets and projection change the actual WebGL frame", async 
   await expect.poll(() => image(page)).not.toBe(initial);
   const front = await image(page);
   await page.getByLabel("Ракурс модели").selectOption("orthographic");
+  await expect(page.getByLabel("Ракурс модели")).toHaveValue("orthographic");
+  await page.getByRole("button", { name: "Сброс вида", exact: true }).click();
+  await expect(page.getByLabel("Ракурс модели")).toHaveValue("orthographic");
   await expect.poll(() => image(page)).not.toBe(front);
   const ortho = await image(page);
   await page.getByRole("button", { name: "Приблизить модель", exact: true }).click();
   await expect.poll(() => image(page)).not.toBe(ortho);
   await page.getByLabel("Ракурс модели").selectOption("perspective");
+  await expect(page.getByLabel("Ракурс модели")).toHaveValue("perspective");
   await expect
     .poll(async () => {
       const current = await coverage(page);

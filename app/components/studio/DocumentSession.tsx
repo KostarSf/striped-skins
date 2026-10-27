@@ -9,7 +9,12 @@ import {
   type ReactNode,
 } from "react";
 import { documentCanvas, type SkinDocument } from "@striped-skins/api";
-type Info = { name: string; baseline: Uint8ClampedArray };
+// Recovery may contain unexported edits with no original baseline left in memory.
+const recoveredDirty = new WeakSet<SkinDocument>();
+export function markRecoveredDirty(document: SkinDocument) {
+  recoveredDirty.add(document);
+}
+type Info = { name: string; baseline: Uint8ClampedArray | null };
 type Session = { documents: WeakMap<SkinDocument, Info>; changed: () => void };
 const Context = createContext<Session | null>(null);
 export function DocumentSession({ children }: { children: ReactNode }) {
@@ -28,10 +33,14 @@ export function useDocumentInfo(document: SkinDocument, fallback = "skin.png") {
   useSyncExternalStore(document.subscribe, document.getSnapshot, document.getSnapshot);
   let info = session.documents.get(document);
   if (!info) {
-    info = { name: fallback, baseline: new Uint8ClampedArray(document.pixels) };
+    info = {
+      name: fallback,
+      baseline: recoveredDirty.has(document) ? null : new Uint8ClampedArray(document.pixels),
+    };
     session.documents.set(document, info);
   }
-  const dirty = document.pixels.some((v, i) => v !== info.baseline[i]);
+  const baseline = info.baseline;
+  const dirty = baseline === null || document.pixels.some((v, i) => v !== baseline[i]);
   const { documents, changed } = session;
   const register = useCallback(
     (doc: SkinDocument, name: string) => {

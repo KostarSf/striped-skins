@@ -43,8 +43,8 @@ export function ModelViewport({
   const [maximized, setMaximized] = useState(false);
   const [view, setView] = useState("perspective");
   const [action, setAction] = useState<CameraAction>({ id: 0, kind: "reset" });
-  const command = (kind: CameraAction["kind"]) => {
-    if (kind === "reset") setView(projection);
+  const command = (kind: CameraAction["kind"], nextProjection = projection) => {
+    if (kind === "reset") setView(nextProjection);
     setAction((a) => ({ id: a.id + 1, kind }));
   };
   useEffect(() => {
@@ -89,7 +89,7 @@ export function ModelViewport({
                 setView(e.target.value);
                 if (e.target.value === "orthographic" || e.target.value === "perspective") {
                   setProjection(e.target.value);
-                  command("reset");
+                  command("reset", e.target.value);
                 } else command(e.target.value as CameraAction["kind"]);
               }}
             >

@@ -47,6 +47,7 @@ export default function Studio({ mode }: { mode: "viewer" | "editor" }) {
   const { register } = info;
   const firstURL = params.get("skin"),
     secondURL = params.get("second-skin");
+  const previousURLs = useRef({ first: firstURL, second: secondURL });
   useEffect(() => {
     if (secondURL) setMode("side-by-side");
   }, [secondURL, setMode]);
@@ -55,9 +56,19 @@ export default function Studio({ mode }: { mode: "viewer" | "editor" }) {
       ["first", firstURL],
       ["second", secondURL],
     ] as const) {
-      const safe = getSafeSkinUrl(url);
-      if (!safe) continue;
+      const previousURL = previousURLs.current[slot];
+      previousURLs.current[slot] = url;
       const item = latest.current[slot];
+      let safe = getSafeSkinUrl(url);
+      if (previousURL !== null && url === null) {
+        // Cancel an in-flight URL load. Local imports install a document without a
+        // source URL; preserve those while resetting documents loaded from a URL.
+        generation.current[slot]++;
+        requested.current[slot] = "";
+        if (item.skin.sourceUrl && !item.skin.sourceUrl.startsWith("blob:"))
+          safe = "/steve_pony.png";
+      }
+      if (!safe) continue;
       if (item.skin.sourceUrl === safe) {
         requested.current[slot] = safe;
         continue;

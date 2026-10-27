@@ -8,6 +8,7 @@ export type SavedDocuments = Record<
   "first" | "second",
   null | {
     url: string | null;
+    dirty?: boolean;
     document: RecoverySnapshot;
   }
 >;

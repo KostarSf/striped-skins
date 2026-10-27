@@ -210,3 +210,31 @@ test("wide 3D brushes stay inside a UV face and preserve trigger pixels", () => 
   doc.undo();
   assert.deepEqual(doc.snapshot(), before);
 });
+
+test("inactive unicorn casting parts stay unavailable, including inherited races", () => {
+  const doc = skin();
+  for (const race of ["UNICORN", "ALICORN", "KIRIN"]) {
+    writeSkinMetadata(doc, { race });
+    const metadata = decodeSkinMetadata(doc);
+    const parts = flattenNodes(resolveModel(metadata)).filter((n) =>
+      /^(left_cast|right_cast)(\/|$)/.test(n.id),
+    );
+    assert.ok(parts.length >= 2);
+    for (const part of parts) {
+      assert.equal(part.visible, false);
+      assert.equal(partAvailable(part.id, metadata, defaultPreview), false);
+    }
+  }
+});
+
+test("Kirin retains its source-visible mane while ordinary pony manes stay hidden", () => {
+  const doc = skin();
+  for (const race of ["KIRIN", "EARTH", "UNICORN"]) {
+    writeSkinMetadata(doc, { race });
+    const metadata = decodeSkinMetadata(doc);
+    const mane = flattenNodes(resolveModel(metadata)).find((n) => n.id === "neck/mane");
+    assert.ok(mane.quads.length);
+    assert.equal(mane.visible, race === "KIRIN");
+    assert.equal(partAvailable(mane.id, metadata, defaultPreview), race === "KIRIN");
+  }
+});

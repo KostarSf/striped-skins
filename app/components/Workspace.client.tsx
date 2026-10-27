@@ -1,8 +1,17 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { PonySkin, SkinDocument } from "@striped-skins/api";
-import { StripedContextProvider, usePonyContext } from "./striped-viewer.client";
+import {
+  StripedContextProvider,
+  usePonyContext,
+  useViewerPreferencesContext,
+} from "./striped-viewer.client";
 import { useLocation } from "react-router";
-import { DocumentSession } from "./studio/DocumentSession";
+import {
+  DocumentSession,
+  markRecoveredDirty,
+  useDocumentInfo,
+  skinName,
+} from "./studio/DocumentSession";
 import { getSafeSkinUrl } from "../utils";
 import { XMarkIcon } from "@heroicons/react/24/outline";
 import { IconButton } from "./studio/ui";
@@ -17,6 +26,8 @@ async function restore() {
       if (!value || value.url !== params.get(param)) return PonySkin.DEFAULT;
       const skin = PonySkin.fromDocument(SkinDocument.restore(value.document));
       skin.sourceUrl = getSafeSkinUrl(params.get(param)) ?? undefined;
+      // Old snapshots have no dirty flag; protect them conservatively until exported.
+      if (value.dirty !== false) markRecoveredDirty(skin.document);
       return skin;
     } catch {
       return PonySkin.DEFAULT;
@@ -34,20 +45,30 @@ function Autosave() {
   const first = usePonyContext((s) => s.firstPony.skin),
     second = usePonyContext((s) => s.secondPony.skin),
     route = useLocation();
+  const defaultURL = useViewerPreferencesContext((s) => s.defaultSkinUrl);
+  const firstInfo = useDocumentInfo(first.document, skinName(first.sourceUrl));
+  const secondInfo = useDocumentInfo(second.document, skinName(second.sourceUrl));
   useEffect(() => {
     if (first === PonySkin.DEFAULT && second === PonySkin.DEFAULT) return;
     const params = new URLSearchParams(route.search);
-    const snapshot = (skin: PonySkin, key: string) => {
+    const snapshot = (skin: PonySkin, key: string, dirty: boolean) => {
       const url = params.get(key);
       if (skin === PonySkin.DEFAULT || (url && skin.sourceUrl !== getSafeSkinUrl(url))) return null;
-      return { url, document: recoverySnapshot(skin.document) };
+      if (
+        !url &&
+        skin.sourceUrl &&
+        skin.sourceUrl !== defaultURL &&
+        !skin.sourceUrl.startsWith("blob:")
+      )
+        return null;
+      return { url, dirty, document: recoverySnapshot(skin.document) };
     };
     let active = true;
     const save = () => {
       // Copy pixels now; later edits must not alter a queued recovery write.
       void saveDocuments({
-        first: snapshot(first, "skin"),
-        second: snapshot(second, "second-skin"),
+        first: snapshot(first, "skin", firstInfo.dirty),
+        second: snapshot(second, "second-skin", secondInfo.dirty),
       })
         .then(() => {
           if (active) {
@@ -81,7 +102,7 @@ function Autosave() {
       save();
       active = false;
     };
-  }, [first, second, route.search]);
+  }, [first, second, route.search, defaultURL, firstInfo.dirty, secondInfo.dirty]);
   return warning && !dismissed ? (
     <section role="alert" className="recovery-warning">
       <p>Браузер не смог сохранить локальную копию. Скачайте PNG перед закрытием страницы.</p>
