@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import {
   CameraControls,
   CameraControlsImpl,
@@ -26,6 +26,7 @@ export type PreviewCameraProps = {
   smoothCamera?: boolean;
   painting: boolean;
   comparison?: boolean;
+  onScale?: (scale: number) => void;
 };
 export function PreviewCamera({
   cameraAction,
@@ -34,8 +35,24 @@ export function PreviewCamera({
   smoothCamera = true,
   painting,
   comparison,
+  onScale,
 }: PreviewCameraProps) {
   const controls = useRef<CameraControls>(null);
+  const referenceScale = useRef({ distance: 0, zoom: 0 });
+  const scaleListener = useRef(onScale);
+  scaleListener.current = onScale;
+  const reportScale = useCallback(() => {
+    const c = controls.current;
+    if (!c) return;
+    const base = referenceScale.current;
+    base.distance ||= c.distance;
+    base.zoom ||= c.camera.zoom;
+    scaleListener.current?.(
+      c.camera instanceof ThreeOrthographicCamera
+        ? c.camera.zoom / base.zoom
+        : (base.distance / c.distance) * (c.camera.zoom / base.zoom),
+    );
+  }, []);
   const smooth = useRef(smoothCamera);
   smooth.current = smoothCamera;
   const mouseButtons = useMemo(
@@ -89,19 +106,25 @@ export function PreviewCamera({
             projected.expandByPoint(new Vector3(x, y, z).sub(center).applyMatrix4(view));
       const extent = projected.getSize(new Vector3());
       void c.moveTo(center.x, center.y, center.z, false);
-      if (c.camera instanceof ThreePerspectiveCamera)
-        void c.dollyTo(
-          c.getDistanceToFitBox(extent.x + 0.9, extent.y + 1.2, extent.z, false),
+      if (c.camera instanceof ThreePerspectiveCamera) {
+        const fittedDistance = c.getDistanceToFitBox(
+          extent.x + 0.9,
+          extent.y + 1.2,
+          extent.z,
           false,
         );
-      else if (c.camera instanceof ThreeOrthographicCamera)
-        void c.zoomTo(
-          Math.min(
-            (c.camera.right - c.camera.left) / (extent.x + 0.9),
-            (c.camera.top - c.camera.bottom) / (extent.y + 1.2),
-          ),
-          false,
+        referenceScale.current.distance = fittedDistance;
+        referenceScale.current.zoom = c.camera.zoom;
+        void c.dollyTo(fittedDistance, false);
+      } else if (c.camera instanceof ThreeOrthographicCamera) {
+        const fittedZoom = Math.min(
+          (c.camera.right - c.camera.left) / (extent.x + 0.9),
+          (c.camera.top - c.camera.bottom) / (extent.y + 1.2),
         );
+        referenceScale.current.zoom = fittedZoom;
+        void c.zoomTo(fittedZoom, false);
+      }
+      reportScale();
     }
     invalidate();
   };
@@ -156,6 +179,7 @@ export function PreviewCamera({
       <CameraControls
         ref={controls}
         makeDefault
+        onUpdate={reportScale}
         mouseButtons={mouseButtons}
         touches={touches}
         minDistance={5}

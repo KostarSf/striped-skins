@@ -723,3 +723,44 @@ test("editor animation option animates the model and pauses it in brush mode", a
   await page.waitForTimeout(150);
   expect(await image(page)).toBe(paused);
 });
+
+test("viewport headings stay inside panels, texture covers the panel, and 3D reports its scale", async ({
+  page,
+}) => {
+  await enter(page);
+  const model = page.getByRole("region", { name: "Предпросмотр модели", exact: true });
+  const label = page.getByTestId("model-scale");
+  await expect(label).toHaveText("100%");
+  await page.getByRole("button", { name: "Приблизить модель", exact: true }).click();
+  await expect.poll(async () => parseInt((await label.textContent())!)).toBeGreaterThan(100);
+  await page.getByRole("button", { name: "Сброс вида", exact: true }).click();
+  await expect(label).toHaveText("100%");
+  const canvas = page.locator('section[aria-label="Предпросмотр модели"] canvas');
+  const canvasBox = (await canvas.boundingBox())!;
+  await page.mouse.move(canvasBox.x + canvasBox.width / 2, canvasBox.y + canvasBox.height / 2);
+  await page.keyboard.down("Control");
+  await page.mouse.wheel(0, -100);
+  await page.keyboard.up("Control");
+  await expect.poll(async () => parseInt((await label.textContent())!)).toBeGreaterThan(100);
+  await page.getByRole("button", { name: "Сброс вида", exact: true }).click();
+  await expect(label).toHaveText("100%");
+  await page.getByLabel("Ракурс модели").selectOption("orthographic");
+  await page.locator('section[aria-label="Предпросмотр модели"] canvas').screenshot();
+  await expect(label).toHaveText("100%");
+  await page.getByRole("button", { name: "Приблизить модель", exact: true }).click();
+  await expect(label).toHaveText("120%");
+  for (const width of [1440, 1280, 1100, 960, 390]) {
+    await page.setViewportSize({ width, height: 960 });
+    await page.locator(".view-options summary").screenshot();
+    const panel = (await model.boundingBox())!;
+    const button = (await page.locator(".view-options summary").boundingBox())!;
+    expect(button.x + button.width).toBeLessThanOrEqual(panel.x + panel.width - 8);
+    expect(button.x).toBeGreaterThanOrEqual(panel.x + 8);
+    const texturePanel = (await page
+      .getByRole("region", { name: "Редактирование текстуры", exact: true })
+      .boundingBox())!;
+    const area = (await page.locator(".texture-area").boundingBox())!;
+    expect(area.y).toBeCloseTo(texturePanel.y, 1);
+    expect(area.height).toBeCloseTo(texturePanel.height, 1);
+  }
+});

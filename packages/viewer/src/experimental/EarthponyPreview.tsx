@@ -142,6 +142,7 @@ function ModelScene(props: PonyPreviewProps) {
         fitKey={props.fitKey}
         projection={props.projection}
         smoothCamera={props.smoothCamera}
+        onScale={props.onScale}
         comparison={!!props.comparison}
       />
       {props.antialiasing ? (

@@ -335,8 +335,10 @@ button:disabled {
   max-width: 300px;
   font-weight: 600;
 }
-.viewer-content .viewport-heading select {
+.viewer-content .viewport-heading-actions {
   margin-top: 55px;
+}
+.viewer-content .viewport-heading select {
   width: 164px;
 }
 .viewer-description {
@@ -662,6 +664,8 @@ input[type="color"]::-webkit-color-swatch {
   gap: 8px;
   pointer-events: auto;
   min-width: 0;
+  flex: 0 1 230px;
+  max-width: 100%;
 }
 .view-options {
   position: relative;
@@ -967,7 +971,7 @@ input[type="color"]::-webkit-color-swatch {
 }
 .texture-area {
   position: absolute;
-  inset: 60px 0 76px;
+  inset: 0;
   overflow: hidden;
   touch-action: none;
   cursor: crosshair;
@@ -1341,8 +1345,10 @@ input[type="color"]::-webkit-color-swatch {
     font-size: 15px;
     max-width: 200px;
   }
-  .viewer-content .viewport-heading select {
+  .viewer-content .viewport-heading-actions {
     margin-top: 40px;
+  }
+  .viewer-content .viewport-heading select {
     width: 140px;
   }
   .viewer-description {
@@ -1517,10 +1523,12 @@ input[type="color"]::-webkit-color-swatch {
 .studio-app .viewport-heading select {
   width: auto;
   max-width: 162px;
-  flex: 0 0 150px;
+  flex: 1 1 150px;
+  min-width: 0;
 }
 .studio-app .viewport-heading h2 {
   flex: 1;
+  min-width: 0;
   max-width: none;
 }
 .viewer-content .viewport-heading h2 {

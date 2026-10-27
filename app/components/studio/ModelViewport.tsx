@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   PonyPreview,
   type PonyPreviewProps,
@@ -32,6 +32,11 @@ export function ModelViewport({
     props.comparison?.preview,
   ]);
   const host = useRef<HTMLElement>(null);
+  const scaleOutput = useRef<HTMLSpanElement>(null);
+  const reportScale = useCallback((scale: number) => {
+    // Camera motion is transient; update the readout without rebuilding the React scene.
+    if (scaleOutput.current) scaleOutput.current.textContent = `${Math.round(scale * 100)}%`;
+  }, []);
   const [projection, setProjection] = useState<"perspective" | "orthographic">("perspective");
   const [maximized, setMaximized] = useState(false);
   const [view, setView] = useState("perspective");
@@ -59,7 +64,13 @@ export function ModelViewport({
       className={`model-viewport ${mini ? "mini-preview" : ""} ${maximized ? "maximized" : ""}`}
       aria-label="Предпросмотр модели"
     >
-      <PonyPreview {...props} fitKey={fitKey} cameraAction={action} projection={projection} />
+      <PonyPreview
+        {...props}
+        fitKey={fitKey}
+        cameraAction={action}
+        projection={projection}
+        onScale={reportScale}
+      />
       <div className="viewport-heading">
         <h2>{title}</h2>
         <div className="viewport-heading-actions">
@@ -104,7 +115,14 @@ export function ModelViewport({
               <IconButton label="Отдалить модель" onClick={() => command("out")}>
                 −
               </IconButton>
-              <span>Масштаб</span>
+              <span
+                ref={scaleOutput}
+                data-testid="model-scale"
+                aria-label="Масштаб 3D"
+                title="100% — модель вписана в окно"
+              >
+                100%
+              </span>
               <IconButton label="Приблизить модель" onClick={() => command("in")}>
                 +
               </IconButton>
