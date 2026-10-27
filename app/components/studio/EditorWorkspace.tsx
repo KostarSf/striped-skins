@@ -176,7 +176,7 @@ export default function EditorWorkspace({
     const key = (e: KeyboardEvent) => {
       if ((e.target as HTMLElement).closest("input,select,textarea,dialog")) return;
       const k = e.key.toLowerCase();
-      if ((e.ctrlKey || e.metaKey) && k === "z") {
+      if ((e.ctrlKey || e.metaKey) && (k === "z" || e.code === "KeyZ")) {
         e.preventDefault();
         if (e.shiftKey) skin.redo();
         else skin.undo();
@@ -255,10 +255,20 @@ export default function EditorWorkspace({
           </select>
         </label>
         <div className="inline-controls">
-          <IconButton label="Отменить штрих" disabled={!skin.canUndo} onClick={() => skin.undo()}>
+          <IconButton
+            label="Отменить штрих"
+            title="Отменить · Ctrl+Z / ⌘Z"
+            disabled={!skin.canUndo}
+            onClick={() => skin.undo()}
+          >
             <ArrowUturnLeftIcon />
           </IconButton>
-          <IconButton label="Повторить штрих" disabled={!skin.canRedo} onClick={() => skin.redo()}>
+          <IconButton
+            label="Повторить штрих"
+            title="Повторить · Ctrl+Shift+Z / ⇧⌘Z"
+            disabled={!skin.canRedo}
+            onClick={() => skin.redo()}
+          >
             <ArrowUturnRightIcon />
           </IconButton>
         </div>

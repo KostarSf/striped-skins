@@ -155,6 +155,19 @@ test("layout modes, texture pan/zoom and tool shortcuts preserve the exact docum
   await expect.poll(() => pixel(page)).toEqual([0, 0, 0, 0]);
   await page.keyboard.press("Control+z");
   await expect.poll(() => pixel(page)).toEqual([255, 0, 255, 255]);
+  // The physical Z key must work with a Russian keyboard layout as well.
+  await page
+    .locator(".editor-workspace")
+    .dispatchEvent("keydown", { key: "я", code: "KeyZ", ctrlKey: true });
+  await expect.poll(() => pixel(page)).toEqual(initial);
+  await page
+    .locator(".editor-workspace")
+    .dispatchEvent("keydown", { key: "Я", code: "KeyZ", ctrlKey: true, shiftKey: true });
+  await expect.poll(() => pixel(page)).toEqual([255, 0, 255, 255]);
+  await page.keyboard.press("Meta+z");
+  await expect.poll(() => pixel(page)).toEqual(initial);
+  await page.keyboard.press("Meta+Shift+z");
+  await expect.poll(() => pixel(page)).toEqual([255, 0, 255, 255]);
 });
 
 test("camera zoom, presets and projection change the actual WebGL frame", async ({ page }) => {
