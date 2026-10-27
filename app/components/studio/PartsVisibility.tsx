@@ -14,7 +14,7 @@ function VisibilityNode({
   search: string;
   toggle: (node: PartTreeNode, visible: boolean) => void;
 }) {
-  const [expanded, setExpanded] = useState(false);
+  const [expansion, setExpansion] = useState({ search, open: false });
   const input = useRef<HTMLInputElement>(null);
   const leaves = partLeaves(node);
   const count = leaves.filter((leaf) => partVisible(leaf, hidden)).length;
@@ -24,7 +24,7 @@ function VisibilityNode({
   const matches = (n: PartTreeNode): boolean =>
     `${n.id} ${n.label}`.toLowerCase().includes(search) || n.children.some(matches);
   if (search && !matches(node)) return null;
-  const open = expanded || !!search;
+  const open = expansion.search === search ? expansion.open : !!search;
   const ownMatch = `${node.id} ${node.label}`.toLowerCase().includes(search);
   return (
     <li data-part-id={node.id}>
@@ -35,23 +35,21 @@ function VisibilityNode({
             className="part-expand"
             aria-label={`${open ? "Свернуть" : "Развернуть"} ${node.label}`}
             aria-expanded={open}
-            onClick={() => setExpanded((v) => !v)}
+            onClick={() => setExpansion({ search, open: !open })}
           >
             <ChevronRightIcon />
+            <span>{node.label}</span>
           </button>
         ) : (
-          <span className="part-spacer" />
+          <span className="part-name">{node.label}</span>
         )}
-        <label>
-          <span>{node.label}</span>
-          <input
-            ref={input}
-            type="checkbox"
-            aria-label={`Показать ${node.id}`}
-            checked={count === leaves.length}
-            onChange={(e) => toggle(node, e.target.checked)}
-          />
-        </label>
+        <input
+          ref={input}
+          type="checkbox"
+          aria-label={`Показать ${node.id}`}
+          checked={count === leaves.length}
+          onChange={(e) => toggle(node, e.target.checked)}
+        />
       </div>
       {node.children.length ? (
         <ul hidden={!open}>

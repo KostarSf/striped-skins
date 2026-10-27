@@ -93,15 +93,7 @@ test("local recovery and PNG round-trip retain edited content without reloading 
   for (const name of ["Корона", "Маффин", "Stetson"])
     await page.getByRole("checkbox", { name, exact: true }).check();
   await expect(page.getByRole("checkbox", { name: "Шляпа", exact: true })).toBeDisabled();
-  await expect
-    .poll(() =>
-      page.evaluate(
-        () =>
-          JSON.parse(localStorage.getItem("striped.editor.documents.v1") || "null")?.first?.document
-            .pixels[(12 * 64 + 12) * 4],
-      ),
-    )
-    .toBe(255);
+  await expect.poll(() => savedPixel(page, 12, 12)).toEqual([255, 0, 255, 255]);
   await expect.poll(() => pixel(page, 1, 1)).toEqual([22, 50, 250, 255]);
   await page.waitForTimeout(400);
   let originals = 0;
@@ -224,4 +216,126 @@ test("legacy import upgrades to square PNG and a malformed import preserves the 
     .setInputFiles({ name: "bad.png", mimeType: "image/png", buffer: Buffer.from("broken") });
   await expect(page.getByRole("alert")).toBeVisible();
   expect(await pixel(page, 12, 12)).toEqual(before);
+});
+
+async function savedPixel(page: Page, x: number, y: number) {
+  return page.evaluate(
+    ({ x, y }) =>
+      new Promise<number[] | null>((resolve, reject) => {
+        const request = indexedDB.open("striped.editor", 1);
+        request.onerror = () => reject(request.error);
+        request.onsuccess = () => {
+          const db = request.result;
+          const tx = db.transaction("documents", "readonly");
+          const value = tx.objectStore("documents").get("session");
+          tx.oncomplete = () => {
+            const doc = value.result?.first?.document;
+            resolve(
+              doc
+                ? Array.from(doc.pixels.slice((y * doc.width + x) * 4, (y * doc.width + x) * 4 + 4))
+                : null,
+            );
+            db.close();
+          };
+          tx.onabort = () => {
+            reject(tx.error);
+            db.close();
+          };
+        };
+      }),
+    { x, y },
+  );
+}
+
+test("HD recovery stores binary pixels beyond localStorage limits and restores after reload", async ({
+  page,
+}) => {
+  await page.goto("/editor");
+  await expect(page.getByTestId("skin-texture")).toBeVisible();
+  const png = await page.evaluate(() => {
+    const canvas = document.createElement("canvas");
+    canvas.width = canvas.height = 1024;
+    const ctx = canvas.getContext("2d")!;
+    ctx.fillStyle = "#914c38";
+    ctx.fillRect(0, 0, 1024, 1024);
+    return canvas.toDataURL("image/png").split(",")[1];
+  });
+  await page.getByRole("button", { name: "Открыть", exact: true }).click();
+  await page
+    .getByLabel("Открыть PNG", { exact: true })
+    .setInputFiles({ name: "hd.png", mimeType: "image/png", buffer: Buffer.from(png, "base64") });
+  await expect(page.getByTestId("skin-texture")).toHaveAttribute("width", "1024");
+  await page.getByLabel("Раса", { exact: true }).selectOption("KIRIN");
+  await expect.poll(() => savedPixel(page, 12, 12)).toEqual([145, 76, 56, 255]);
+  await expect(page.locator(".recovery-warning")).toHaveCount(0);
+  await page.reload();
+  await expect(page.getByTestId("skin-texture")).toHaveAttribute("width", "1024");
+  await expect(page.getByLabel("Раса", { exact: true })).toHaveValue("KIRIN");
+  await expect.poll(() => pixel(page, 12, 12)).toEqual([145, 76, 56, 255]);
+});
+
+test("legacy localStorage recovery migrates only after a successful IndexedDB save", async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    if (sessionStorage.getItem("legacy-seeded")) return;
+    sessionStorage.setItem("legacy-seeded", "yes");
+    const pixels = Array(64 * 64 * 4).fill(255);
+    pixels.splice((12 * 64 + 12) * 4, 4, 71, 82, 93, 255);
+    localStorage.setItem(
+      "striped.editor.documents.v1",
+      JSON.stringify({
+        first: {
+          url: null,
+          document: { version: 1, width: 64, height: 64, sourceFormat: "modern", pixels },
+        },
+        second: null,
+      }),
+    );
+  });
+  await page.goto("/editor");
+  await expect(page.getByTestId("skin-texture")).toBeVisible();
+  await expect.poll(() => pixel(page, 12, 12)).toEqual([71, 82, 93, 255]);
+  await expect.poll(() => savedPixel(page, 12, 12)).toEqual([71, 82, 93, 255]);
+  await expect
+    .poll(() => page.evaluate(() => localStorage.getItem("striped.editor.documents.v1")))
+    .toBeNull();
+  await page.reload();
+  await expect(page.getByTestId("skin-texture")).toBeVisible();
+  await expect.poll(() => pixel(page, 12, 12)).toEqual([71, 82, 93, 255]);
+});
+
+test("failed recovery is dismissible, leaves the footer clear and does not reopen on each stroke", async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    const transaction = IDBDatabase.prototype.transaction;
+    let failures = 0;
+    Object.defineProperty(window, "recoveryFailures", { get: () => failures });
+    IDBDatabase.prototype.transaction = function (storeNames, mode, options) {
+      if (mode === "readwrite") {
+        failures++;
+        throw new DOMException("Storage is full", "QuotaExceededError");
+      }
+      return transaction.call(this, storeNames, mode, options);
+    };
+  });
+  await page.goto("/editor");
+  await expect(page.getByTestId("skin-texture")).toBeVisible();
+  const warning = page.locator(".recovery-warning");
+  await expect(warning).toBeVisible();
+  const bounds = (await warning.boundingBox())!,
+    footer = (await page.locator(".studio-status").boundingBox())!;
+  expect(bounds.y + bounds.height).toBeLessThan(footer.y);
+  await page
+    .getByRole("button", { name: "Закрыть предупреждение о сохранении", exact: true })
+    .click();
+  await expect(warning).toHaveCount(0);
+  const count = await page.evaluate(() => Reflect.get(window, "recoveryFailures"));
+  await paint(page);
+  await expect
+    .poll(() => page.evaluate(() => Reflect.get(window, "recoveryFailures")))
+    .toBeGreaterThan(count);
+  await expect(warning).toHaveCount(0);
+  await expect.poll(() => pixel(page, 12, 12)).toEqual([255, 0, 255, 255]);
 });

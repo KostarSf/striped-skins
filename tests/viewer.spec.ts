@@ -104,7 +104,10 @@ test("signed skin URLs retain every query parameter on submit and reload", async
 
   proxyRequests = [];
   // This case verifies URL decoding on a fresh load; editor restoration has a separate test.
-  await page.addInitScript(() => localStorage.removeItem("striped.editor.documents.v1"));
+  await page.addInitScript(() => {
+    localStorage.removeItem("striped.editor.documents.v1");
+    indexedDB.deleteDatabase("striped.editor");
+  });
   await page.reload();
   await expect
     .poll(() => proxyRequests.map((url) => url.searchParams.get("url")))
@@ -118,7 +121,6 @@ test("signed skin URLs retain every query parameter on submit and reload", async
 
 async function openURL(page: Page, url: string) {
   await page.getByRole("button", { name: "Открыть", exact: true }).click();
-  await page.getByRole("button", { name: "По ссылке", exact: true }).click();
   await page.getByLabel("Ссылка на скин").fill(url);
   await page.getByRole("button", { name: "Открыть по ссылке", exact: true }).click();
   await expect(page.getByRole("dialog")).not.toBeVisible();

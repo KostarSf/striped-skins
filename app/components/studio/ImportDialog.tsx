@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { ArrowUpTrayIcon, LinkIcon, XMarkIcon } from "@heroicons/react/24/outline";
+import { ArrowUpTrayIcon, XMarkIcon } from "@heroicons/react/24/outline";
 import { Button, IconButton } from "./ui";
 export function ImportDialog({
   open,
@@ -20,8 +20,7 @@ export function ImportDialog({
 }) {
   const dialog = useRef<HTMLDialogElement>(null),
     input = useRef<HTMLInputElement>(null);
-  const [tab, setTab] = useState<"file" | "url">("file"),
-    [url, setURL] = useState(""),
+  const [url, setURL] = useState(""),
     [error, setError] = useState(""),
     [busy, setBusy] = useState(false),
     [drag, setDrag] = useState(false);
@@ -70,16 +69,6 @@ export function ImportDialog({
           <XMarkIcon />
         </IconButton>
       </div>
-      <div className="mode-tabs import-tabs">
-        <Button aria-pressed={tab === "file"} onClick={() => setTab("file")}>
-          <ArrowUpTrayIcon />
-          Файл PNG
-        </Button>
-        <Button aria-pressed={tab === "url"} onClick={() => setTab("url")}>
-          <LinkIcon />
-          По ссылке
-        </Button>
-      </div>
       {pending ? (
         <div className="replace-notice">
           <h3>В текущем скине есть изменения</h3>
@@ -106,53 +95,53 @@ export function ImportDialog({
             </Button>
           </div>
         </div>
-      ) : tab === "file" ? (
-        <div
-          className={`drop-zone ${drag ? "dragging" : ""}`}
-          onDragOver={(e) => {
-            e.preventDefault();
-            setDrag(true);
-          }}
-          onDragLeave={() => setDrag(false)}
-          onDrop={(e) => {
-            e.preventDefault();
-            setDrag(false);
-            const file = e.dataTransfer.files[0];
-            if (file && !busy) accept(file);
-          }}
-        >
-          <ArrowUpTrayIcon />
-          <h3>Перетащите PNG сюда</h3>
-          <p>64 × 64, 64 × 32 и HD до 2048 px</p>
-          <Button disabled={busy} onClick={() => input.current?.click()}>
-            Выбрать файл
-          </Button>
-        </div>
       ) : (
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            if (url.trim()) accept(url.trim());
-          }}
-        >
-          <label className="studio-field">
-            <span>Ссылка на PNG</span>
-            <input
-              autoFocus
-              aria-label="Ссылка на скин"
-              type="url"
-              placeholder="https://example.com/skin.png"
-              required
-              value={url}
-              onChange={(e) => setURL(e.target.value)}
-            />
-          </label>
-          <div className="dialog-actions">
-            <Button type="submit" tone="primary" disabled={busy}>
-              Открыть по ссылке
+        <>
+          <div
+            className={`drop-zone ${drag ? "dragging" : ""}`}
+            onDragOver={(e) => {
+              e.preventDefault();
+              setDrag(true);
+            }}
+            onDragLeave={() => setDrag(false)}
+            onDrop={(e) => {
+              e.preventDefault();
+              setDrag(false);
+              const file = e.dataTransfer.files[0];
+              if (file && !busy) accept(file);
+            }}
+          >
+            <ArrowUpTrayIcon />
+            <h3>Перетащите PNG сюда</h3>
+            <p>64 × 64, 64 × 32 и HD до 2048 px</p>
+            <Button disabled={busy} onClick={() => input.current?.click()}>
+              Выбрать файл
             </Button>
           </div>
-        </form>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (url.trim()) accept(url.trim());
+            }}
+          >
+            <label className="studio-field">
+              <span>Ссылка на PNG</span>
+              <input
+                aria-label="Ссылка на скин"
+                type="url"
+                placeholder="https://example.com/skin.png"
+                required
+                value={url}
+                onChange={(e) => setURL(e.target.value)}
+              />
+            </label>
+            <div className="dialog-actions">
+              <Button type="submit" tone="primary" disabled={busy}>
+                Открыть по ссылке
+              </Button>
+            </div>
+          </form>
+        </>
       )}
       <input
         ref={input}

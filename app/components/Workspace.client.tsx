@@ -4,36 +4,32 @@ import { StripedContextProvider, usePonyContext } from "./striped-viewer.client"
 import { useLocation } from "react-router";
 import { DocumentSession } from "./studio/DocumentSession";
 import { getSafeSkinUrl } from "../utils";
-const KEY = "striped.editor.documents.v1";
-type Saved = {
-  first: null | { url: string | null; document: ReturnType<SkinDocument["snapshot"]> };
-  second: null | { url: string | null; document: ReturnType<SkinDocument["snapshot"]> };
-};
-function restore() {
-  try {
-    const text = localStorage.getItem(KEY);
-    if (!text) return;
-    const saved = JSON.parse(text) as Saved,
-      params = new URLSearchParams(location.search);
-    const first =
-        saved.first?.url === params.get("skin")
-          ? PonySkin.fromDocument(SkinDocument.restore(saved.first.document))
-          : PonySkin.DEFAULT,
-      second =
-        saved.second?.url === params.get("second-skin")
-          ? PonySkin.fromDocument(SkinDocument.restore(saved.second.document))
-          : PonySkin.DEFAULT;
-    if (first !== PonySkin.DEFAULT)
-      first.sourceUrl = getSafeSkinUrl(params.get("skin")) ?? undefined;
-    if (second !== PonySkin.DEFAULT)
-      second.sourceUrl = getSafeSkinUrl(params.get("second-skin")) ?? undefined;
-    return { defaultPony: PonySkin.DEFAULT, firstPony: first, secondPony: second };
-  } catch {
-    return;
-  }
+import { XMarkIcon } from "@heroicons/react/24/outline";
+import { IconButton } from "./studio/ui";
+import { readSavedDocuments, recoverySnapshot, saveDocuments } from "../document-recovery";
+async function restore() {
+  const saved = await readSavedDocuments();
+  const params = new URLSearchParams(location.search);
+  const slot = (key: "first" | "second", param: string) => {
+    try {
+      const value = saved?.[key];
+      if (!value || value.url !== params.get(param)) return PonySkin.DEFAULT;
+      const skin = PonySkin.fromDocument(SkinDocument.restore(value.document));
+      skin.sourceUrl = getSafeSkinUrl(params.get(param)) ?? undefined;
+      return skin;
+    } catch {
+      return PonySkin.DEFAULT;
+    }
+  };
+  return {
+    defaultPony: PonySkin.DEFAULT,
+    firstPony: slot("first", "skin"),
+    secondPony: slot("second", "second-skin"),
+  };
 }
 function Autosave() {
   const [warning, setWarning] = useState(false);
+  const [dismissed, setDismissed] = useState(false);
   const first = usePonyContext((s) => s.firstPony.skin),
     second = usePonyContext((s) => s.secondPony.skin),
     route = useLocation();
@@ -43,21 +39,24 @@ function Autosave() {
     const snapshot = (skin: PonySkin, key: string) => {
       const url = params.get(key);
       if (skin === PonySkin.DEFAULT || (url && skin.sourceUrl !== getSafeSkinUrl(url))) return null;
-      return { url, document: skin.document.snapshot() };
+      return { url, document: recoverySnapshot(skin.document) };
     };
+    let active = true;
     const save = () => {
-      try {
-        localStorage.setItem(
-          KEY,
-          JSON.stringify({
-            first: snapshot(first, "skin"),
-            second: snapshot(second, "second-skin"),
-          }),
-        );
-        setWarning(false);
-      } catch {
-        setWarning(true);
-      }
+      // Copy pixels now; later edits must not alter a queued recovery write.
+      void saveDocuments({
+        first: snapshot(first, "skin"),
+        second: snapshot(second, "second-skin"),
+      })
+        .then(() => {
+          if (active) {
+            setWarning(false);
+            setDismissed(false);
+          }
+        })
+        .catch(() => {
+          if (active) setWarning(true);
+        });
     };
     let timer: ReturnType<typeof setTimeout> | undefined;
     const schedule = () => {
@@ -66,24 +65,43 @@ function Autosave() {
     };
     const a = first.document.subscribe(schedule),
       b = second.document.subscribe(schedule);
+    const background = () => {
+      if (document.visibilityState === "hidden") save();
+    };
     window.addEventListener("pagehide", save);
+    document.addEventListener("visibilitychange", background);
     schedule();
     return () => {
       a();
       b();
       clearTimeout(timer);
       window.removeEventListener("pagehide", save);
+      document.removeEventListener("visibilitychange", background);
       save();
+      active = false;
     };
   }, [first, second, route.search]);
-  return warning ? (
-    <p role="alert" className="fixed bottom-0 left-0 z-50 bg-amber-950 p-3 text-sm text-amber-100">
-      Браузер не смог сохранить локальную копию. Скачайте PNG в редакторе перед закрытием страницы.
-    </p>
+  return warning && !dismissed ? (
+    <section role="alert" className="recovery-warning">
+      <p>Браузер не смог сохранить локальную копию. Скачайте PNG перед закрытием страницы.</p>
+      <IconButton label="Закрыть предупреждение о сохранении" onClick={() => setDismissed(true)}>
+        <XMarkIcon />
+      </IconButton>
+    </section>
   ) : null;
 }
 export default function Workspace({ children }: { children: ReactNode }) {
-  const [initial] = useState(restore);
+  const [initial, setInitial] = useState<Awaited<ReturnType<typeof restore>> | null>(null);
+  useEffect(() => {
+    let active = true;
+    void restore().then((value) => {
+      if (active) setInitial(value);
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
+  if (!initial) return <output className="studio-loading-badge">Восстановление скина…</output>;
   return (
     <StripedContextProvider
       ponyParams={initial}

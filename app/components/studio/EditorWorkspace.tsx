@@ -460,15 +460,6 @@ export default function EditorWorkspace({
                 <Button onClick={addColor}>+ Цвет</Button>
               </div>
             </div>
-            <Button
-              tone="ghost"
-              className="palette-dropper"
-              aria-pressed={tool === "drop"}
-              onClick={() => selectTool("drop")}
-            >
-              Пипетка <kbd>I</kbd>
-              <DesignIcon name="drop" />
-            </Button>
           </div>
         </div>
         <aside className="inspector studio-panel" aria-label="Параметры модели">

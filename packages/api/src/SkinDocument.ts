@@ -80,7 +80,9 @@ export class SkinDocument {
   clone() {
     return new SkinDocument(this.width, this.height, this.pixels, this.sourceFormat);
   }
-  static restore(snapshot: ReturnType<SkinDocument["snapshot"]>) {
+  static restore(
+    snapshot: Omit<ReturnType<SkinDocument["snapshot"]>, "pixels"> & { pixels: ArrayLike<number> },
+  ) {
     if (snapshot.version !== 1 || snapshot.width > 2048 || snapshot.height > 2048)
       throw new Error("Unsupported document snapshot");
     return new SkinDocument(

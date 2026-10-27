@@ -258,8 +258,14 @@ test("mobile editor exposes texture, metadata and import without horizontal over
   await page.getByLabel("Раса", { exact: true }).selectOption("KIRIN");
   await expect(page.getByLabel("Раса", { exact: true })).toHaveValue("KIRIN");
   await page.getByRole("button", { name: "Открыть", exact: true }).click();
-  await page.getByRole("button", { name: "По ссылке", exact: true }).click();
-  await expect(page.getByLabel("Ссылка на скин")).toBeFocused();
+  await expect(page.getByRole("button", { name: "Выбрать файл", exact: true })).toBeVisible();
+  await expect(page.getByLabel("Ссылка на скин")).toBeVisible();
+  const fileBox = (await page.locator(".drop-zone").boundingBox())!;
+  const urlBox = (await page.getByLabel("Ссылка на скин").boundingBox())!;
+  expect(fileBox.y + fileBox.height).toBeLessThan(urlBox.y);
+  await expect(page.locator(".import-tabs")).toHaveCount(0);
+  const closeBox = (await page.getByRole("button", { name: "Закрыть импорт" }).boundingBox())!;
+  expect(closeBox.width).toBe(closeBox.height);
   await page.keyboard.press("Escape");
   await expect(page.getByRole("dialog")).not.toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)).toBe(false);
@@ -662,6 +668,7 @@ test("editor view options share preferences, tool order and smaller foreground s
 }) => {
   await enter(page);
   const rail = page.getByRole("complementary", { name: "Инструменты", exact: true });
+  await expect(page.locator(".palette-dropper")).toHaveCount(0);
   await expect(rail.getByRole("button").first()).toHaveAccessibleName("Перемещение · H");
   const primary = (await page.getByLabel("Цвет кисти", { exact: true }).boundingBox())!;
   const secondary = (await page.getByLabel("Дополнительный цвет", { exact: true }).boundingBox())!;
@@ -893,6 +900,14 @@ test("viewport parts popup groups model nodes and faces, preserves pixels and fi
   await page.locator(".parts-popover summary").click();
   const popup = page.getByRole("region", { name: "Видимость частей модели" });
   await expect(popup).toBeVisible();
+  const group = popup.locator('[data-part-id="group/head"] > .part-row');
+  await group.getByRole("button").getByText("Голова", { exact: true }).click();
+  await expect(group.getByRole("button")).toHaveAttribute("aria-expanded", "true");
+  await expect(group.getByRole("checkbox")).toBeChecked();
+  expect(await image(page)).toBe(initial);
+  await group.getByRole("button").getByText("Голова", { exact: true }).click();
+  await expect(group.getByRole("button")).toHaveAttribute("aria-expanded", "false");
+  await expect(group.getByRole("checkbox")).toBeChecked();
   const search = popup.getByRole("searchbox", { name: "Найти часть" });
   await search.fill("body/surface-3");
   await popup.getByRole("checkbox", { name: "Показать body/surface-3", exact: true }).uncheck();
