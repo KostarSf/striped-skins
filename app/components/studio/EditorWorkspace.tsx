@@ -303,10 +303,10 @@ export default function EditorWorkspace({
         <aside className="tool-rail" aria-label="Инструменты">
           {(
             [
+              ["hand", "Перемещение · H"],
               ["brush", "Кисть · B"],
               ["eraser", "Ластик · E"],
               ["drop", "Пипетка · I"],
-              ["hand", "Перемещение · H"],
             ] as const
           ).map(([id, label]) => (
             <IconButton
@@ -363,6 +363,7 @@ export default function EditorWorkspace({
                 textureHover={textureHover}
                 brushPreview={tool === "brush"}
                 onStats={onStats}
+                animate={options.animations}
                 antialiasing={options.antialiasing}
                 smoothCamera={options.smoothCamera}
                 mini={layout === "2d"}

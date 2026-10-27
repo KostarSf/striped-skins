@@ -487,7 +487,7 @@ test("antialiasing uses screen-space SMAA with no MSAA and survives projection c
       );
   expect(await contextAA()).toBe(false);
   const smooth = await image(page);
-  await page.locator(".viewer-options summary").click();
+  await page.locator(".view-options summary").click();
   await page.getByRole("checkbox", { name: "Сглаживание", exact: true }).uncheck();
   await expect.poll(() => image(page)).not.toBe(smooth);
   const sharp = await image(page);
@@ -564,4 +564,162 @@ test("2D brush hover highlights the same 3D texel without painting, and clears o
   await page.mouse.move(5, 5);
   await expect.poll(() => image(page)).toBe(miniInitial);
   expect(errors).toEqual([]);
+});
+
+test("editor view options share preferences, tool order and smaller foreground secondary swatch", async ({
+  page,
+}) => {
+  await enter(page);
+  const rail = page.getByRole("complementary", { name: "Инструменты", exact: true });
+  await expect(rail.getByRole("button").first()).toHaveAccessibleName("Перемещение · H");
+  const primary = (await page.getByLabel("Цвет кисти", { exact: true }).boundingBox())!;
+  const secondary = (await page.getByLabel("Дополнительный цвет", { exact: true }).boundingBox())!;
+  expect(secondary.width).toBeLessThan(primary.width);
+  expect(secondary.height).toBeLessThan(primary.height);
+  expect(secondary.x).toBeLessThan(primary.x + primary.width);
+  expect(secondary.y).toBeLessThan(primary.y + primary.height);
+  expect(
+    await page.evaluate(({ x, y }) => document.elementFromPoint(x, y)?.getAttribute("aria-label"), {
+      x: secondary.x + 3,
+      y: secondary.y + 3,
+    }),
+  ).toBe("Дополнительный цвет");
+  await expect(page.locator('img[src="/design/cube.svg"]')).toHaveCount(0);
+  for (const footer of await page.locator(".viewport-footer").all()) {
+    await expect(footer.locator(".camera-actions > .viewport-hint")).toBeVisible();
+  }
+  await page.locator(".view-options summary").click();
+  await expect(page.getByRole("checkbox", { name: "Анимации", exact: true })).not.toBeChecked();
+  await page.getByRole("checkbox", { name: "Сглаживание", exact: true }).uncheck();
+  await page.getByRole("checkbox", { name: "Плавная камера", exact: true }).check();
+  await page.keyboard.press("Escape");
+  await expect(page.locator(".view-options")).not.toHaveAttribute("open", "");
+  await page.getByRole("link", { name: "← Просмотрщик", exact: true }).click();
+  await page.locator(".view-options summary").click();
+  await expect(page.getByRole("checkbox", { name: "Сглаживание", exact: true })).not.toBeChecked();
+  await expect(page.getByRole("checkbox", { name: "Плавная камера", exact: true })).toBeChecked();
+  await page.reload();
+  await page.locator(".view-options summary").click();
+  await expect(page.getByRole("checkbox", { name: "Сглаживание", exact: true })).not.toBeChecked();
+});
+
+test("mouse camera mapping works in rotation and brush modes without painting during navigation", async ({
+  page,
+}) => {
+  await enter(page);
+  const model = page.locator('section[aria-label="Предпросмотр модели"] canvas');
+  const rect = (await model.boundingBox())!;
+  const start = { x: rect.x + rect.width * 0.5, y: rect.y + rect.height * 0.5 };
+  const drag = async (button: "left" | "middle" | "right") => {
+    await page.mouse.move(start.x, start.y);
+    await page.mouse.down({ button });
+    await page.mouse.move(start.x + 60, start.y + 12, { steps: 8 });
+    await page.mouse.up({ button });
+    await page.mouse.move(5, 5);
+    await model.screenshot();
+  };
+  const initial = await image(page);
+  const rest = await coverage(page);
+  const reset = async () => {
+    await page.getByRole("button", { name: "Сброс вида", exact: true }).click();
+    await expect
+      .poll(async () => {
+        const c = await coverage(page);
+        return c.slice(0, 4).every((v, i) => Math.abs(v - rest[i]) <= 1);
+      })
+      .toBe(true);
+  };
+  await drag("left");
+  await expect.poll(() => image(page)).not.toBe(initial);
+  const left = await coverage(page);
+  await reset();
+  await drag("middle");
+  const middle = await coverage(page);
+  for (let i = 0; i < 4; i++) expect(Math.abs(left[i] - middle[i])).toBeLessThanOrEqual(1);
+  await reset();
+  const beforePan = await coverage(page);
+  await drag("right");
+  await expect
+    .poll(async () => Math.abs((await coverage(page))[0] - beforePan[0]))
+    .toBeGreaterThan(20);
+
+  await page.getByRole("button", { name: "Режим: вращение", exact: true }).click();
+  const revision = await page.getByTestId("document-status").getAttribute("data-revision");
+  const pixels = await tex(page).evaluate((c) => (c as HTMLCanvasElement).toDataURL());
+  for (const button of ["middle", "right"] as const) {
+    const before = await image(page);
+    await drag(button);
+    await expect.poll(() => image(page)).not.toBe(before);
+  }
+  const beforeZoom = await coverage(page);
+  await page.mouse.move(start.x, start.y);
+  await page.mouse.wheel(0, -250);
+  await page.mouse.move(5, 5);
+  await expect
+    .poll(async () => {
+      const c = await coverage(page);
+      return c[2] - c[0];
+    })
+    .toBeGreaterThan(beforeZoom[2] - beforeZoom[0] + 10);
+  expect(await tex(page).evaluate((c) => (c as HTMLCanvasElement).toDataURL())).toBe(pixels);
+  await expect(page.getByTestId("document-status")).toHaveAttribute("data-revision", revision!);
+  await expect(page.getByRole("button", { name: "Отменить штрих", exact: true })).toBeDisabled();
+  // Switching smoothness updates controls without issuing another reset command.
+  const beforeOptions = await image(page);
+  await page.locator(".view-options summary").click();
+  await page.getByRole("checkbox", { name: "Плавная камера", exact: true }).check();
+  await page.keyboard.press("Escape");
+  expect(await image(page)).toBe(beforeOptions);
+  await page.locator(".view-options summary").click();
+  await page.getByRole("checkbox", { name: "Плавная камера", exact: true }).uncheck();
+  await page.keyboard.press("Escape");
+  await page.getByRole("button", { name: "Сброс вида", exact: true }).click();
+  await page.getByLabel("Ракурс модели").selectOption("orthographic");
+  await model.screenshot();
+  // Orthographic panning must translate the silhouette without rotating or scaling it.
+  const orthoPan = await coverage(page);
+  await drag("right");
+  const afterOrthoPan = await coverage(page);
+  expect(Math.abs(afterOrthoPan[0] - orthoPan[0])).toBeGreaterThan(20);
+  expect(
+    Math.abs(afterOrthoPan[2] - afterOrthoPan[0] - (orthoPan[2] - orthoPan[0])),
+  ).toBeLessThanOrEqual(1);
+  const beforeOrtho = await coverage(page);
+  await page.mouse.move(start.x, start.y);
+  await page.mouse.wheel(0, -150);
+  await page.mouse.move(5, 5);
+  await expect
+    .poll(async () => {
+      const c = await coverage(page);
+      return c[2] - c[0];
+    })
+    .toBeGreaterThan(beforeOrtho[2] - beforeOrtho[0] + 10);
+  // Left is still the paint action, not rotation.
+  await page.getByRole("button", { name: "Сброс вида", exact: true }).click();
+  const point = { x: 0, y: 0 };
+  await expect
+    .poll(async () => {
+      const p = await opaquePoint(page);
+      if (p) Object.assign(point, p);
+      return !!p;
+    })
+    .toBe(true);
+  await page.getByLabel("Цвет кисти", { exact: true }).fill("#ff00ff");
+  await page.mouse.click(point.x, point.y);
+  await expect(page.getByRole("button", { name: "Отменить штрих", exact: true })).toBeEnabled();
+});
+
+test("editor animation option animates the model and pauses it in brush mode", async ({ page }) => {
+  await enter(page);
+  await page.locator(".view-options summary").click();
+  const before = await image(page);
+  await page.getByRole("checkbox", { name: "Анимации", exact: true }).check();
+  await expect.poll(() => image(page)).not.toBe(before);
+  await page.keyboard.press("Escape");
+  await page.getByRole("button", { name: "Режим: вращение", exact: true }).click();
+  await page.mouse.move(5, 5);
+  await page.locator('section[aria-label="Предпросмотр модели"] canvas').screenshot();
+  const paused = await image(page);
+  await page.waitForTimeout(150);
+  expect(await image(page)).toBe(paused);
 });

@@ -1,6 +1,6 @@
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router";
-import { AdjustmentsHorizontalIcon, Cog6ToothIcon, ScaleIcon } from "@heroicons/react/24/outline";
+import { AdjustmentsHorizontalIcon, ScaleIcon } from "@heroicons/react/24/outline";
 import {
   PonySkin,
   decodeSkinMetadata,
@@ -14,7 +14,7 @@ import { ImportDialog } from "./ImportDialog";
 import { skinName, useDocumentInfo } from "./DocumentSession";
 import { ModelViewport } from "./ModelViewport";
 import { SkinSettings, raceNames } from "./SkinSettings";
-import { Button, PanelHeading, Toggle } from "./ui";
+import { Button, PanelHeading } from "./ui";
 const EditorWorkspace = lazy(() => import("./EditorWorkspace"));
 const empty = new Set<string>();
 export default function Studio({ mode }: { mode: "viewer" | "editor" }) {
@@ -317,31 +317,6 @@ function ViewerWorkspace({
               </div>
             </aside>
           ) : null}
-          <details className="viewer-options studio-panel">
-            <summary title="Настройки просмотра">
-              <Cog6ToothIcon />
-              <span>Вид</span>
-            </summary>
-            <div>
-              {(
-                [
-                  ["animations", "Анимации"],
-                  ["antialiasing", "Сглаживание"],
-                  ["smoothCamera", "Плавная камера"],
-                ] as const
-              ).map(([id, label]) => (
-                <Toggle
-                  key={id}
-                  label={label}
-                  checked={prefs.userOptions[id]}
-                  onChange={(v) => {
-                    prefs.setUserOptions({ [id]: v });
-                    localStorage.setItem(`viewer.options.${id}`, v ? "on" : "");
-                  }}
-                />
-              ))}
-            </div>
-          </details>
         </ModelViewport>
       </div>
       <footer className="studio-status">

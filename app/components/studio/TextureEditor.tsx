@@ -317,9 +317,11 @@ export function TextureEditor({
         </div>
       </div>
       <div className="viewport-footer">
-        <span className="viewport-hint">ЛКМ · рисовать　Пробел + drag · панорама</span>
         <div className="camera-actions">
-          <DesignIcon name="cube" />
+          <span className="viewport-hint">
+            <span>ЛКМ · рисовать</span>
+            <span>ПКМ / пробел · панорама · колесо · масштаб</span>
+          </span>
           <div className="zoom-controls">
             <IconButton label="2D −" onClick={() => setZoom((z) => Math.max(0.15, z / 1.25))}>
               −

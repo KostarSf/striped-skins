@@ -174,7 +174,7 @@ function ModelScene(props: PonyPreviewProps) {
         onPointerMove={(e) => {
           e.stopPropagation();
           if (dragging.current) paint(e);
-          else updateHover(surfaceHit(e, skinDocument, activePart));
+          else updateHover(e.buttons ? null : surfaceHit(e, skinDocument, activePart));
         }}
         onPointerUp={(e) => {
           end();

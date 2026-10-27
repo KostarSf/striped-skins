@@ -296,16 +296,18 @@ button:disabled {
   display: block;
   color: var(--studio-muted);
   font-size: 10px;
-  margin-bottom: 14px;
-  white-space: nowrap;
+  margin: 0 auto 0 0;
+  white-space: normal;
+  min-width: 0;
+  flex: 1;
+}
+.viewport-hint > span {
+  display: block;
 }
 .camera-actions {
   display: flex;
   align-items: center;
   gap: 8px;
-}
-.camera-actions > .design-icon {
-  margin-right: auto;
 }
 .zoom-controls {
   display: flex;
@@ -366,9 +368,6 @@ button:disabled {
 }
 .viewer-content .camera-actions {
   justify-content: center;
-}
-.viewer-content .camera-actions > .design-icon {
-  display: none;
 }
 .viewer-content .camera-actions > .icon-button:last-child {
   position: absolute;
@@ -657,31 +656,47 @@ input[type="color"]::-webkit-color-swatch {
   flex-wrap: wrap;
   max-width: calc(100% - 48px);
 }
-.viewer-options {
-  position: absolute;
-  bottom: 22px;
-  left: 24px;
-  z-index: 2;
+.viewport-heading-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  pointer-events: auto;
+  min-width: 0;
+}
+.view-options {
+  position: relative;
+  flex: none;
+  pointer-events: auto;
+  color: var(--studio-text);
+  background: var(--studio-raised);
+  border-radius: 7px;
   font-size: 11px;
 }
-.viewer-options summary {
+.view-options summary {
   list-style: none;
-  padding: 8px 12px;
+  padding: 8px 10px;
   display: flex;
   align-items: center;
   gap: 7px;
+  min-height: 36px;
 }
-.viewer-options summary svg {
+.view-options summary::-webkit-details-marker {
+  display: none;
+}
+.view-options summary svg {
   width: 16px;
   height: 16px;
 }
-.viewer-options > div {
-  min-width: 220px;
+.view-options > div {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 8px);
+  width: 220px;
   padding: 10px 14px;
-  border-top: 1px solid var(--studio-border);
+  box-shadow: 0 8px 24px #0006;
 }
-.viewer-options[open] {
-  bottom: 66px;
+.model-viewport:has(.view-options[open]) .viewport-heading {
+  z-index: 5;
 }
 .brush-toolbar {
   min-height: 56px;
@@ -1200,6 +1215,9 @@ input[type="color"]::-webkit-color-swatch {
   .viewport-heading select {
     max-width: 135px;
   }
+  .view-options summary > span {
+    display: none;
+  }
   .viewport-footer {
     left: 14px;
     right: 14px;
@@ -1336,10 +1354,6 @@ input[type="color"]::-webkit-color-swatch {
     bottom: 16px;
     left: 12px;
     right: 12px;
-  }
-  .viewer-options {
-    left: 12px;
-    bottom: 62px;
   }
   .quick-settings {
     top: 58px;
@@ -1512,9 +1526,6 @@ input[type="color"]::-webkit-color-swatch {
 .viewer-content .viewport-heading h2 {
   max-width: 300px;
 }
-.viewer-content .viewport-hint {
-  left: 85px;
-}
 
 .studio-app .model-viewport.maximized {
   position: fixed;
@@ -1543,7 +1554,7 @@ input[type="color"]::-webkit-color-swatch {
 .rail-colors {
   position: relative;
   width: 38px;
-  height: 40px;
+  height: 38px;
   flex: none;
 }
 .rail-colors .rail-color {
@@ -1557,6 +1568,13 @@ input[type="color"]::-webkit-color-swatch {
 .rail-colors .secondary-color {
   bottom: 0;
   right: 0;
+  z-index: 1;
+  border: 2px solid var(--studio-panel);
+  border-radius: 5px;
+}
+.rail-colors .secondary-color input {
+  width: 20px !important;
+  height: 20px !important;
 }
 .palette-entry {
   position: relative;

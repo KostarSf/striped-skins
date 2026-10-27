@@ -1,5 +1,10 @@
-import { useEffect, useRef } from "react";
-import { CameraControls, OrthographicCamera, PerspectiveCamera } from "@react-three/drei";
+import { useEffect, useMemo, useRef } from "react";
+import {
+  CameraControls,
+  CameraControlsImpl,
+  OrthographicCamera,
+  PerspectiveCamera,
+} from "@react-three/drei";
 import {
   Box3,
   Mesh,
@@ -31,6 +36,31 @@ export function PreviewCamera({
   comparison,
 }: PreviewCameraProps) {
   const controls = useRef<CameraControls>(null);
+  const smooth = useRef(smoothCamera);
+  smooth.current = smoothCamera;
+  const mouseButtons = useMemo(
+    () => ({
+      left: painting ? CameraControlsImpl.ACTION.NONE : CameraControlsImpl.ACTION.ROTATE,
+      middle: CameraControlsImpl.ACTION.ROTATE,
+      right: CameraControlsImpl.ACTION.TRUCK,
+      wheel:
+        projection === "orthographic"
+          ? CameraControlsImpl.ACTION.ZOOM
+          : CameraControlsImpl.ACTION.DOLLY,
+    }),
+    [painting, projection],
+  );
+  const touches = useMemo(
+    () => ({
+      one: painting ? CameraControlsImpl.ACTION.NONE : CameraControlsImpl.ACTION.TOUCH_ROTATE,
+      two:
+        projection === "orthographic"
+          ? CameraControlsImpl.ACTION.TOUCH_ZOOM_TRUCK
+          : CameraControlsImpl.ACTION.TOUCH_DOLLY_TRUCK,
+      three: CameraControlsImpl.ACTION.TOUCH_TRUCK,
+    }),
+    [painting, projection],
+  );
   const invalidate = useThree((s) => s.invalidate);
   const size = useThree((s) => s.size);
   const activeCamera = useThree((s) => s.camera);
@@ -85,6 +115,7 @@ export function PreviewCamera({
   useEffect(() => {
     const c = controls.current;
     if (!c) return;
+    const smoothCamera = smooth.current;
     const kind = cameraAction?.kind ?? "reset";
     if (kind === "in" || kind === "out") {
       if (projection === "orthographic")
@@ -104,16 +135,7 @@ export function PreviewCamera({
       else if (projection === "orthographic") c.zoomTo(50, smoothCamera);
     }
     invalidate();
-  }, [
-    cameraAction,
-    activeCamera,
-    projection,
-    comparison,
-    distance,
-    smoothCamera,
-    invalidate,
-    fitKey,
-  ]);
+  }, [cameraAction, activeCamera, projection, comparison, distance, invalidate, fitKey]);
   return (
     <>
       {projection === "orthographic" ? (
@@ -134,7 +156,8 @@ export function PreviewCamera({
       <CameraControls
         ref={controls}
         makeDefault
-        enabled={!painting}
+        mouseButtons={mouseButtons}
+        touches={touches}
         minDistance={5}
         maxDistance={45}
         smoothTime={smoothCamera ? 0.1 : 0}

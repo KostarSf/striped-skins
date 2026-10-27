@@ -6,6 +6,7 @@ import {
 } from "@striped-skins/viewer/experimental";
 import { decodeSkinMetadata } from "@striped-skins/api";
 import { XMarkIcon } from "@heroicons/react/24/outline";
+import { ViewOptions } from "./ViewOptions";
 import { Button, DesignIcon, IconButton } from "./ui";
 export function ModelViewport({
   title = "3D-модель",
@@ -61,39 +62,44 @@ export function ModelViewport({
       <PonyPreview {...props} fitKey={fitKey} cameraAction={action} projection={projection} />
       <div className="viewport-heading">
         <h2>{title}</h2>
-        {mini && onClose ? (
-          <IconButton label="Скрыть 3D-превью" onClick={onClose}>
-            <XMarkIcon />
-          </IconButton>
-        ) : null}
-        {!mini ? (
-          <select
-            aria-label="Ракурс модели"
-            value={view}
-            onChange={(e) => {
-              setView(e.target.value);
-              if (e.target.value === "orthographic" || e.target.value === "perspective") {
-                setProjection(e.target.value);
-                command("reset");
-              } else command(e.target.value as CameraAction["kind"]);
-            }}
-          >
-            <option value="perspective">Перспектива</option>
-            <option value="orthographic">Ортография</option>
-            <option value="front">Спереди</option>
-            <option value="back">Сзади</option>
-            <option value="left">Слева</option>
-            <option value="right">Справа</option>
-          </select>
-        ) : null}
+        <div className="viewport-heading-actions">
+          {mini && onClose ? (
+            <IconButton label="Скрыть 3D-превью" onClick={onClose}>
+              <XMarkIcon />
+            </IconButton>
+          ) : null}
+          {!mini ? (
+            <select
+              aria-label="Ракурс модели"
+              value={view}
+              onChange={(e) => {
+                setView(e.target.value);
+                if (e.target.value === "orthographic" || e.target.value === "perspective") {
+                  setProjection(e.target.value);
+                  command("reset");
+                } else command(e.target.value as CameraAction["kind"]);
+              }}
+            >
+              <option value="perspective">Перспектива</option>
+              <option value="orthographic">Ортография</option>
+              <option value="front">Спереди</option>
+              <option value="back">Сзади</option>
+              <option value="left">Слева</option>
+              <option value="right">Справа</option>
+            </select>
+          ) : null}
+          {!mini ? <ViewOptions /> : null}
+        </div>
       </div>
       {!mini ? (
         <div className="viewport-footer">
-          <span className="viewport-hint">
-            {props.painting ? "ЛКМ · рисовать на модели" : "ЛКМ · вращать   ПКМ · перемещать"}
-          </span>
           <div className="camera-actions">
-            <DesignIcon name="cube" />
+            <span className="viewport-hint">
+              <span>
+                {props.painting ? "ЛКМ · рисовать · СКМ · вращать" : "ЛКМ / СКМ · вращать"}
+              </span>
+              <span>ПКМ · панорама · колесо · масштаб</span>
+            </span>
             <div className="zoom-controls">
               <IconButton label="Отдалить модель" onClick={() => command("out")}>
                 −
