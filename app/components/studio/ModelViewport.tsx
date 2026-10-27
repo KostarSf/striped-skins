@@ -8,12 +8,14 @@ import { decodeSkinMetadata } from "@striped-skins/api";
 import { XMarkIcon } from "@heroicons/react/24/outline";
 import { ViewOptions } from "./ViewOptions";
 import { Button, DesignIcon, IconButton } from "./ui";
+import { useSkinDrop } from "./useSkinDrop";
 export function ModelViewport({
   title = "3D-модель",
   mini = false,
   onClose,
   children,
   headerActions,
+  onFileDrop,
   ...props
 }: PonyPreviewProps & {
   title?: string | null;
@@ -21,7 +23,9 @@ export function ModelViewport({
   onClose?: () => void;
   children?: React.ReactNode;
   headerActions?: React.ReactNode;
+  onFileDrop?: (file: File) => void;
 }) {
+  const drop = useSkinDrop(onFileDrop);
   const metadata = decodeSkinMetadata(props.document);
   const fitKey = JSON.stringify([
     props.document.id,
@@ -65,6 +69,7 @@ export function ModelViewport({
       ref={host}
       className={`model-viewport ${mini ? "mini-preview" : ""} ${maximized ? "maximized" : ""}`}
       aria-label="Предпросмотр модели"
+      {...drop.handlers}
     >
       <PonyPreview
         {...props}
@@ -73,6 +78,9 @@ export function ModelViewport({
         projection={projection}
         onScale={reportScale}
       />
+      {drop.dragging ? (
+        <div className="skin-drop-overlay">Отпустите PNG, чтобы открыть скин</div>
+      ) : null}
       <div className="viewport-heading">
         {title ? <h2>{title}</h2> : null}
         <div className="viewport-heading-actions">

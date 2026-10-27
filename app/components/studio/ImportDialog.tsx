@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useEffectEvent, useRef, useState } from "react";
 import { ArrowUpTrayIcon, XMarkIcon } from "@heroicons/react/24/outline";
 import { Button, IconButton } from "./ui";
 export function ImportDialog({
@@ -9,6 +9,7 @@ export function ImportDialog({
   dirty,
   onExport,
   second,
+  initialFile,
 }: {
   open: boolean;
   onClose: () => void;
@@ -17,6 +18,7 @@ export function ImportDialog({
   dirty: boolean;
   onExport: () => Promise<void>;
   second: boolean;
+  initialFile?: File;
 }) {
   const dialog = useRef<HTMLDialogElement>(null),
     input = useRef<HTMLInputElement>(null);
@@ -25,13 +27,6 @@ export function ImportDialog({
     [busy, setBusy] = useState(false),
     [drag, setDrag] = useState(false);
   const [pending, setPending] = useState<File | string | null>(null);
-  useEffect(() => {
-    if (open) {
-      setError("");
-      setPending(null);
-      dialog.current?.showModal();
-    } else dialog.current?.close();
-  }, [open]);
   const run = async (value: File | string) => {
     setBusy(true);
     setError("");
@@ -50,6 +45,16 @@ export function ImportDialog({
     if (dirty) setPending(value);
     else void run(value);
   };
+  const startImport = useEffectEvent(() => {
+    setError("");
+    setPending(null);
+    dialog.current?.showModal();
+    if (initialFile) accept(initialFile);
+  });
+  useEffect(() => {
+    if (open) startImport();
+    else dialog.current?.close();
+  }, [open, initialFile]);
   return (
     <dialog
       ref={dialog}
@@ -72,18 +77,23 @@ export function ImportDialog({
       {pending ? (
         <div className="replace-notice">
           <h3>В текущем скине есть изменения</h3>
-          <p>Перед заменой можно сохранить их отдельным PNG.</p>
+          <p>
+            Несохранённые изменения будут потеряны. Перед заменой можно сохранить их отдельным PNG.
+          </p>
           <div className="dialog-actions">
-            <Button onClick={() => setPending(null)} disabled={busy}>
+            <Button onClick={() => (initialFile ? onClose() : setPending(null))} disabled={busy}>
               Отмена
             </Button>
             <Button
               onClick={async () => {
+                setBusy(true);
                 try {
                   await onExport();
                   await run(pending);
                 } catch {
                   setError("Не удалось экспортировать текущий скин");
+                } finally {
+                  setBusy(false);
                 }
               }}
               disabled={busy}

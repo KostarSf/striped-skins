@@ -3,6 +3,7 @@ import { type SkinDocument, type Pixel } from "@striped-skins/api";
 import { type SurfaceHover } from "@striped-skins/viewer/experimental";
 import { type ModelQuad } from "@striped-skins/models";
 import { Button, DesignIcon, IconButton } from "./ui";
+import { useSkinDrop } from "./useSkinDrop";
 export type PaintTool = "brush" | "eraser" | "drop" | "hand";
 export function TextureEditor({
   document: skin,
@@ -16,6 +17,7 @@ export function TextureEditor({
   onHover,
   showUV: uv,
   onShowUV,
+  onFileDrop,
 }: {
   document: SkinDocument;
   color: Pixel;
@@ -28,7 +30,9 @@ export function TextureEditor({
   onHover?: (pixel: { x: number; y: number } | null) => void;
   showUV: boolean;
   onShowUV: (visible: boolean) => void;
+  onFileDrop?: (file: File) => void;
 }) {
+  const drop = useSkinDrop(onFileDrop);
   const canvas = useRef<HTMLCanvasElement>(null),
     area = useRef<HTMLDivElement>(null);
   const mode = useRef<"draw" | "pan" | null>(null),
@@ -150,7 +154,10 @@ export function TextureEditor({
     mode.current = null;
   };
   return (
-    <section className="texture-viewport" aria-label="Редактирование текстуры">
+    <section className="texture-viewport" aria-label="Редактирование текстуры" {...drop.handlers}>
+      {drop.dragging ? (
+        <div className="skin-drop-overlay">Отпустите PNG, чтобы открыть скин</div>
+      ) : null}
       <div className="viewport-heading">
         <h2>2D-текстура</h2>
         <div className="inline-controls">

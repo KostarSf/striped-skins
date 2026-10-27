@@ -227,6 +227,8 @@ export function PonyPreview(props: PonyPreviewProps) {
       frameloop="demand"
       camera={{ position: [8, 4, 12], fov: 42 }}
       gl={{ antialias: false }}
+      // SMAA renders without tone mapping. Keep direct rendering identical.
+      flat
       aria-label="3D pony preview"
     >
       <ModelScene {...props} />
