@@ -8,13 +8,15 @@ import {
 } from "three";
 
 /** Quad borders only: a triangle wireframe would add false diagonal UV seams. */
-export function uvOutlineGeometry(source: BufferGeometry) {
+export function uvOutlineGeometry(source: BufferGeometry, hiddenQuads: readonly boolean[] = []) {
   const position = source.getAttribute("position");
   const vertices: number[] = [];
-  for (let quad = 0; quad < position.count; quad += 4)
+  for (let quad = 0; quad < position.count; quad += 4) {
+    if (hiddenQuads[quad / 4]) continue;
     for (let corner = 0; corner < 4; corner++)
       for (const index of [quad + corner, quad + ((corner + 1) % 4)])
         vertices.push(position.getX(index), position.getY(index), position.getZ(index));
+  }
   const geometry = new BufferGeometry();
   geometry.setAttribute("position", new Float32BufferAttribute(vertices, 3));
   return geometry;
@@ -26,8 +28,15 @@ function biasDepth(shader: WebGLProgramParametersWithUniforms) {
     "#include <project_vertex>\ngl_Position.z -= 0.00001 * gl_Position.w;",
   );
 }
-function UVOutline({ mesh }: { mesh: Mesh }) {
-  const geometry = useMemo(() => uvOutlineGeometry(mesh.geometry), [mesh.geometry]);
+function UVOutline({ mesh, hidden }: { mesh: Mesh; hidden: ReadonlySet<string> }) {
+  const geometry = useMemo(
+    () =>
+      uvOutlineGeometry(
+        mesh.geometry,
+        (mesh.userData.surfaceIds as string[]).map((id) => hidden.has(id)),
+      ),
+    [mesh, hidden],
+  );
   useEffect(() => () => geometry.dispose(), [geometry]);
   return createPortal(
     <lineSegments name="uv-outlines" geometry={geometry} raycast={() => {}} renderOrder={999}>
@@ -43,6 +52,12 @@ function UVOutline({ mesh }: { mesh: Mesh }) {
     mesh,
   );
 }
-export function UVOutlines({ meshes }: { meshes: readonly Mesh[] }) {
-  return meshes.map((mesh) => <UVOutline key={mesh.uuid} mesh={mesh} />);
+export function UVOutlines({
+  meshes,
+  hidden,
+}: {
+  meshes: readonly Mesh[];
+  hidden: ReadonlySet<string>;
+}) {
+  return meshes.map((mesh) => <UVOutline key={mesh.uuid} mesh={mesh} hidden={hidden} />);
 }

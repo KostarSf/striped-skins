@@ -13,6 +13,8 @@ import {
 import { wearableNames } from "@striped-skins/api";
 import { type PreviewStats, type SurfaceHover } from "@striped-skins/viewer/experimental";
 import { ModelViewport } from "./ModelViewport";
+import { PartsVisibility } from "./PartsVisibility";
+import { buildPartTree } from "./part-tree";
 import { SkinSettings } from "./SkinSettings";
 import { TextureEditor, type PaintTool } from "./TextureEditor";
 import { Button, DesignIcon, Field, HexInput, IconButton, PanelHeading } from "./ui";
@@ -126,8 +128,7 @@ export default function EditorWorkspace({
     [activePart, setActivePart] = useState<string | null>(null),
     [lastPixel, setLastPixel] = useState<{ x: number; y: number; part: string } | null>(null),
     [stats, setStats] = useState<PreviewStats | null>(null),
-    [customColors, setCustomColors] = useState<string[]>([]),
-    [search, setSearch] = useState("");
+    [customColors, setCustomColors] = useState<string[]>([]);
   const hex = colors.primary;
   const setHex = useCallback((primary: string) => setColors((c) => ({ ...c, primary })), []);
   const swapColors = useCallback(
@@ -156,10 +157,24 @@ export default function EditorWorkspace({
       })),
     ),
   ];
+  const tree = buildPartTree(
+    definition.nodes,
+    (id) => partAvailable(id, appearance, preview),
+    labelFor,
+    resolveWearables(appearance, preview).map((gear) => ({
+      id: gear.id,
+      label: wearableNames[gear.id as keyof typeof wearableNames],
+      nodes: gearModels[gear.model].nodes,
+    })),
+  );
   const selected = parts.some((p) => p.id === activePart) ? activePart : null;
   const quads = flattenNodes(definition)
-    .filter((n) => (selected ? n.id === selected : partAvailable(n.id, appearance, preview)))
-    .flatMap((n) => n.quads);
+    .filter(
+      (n) =>
+        !hidden.has(n.id) &&
+        (selected ? n.id === selected : partAvailable(n.id, appearance, preview)),
+    )
+    .flatMap((n) => n.quads.filter((q) => !hidden.has(q.id)));
   const color: Pixel =
     tool === "eraser"
       ? [0, 0, 0, 0]
@@ -361,6 +376,15 @@ export default function EditorWorkspace({
                 onSample={tool === "drop" ? sample : undefined}
                 onPaint={onPaint}
                 onHover={setHover}
+                headerActions={
+                  <PartsVisibility
+                    tree={tree}
+                    hidden={hidden}
+                    onHidden={setHidden}
+                    selected={selected}
+                    parts={visibleParts}
+                  />
+                }
                 textureHover={textureHover}
                 showUV={showUV}
                 groundGrid={options.groundGrid}
@@ -472,68 +496,7 @@ export default function EditorWorkspace({
                 ))}
               </select>
             </Field>
-            <div className="part-actions">
-              <Button
-                disabled={!selected}
-                onClick={() =>
-                  setHidden(new Set(visibleParts.filter((p) => p.id !== selected).map((p) => p.id)))
-                }
-              >
-                Изолировать часть
-              </Button>
-              <Button
-                disabled={!selected}
-                onClick={() =>
-                  setHidden(
-                    (v) =>
-                      new Set([
-                        ...v,
-                        ...visibleParts
-                          .filter((p) => p.id === selected || p.id.startsWith(selected + "/"))
-                          .map((p) => p.id),
-                      ]),
-                  )
-                }
-              >
-                Скрыть ветку
-              </Button>
-              <Button onClick={() => setHidden(new Set())}>Показать всё</Button>
-            </div>
           </div>
-          <details open className="settings-group">
-            <summary>Видимость частей</summary>
-            <p className="muted">Скрытые части не мешают рисованию. PNG сохраняется целиком.</p>
-            <input
-              type="search"
-              aria-label="Найти часть"
-              placeholder="Найти часть…"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-            <div className="parts-list">
-              {visibleParts
-                .filter((p) => (p.id + labelFor(p.id)).toLowerCase().includes(search.toLowerCase()))
-                .map((p) => (
-                  <label className="part-row" key={p.id} title={p.id}>
-                    <DesignIcon name="eye" />
-                    <span>{p.id.startsWith("gear/") ? p.label : labelFor(p.id)}</span>
-                    <input
-                      type="checkbox"
-                      aria-label={`Показать ${p.id}`}
-                      checked={!hidden.has(p.id)}
-                      onChange={(e) =>
-                        setHidden((v) => {
-                          const n = new Set(v);
-                          if (e.target.checked) n.delete(p.id);
-                          else n.add(p.id);
-                          return n;
-                        })
-                      }
-                    />
-                  </label>
-                ))}
-            </div>
-          </details>
           <output
             hidden
             data-testid="render-stats"

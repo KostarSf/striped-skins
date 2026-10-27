@@ -162,10 +162,13 @@ test("all races, wing forms and accessories render; returning to Earth releases 
   }
   await page.getByLabel("Раса", { exact: true }).selectOption("SEAPONY");
   await page.getByLabel("Форма", { exact: true }).selectOption("dry");
+  await page.locator(".parts-popover summary").click();
+  await page.getByRole("searchbox", { name: "Найти часть" }).fill("left_leg");
   await expect(
     page.getByRole("checkbox", { name: "Показать left_leg", exact: true }),
   ).toBeVisible();
   await page.getByLabel("Форма", { exact: true }).selectOption("wet");
+  await page.locator(".parts-popover summary").click();
   await expect(page.getByRole("checkbox", { name: "Показать left_leg", exact: true })).toHaveCount(
     0,
   );

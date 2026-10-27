@@ -89,6 +89,7 @@ export function textureSurfaceHits(
     const part = mesh.userData.partId as string;
     if (activePart && part !== activePart) return;
     (mesh.userData.surfaceUVs as number[][]).forEach((uv, quad) => {
+      if (mesh.userData.hiddenSurfaces?.[quad]) return;
       const face = boundsForUV(uv, document.width, document.height);
       const bounds = clip
         ? {

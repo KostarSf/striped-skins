@@ -280,7 +280,17 @@ test("original Figma UI assets load locally at their intended dimensions", async
       };
     }),
   );
-  expect(images.length).toBeGreaterThan(10);
+  expect(images.map((image) => image.src)).toEqual(
+    expect.arrayContaining([
+      "/design/hand.svg",
+      "/design/brush.svg",
+      "/design/eraser.svg",
+      "/design/drop.svg",
+      "/design/plus.svg",
+      "/design/reset.svg",
+      "/design/expand.svg",
+    ]),
+  );
   for (const image of images) {
     expect(image.ok, image.src).toBe(true);
     const expected = image.src.endsWith("brand.svg") ? 18 : image.src.endsWith("eye.svg") ? 16 : 20;
@@ -868,4 +878,53 @@ test("viewer camera controls replace the title overlay and the view popup stays 
     expect(popup.x + popup.width).toBeLessThanOrEqual(host.x + host.width - 8);
     await expect(page.getByRole("checkbox", { name: "Сглаживание", exact: true })).toBeVisible();
   }
+});
+
+test("viewport parts popup groups model nodes and faces, preserves pixels and fits narrow panels", async ({
+  page,
+}) => {
+  const errors: string[] = [];
+  page.on("pageerror", (e) => errors.push(e.message));
+  await enter(page);
+  await page.mouse.move(5, 5);
+  const initial = await image(page);
+  const pixels = await tex(page).evaluate((c) => (c as HTMLCanvasElement).toDataURL());
+  await expect(page.locator(".inspector .parts-list")).toHaveCount(0);
+  await page.locator(".parts-popover summary").click();
+  const popup = page.getByRole("region", { name: "Видимость частей модели" });
+  await expect(popup).toBeVisible();
+  const search = popup.getByRole("searchbox", { name: "Найти часть" });
+  await search.fill("body/surface-3");
+  await popup.getByRole("checkbox", { name: "Показать body/surface-3", exact: true }).uncheck();
+  await expect.poll(() => image(page)).not.toBe(initial);
+  await expect(
+    popup.getByRole("checkbox", { name: "Показать group/body", exact: true }),
+  ).toHaveJSProperty("indeterminate", true);
+  const oneFaceHidden = await image(page);
+  await search.fill("");
+  const head = popup.getByRole("checkbox", { name: "Показать group/head", exact: true });
+  await head.uncheck();
+  await expect.poll(() => image(page)).not.toBe(oneFaceHidden);
+  await head.check();
+  await expect.poll(() => image(page)).toBe(oneFaceHidden);
+  await popup.getByRole("button", { name: "Показать всё", exact: true }).click();
+  await expect.poll(() => image(page)).toBe(initial);
+  expect(await tex(page).evaluate((c) => (c as HTMLCanvasElement).toDataURL())).toBe(pixels);
+  await page.keyboard.press("Escape");
+  await expect(popup).not.toBeVisible();
+  await page.getByRole("button", { name: "3D", exact: true }).click();
+  for (const width of [900, 390]) {
+    await page.setViewportSize({ width, height: 900 });
+    await page.locator(".parts-popover summary").click();
+    await expect(popup).toBeVisible();
+    const bounds = (await popup.boundingBox())!;
+    const panel = (await page.locator(".model-viewport").boundingBox())!;
+    expect(bounds.x).toBeGreaterThanOrEqual(panel.x);
+    expect(bounds.x + bounds.width).toBeLessThanOrEqual(panel.x + panel.width + 1);
+    expect(bounds.y + bounds.height).toBeLessThanOrEqual(panel.y + panel.height + 1);
+    const button = (await page.locator(".parts-popover summary").boundingBox())!;
+    expect(button.x + button.width).toBeLessThanOrEqual(panel.x + panel.width + 1);
+    await page.keyboard.press("Escape");
+  }
+  expect(errors).toEqual([]);
 });

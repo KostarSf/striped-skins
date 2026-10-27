@@ -13,12 +13,14 @@ export function ModelViewport({
   mini = false,
   onClose,
   children,
+  headerActions,
   ...props
 }: PonyPreviewProps & {
   title?: string | null;
   mini?: boolean;
   onClose?: () => void;
   children?: React.ReactNode;
+  headerActions?: React.ReactNode;
 }) {
   const metadata = decodeSkinMetadata(props.document);
   const fitKey = JSON.stringify([
@@ -100,6 +102,7 @@ export function ModelViewport({
             </select>
           ) : null}
           {!mini ? <ViewOptions /> : null}
+          {headerActions}
         </div>
       </div>
       {!mini ? (

@@ -15,6 +15,7 @@ import {
 } from "three";
 import { decodeSkinMetadata, type SkinDocument, type SkinMetadata } from "@striped-skins/api";
 import { UVOutlines } from "./UVOutlines.js";
+import { updateSurfaceVisibility } from "./SurfaceVisibility.js";
 import {
   resolveModel,
   resolveWearables,
@@ -163,7 +164,9 @@ export function GeneratedPony({
           partId: node.id,
           documentId: skinDocument.id,
           textureDocumentId: material === surface.material ? skinDocument.id : null,
-          surfaceIds: node.quads.map((q) => q.id),
+          surfaceIds: node.quads.map((q) =>
+            gearId === undefined ? q.id : `gear/${gearId}/${q.id}`,
+          ),
           surfaceUVs: node.quads.map((q) => q.uv),
           editable: gearId === undefined,
           gearId,
@@ -253,7 +256,8 @@ export function GeneratedPony({
       instance.root.position.set(0, 2, 1.2);
       for (const mesh of instance.meshes) {
         const id = mesh.userData.partId as string;
-        let visible = !hidden.has(id) && partAvailable(id, metadata, preview);
+        const hasSurfaces = updateSurfaceVisibility(mesh, hidden);
+        let visible = !hidden.has(id) && hasSurfaces && partAvailable(id, metadata, preview);
         const item = instance.gear.find((g) => g.id === mesh.userData.gearId);
         if (item?.side) {
           if (id.endsWith("strap")) visible &&= item.side === "both";
@@ -312,7 +316,7 @@ export function GeneratedPony({
   return (
     <>
       <primitive object={instance.root} dispose={null} />
-      {showUV ? <UVOutlines meshes={instance.meshes} /> : null}
+      {showUV ? <UVOutlines meshes={instance.meshes} hidden={hidden} /> : null}
     </>
   );
 }
