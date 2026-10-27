@@ -26,6 +26,7 @@
     "@react-three/postprocessing": "^3.2.2",
     "@striped-skins/api": "^1.0.0",
     "@striped-skins/models": "^1.0.0",
+    "postprocessing": "^6.39.5",
     "r3f-perf": "^7.2.3",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",

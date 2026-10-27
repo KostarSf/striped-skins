@@ -211,11 +211,13 @@ test("antialiasing preserves material colors in viewer, editor and mini preview"
       const before = await meanColor();
       expect(before.every(Number.isFinite)).toBe(true);
       for (const enabled of [false, true, false, true]) {
+        const previous = await image(page);
         if (mode === "mini") await page.getByRole("button", { name: "Рядом", exact: true }).click();
         await page.locator(".view-options summary").click();
         await page.getByRole("checkbox", { name: "Сглаживание", exact: true }).setChecked(enabled);
         await page.keyboard.press("Escape");
         if (mode === "mini") await page.getByRole("button", { name: "2D", exact: true }).click();
+        await expect.poll(() => image(page)).not.toBe(previous);
         await expect
           .poll(async () => {
             const after = await meanColor();
@@ -702,6 +704,67 @@ test("3D brush preview matches every shared UV target shown by the 2D brush", as
   expect(await tex(page).evaluate((c) => (c as HTMLCanvasElement).toDataURL())).toBe(pixels);
   await expect(page.getByRole("button", { name: "Отменить штрих", exact: true })).toBeDisabled();
 });
+
+for (const route of ["/", "/editor"]) {
+  test(`ground grid retains the unsmoothed line colors and contrast with SMAA on ${route}`, async ({
+    page,
+  }) => {
+    await enter(page, route);
+    await page.locator(".view-options summary").click();
+    await page.getByRole("checkbox", { name: "Сглаживание", exact: true }).uncheck();
+    await page.keyboard.press("Escape");
+    // Exclude the model, including its translucent edges, from the grid measurements.
+    const mask = await page.locator(".model-viewport canvas").evaluateHandle((c) => {
+      const canvas = c as HTMLCanvasElement,
+        gl = canvas.getContext("webgl2")!;
+      const pixels = new Uint8Array(canvas.width * canvas.height * 4);
+      gl.readPixels(0, 0, canvas.width, canvas.height, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
+      return Uint8Array.from({ length: pixels.length / 4 }, (_, i) =>
+        pixels[i * 4 + 3] === 0 ? 1 : 0,
+      );
+    });
+    await page.locator(".view-options summary").click();
+    await page.getByRole("checkbox", { name: "Сетка под моделью", exact: true }).check();
+    await page.keyboard.press("Escape");
+    const gridColors = () =>
+      page.locator(".model-viewport canvas").evaluate((c, mask) => {
+        const canvas = c as HTMLCanvasElement,
+          gl = canvas.getContext("webgl2")!;
+        const pixels = new Uint8Array(canvas.width * canvas.height * 4);
+        gl.readPixels(0, 0, canvas.width, canvas.height, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
+        const colors: number[] = [];
+        for (let i = 0; i < mask.length; i++) {
+          const a = pixels[i * 4 + 3];
+          if (!mask[i] || a < 64 || a > 220) continue;
+          // Unpremultiply the displayed pixel to measure color independently of line coverage.
+          colors.push(((pixels[i * 4] + pixels[i * 4 + 1] + pixels[i * 4 + 2]) * 255) / (3 * a));
+        }
+        colors.sort((a, b) => a - b);
+        return {
+          count: colors.length,
+          levels: [0.1, 0.5, 0.9].map((q) => colors[Math.floor(q * colors.length)]),
+        };
+      }, mask);
+    await page.locator(".model-viewport canvas").screenshot();
+    const reference = await gridColors();
+    expect(reference.count).toBeGreaterThan(100);
+    expect(reference.levels[2] - reference.levels[0]).toBeGreaterThan(5);
+    for (const enabled of [true, false, true]) {
+      const previous = await image(page);
+      await page.locator(".view-options summary").click();
+      await page.getByRole("checkbox", { name: "Сглаживание", exact: true }).setChecked(enabled);
+      await page.keyboard.press("Escape");
+      await expect.poll(() => image(page)).not.toBe(previous);
+      await expect
+        .poll(async () => {
+          const current = await gridColors();
+          return Math.max(...current.levels.map((v, i) => Math.abs(v - reference.levels[i])));
+        })
+        .toBeLessThan(3);
+    }
+    await mask.dispose();
+  });
+}
 
 test("ground grid toggles without changing camera scale and persists across modes and reload", async ({
   page,
