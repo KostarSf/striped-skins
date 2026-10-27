@@ -241,6 +241,7 @@ function ViewerWorkspace({
           antialiasing={prefs.userOptions.antialiasing}
           smoothCamera={prefs.userOptions.smoothCamera}
           groundGrid={prefs.userOptions.groundGrid}
+          shading="studio"
           title={null}
         >
           <div className="viewer-top-actions">

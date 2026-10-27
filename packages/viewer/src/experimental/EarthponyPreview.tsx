@@ -14,6 +14,8 @@ import { type SkinDocument, type SkinMetadata, type Pixel } from "@striped-skins
 import { type BodySize, type PreviewSettings, type MotionLayer } from "@striped-skins/models";
 import { GeneratedPony } from "../models/GeneratedPony.js";
 import { GroundGrid } from "./GroundGrid.js";
+import { PreviewLighting } from "./PreviewLighting.js";
+import type { ModelShading } from "../models/SkinMaterial.js";
 export type PreviewStats = {
   calls: number;
   geometries: number;
@@ -24,6 +26,7 @@ export type PonyPreviewProps = Partial<Omit<PreviewCameraProps, "painting" | "co
   antialiasing?: boolean;
   groundGrid?: boolean;
   showUV?: boolean;
+  shading?: ModelShading;
   comparison?: {
     document: SkinDocument;
     preview?: PreviewSettings;
@@ -162,6 +165,7 @@ function ModelScene(props: PonyPreviewProps) {
         </EffectComposer>
       ) : null}
       {props.groundGrid ? <GroundGrid contextKey={contextKey} /> : null}
+      {props.shading === "studio" ? <PreviewLighting /> : null}
       {brushHover && props.brushPreview !== false && !onSample && color[3] > 0 ? (
         <TextureBrushPreview
           pixel={brushHover}
@@ -209,6 +213,7 @@ function ModelScene(props: PonyPreviewProps) {
               overrides={props.comparison.overrides}
               animate={props.animate}
               showUV={props.showUV}
+              shading={props.shading}
             />
           </group>
         ) : null}

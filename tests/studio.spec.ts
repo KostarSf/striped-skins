@@ -943,3 +943,58 @@ test("viewport parts popup groups model nodes and faces, preserves pixels and fi
   }
   expect(errors).toEqual([]);
 });
+
+test("viewer restores lit materials while editor and mini preview retain exact flat texture colors", async ({
+  page,
+}) => {
+  const errors: string[] = [];
+  page.on("pageerror", (e) => errors.push(e.message));
+  await page.addInitScript(() => localStorage.setItem("viewer.options.antialiasing", ""));
+  await enter(page, "/");
+  const png = await page.evaluate(() => {
+    const c = document.createElement("canvas");
+    c.width = c.height = 64;
+    const ctx = c.getContext("2d")!;
+    ctx.fillStyle = "#808080";
+    ctx.fillRect(0, 0, 64, 64);
+    return c.toDataURL("image/png").split(",")[1];
+  });
+  await page.getByRole("button", { name: "Открыть", exact: true }).click();
+  await page
+    .getByLabel("Открыть PNG", { exact: true })
+    .setInputFiles({ name: "gray.png", mimeType: "image/png", buffer: Buffer.from(png, "base64") });
+  const colors = () =>
+    page.locator(".model-viewport canvas").evaluate((c) => {
+      const canvas = c as HTMLCanvasElement,
+        gl = canvas.getContext("webgl2")!;
+      const pixels = new Uint8Array(canvas.width * canvas.height * 4);
+      gl.readPixels(0, 0, canvas.width, canvas.height, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
+      const colors = new Map<string, number>();
+      for (let i = 0; i < pixels.length; i += 4)
+        if (pixels[i + 3] === 255) {
+          const rgb = Array.from(pixels.slice(i, i + 3)).join(",");
+          colors.set(rgb, (colors.get(rgb) ?? 0) + 1);
+        }
+      return [...colors]
+        .filter(([, count]) => count > 10)
+        .map(([rgb]) => rgb)
+        .sort();
+    });
+  await expect.poll(async () => (await colors()).length).toBeGreaterThan(1);
+  const lit = await image(page);
+  await page.getByLabel("Ракурс модели").selectOption("orthographic");
+  await expect.poll(() => image(page)).not.toBe(lit);
+  await expect.poll(async () => (await colors()).length).toBeGreaterThan(1);
+  await page.getByRole("link", { name: "Редактировать", exact: true }).click();
+  await expect(tex(page)).toBeVisible();
+  await page.getByRole("button", { name: "UV", exact: true }).click();
+  await expect.poll(colors).toEqual(["128,128,128"]);
+  await page.getByLabel("Ракурс модели").selectOption("orthographic");
+  await expect.poll(colors).toEqual(["128,128,128"]);
+  await page.getByRole("button", { name: "2D", exact: true }).click();
+  await expect.poll(colors).toEqual(["128,128,128"]);
+  await page.getByRole("link", { name: "← Просмотрщик", exact: true }).click();
+  await expect(tex(page)).toHaveCount(0);
+  await expect.poll(async () => (await colors()).length).toBeGreaterThan(1);
+  expect(errors).toEqual([]);
+});

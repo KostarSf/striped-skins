@@ -388,6 +388,7 @@ export default function EditorWorkspace({
                 textureHover={textureHover}
                 showUV={showUV}
                 groundGrid={options.groundGrid}
+                shading="flat"
                 brushPreview={tool === "brush"}
                 onStats={onStats}
                 animate={options.animations}
