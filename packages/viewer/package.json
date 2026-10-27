@@ -8,6 +8,10 @@
   "main": "build/esm/index.js",
   "types": "./build/types/index.d.ts",
   "exports": {
+    "./experimental": {
+      "types": "./build/types/experimental/EarthponyPreview.d.ts",
+      "default": "./build/esm/experimental/EarthponyPreview.js"
+    },
     ".": {
       "types": "./build/types/index.d.ts",
       "default": "./build/esm/index.js"
@@ -21,6 +25,7 @@
     "@react-three/fiber": "^9.8.2",
     "@react-three/postprocessing": "^3.2.2",
     "@striped-skins/api": "^1.0.0",
+    "@striped-skins/models": "^1.0.0",
     "r3f-perf": "^7.2.3",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",

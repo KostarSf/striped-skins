@@ -19,6 +19,9 @@ export default function SideBySidePonyView() {
     <>
       <PonyModel
         skin={firstPony.skin}
+        preview={firstPony.preview}
+        hidden={firstPony.hidden}
+        motionLayers={firstPony.motionLayers}
         ref={pony1ref}
         position={[x, y, 0]}
         scale={[scale, scale, scale]}
@@ -26,6 +29,9 @@ export default function SideBySidePonyView() {
 
       <PonyModel
         skin={secondPony.skin}
+        preview={secondPony.preview}
+        hidden={secondPony.hidden}
+        motionLayers={secondPony.motionLayers}
         ref={pony2ref}
         position={[-x, -y, 0]}
         scale={[scale, scale, scale]}

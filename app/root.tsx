@@ -1,6 +1,7 @@
 import { Links, Meta, Outlet, Scripts, ScrollRestoration } from "react-router";
 import styles from "./tailwind.css?url";
 import type { LinksFunction, MetaFunction } from "react-router";
+import { WorkspaceBoundary } from "./components/WorkspaceBoundary";
 
 export const links: LinksFunction = () => [{ rel: "stylesheet", href: styles }];
 
@@ -34,7 +35,9 @@ export default function App() {
         <link rel="manifest" href="manifest.json" />
       </head>
       <body className="overflow-clip">
-        <Outlet />
+        <WorkspaceBoundary>
+          <Outlet />
+        </WorkspaceBoundary>
         <ScrollRestoration />
         <Scripts />
       </body>

@@ -19,7 +19,11 @@ export class ImageTransformer {
   }
 
   get hasImage() {
-    return !!this._rawImage && !!this._canvas && !!this._context;
+    return !!this._canvas && !!this._context;
+  }
+  setCanvas(canvas: HTMLCanvasElement) {
+    this._canvas = canvas;
+    this._context = canvas.getContext("2d")!;
   }
 
   setImage(image: HTMLImageElement) {

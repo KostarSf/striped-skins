@@ -29,11 +29,11 @@ export class Race {
         color = color.substring(1);
       }
 
-      return allRaces.get(color) ?? allRaces.get(RacePixel.Earthpony)!;
+      return allRaces.get(color) ?? allRaces.get(RacePixel.Human)!;
     }
 
-    const hexColor = toHexColor(color, false, false);
-    return allRaces.get(hexColor) ?? allRaces.get(RacePixel.Earthpony)!;
+    const hexColor = color[3] === 255 ? toHexColor(color, false, false) : RacePixel.Human;
+    return allRaces.get(hexColor) ?? allRaces.get(RacePixel.Human)!;
   }
 }
 

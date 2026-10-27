@@ -6,64 +6,142 @@ import {
   BodyPixel,
   TailShapePixel,
 } from "./skin-pixels/index.js";
-import { ImageTransformer, loadImage, toHexColor } from "./utils/index.js";
-
+import { ImageTransformer, loadImage } from "./utils/index.js";
+import { SkinDocument } from "./SkinDocument.js";
+import {
+  decodeSkinMetadata,
+  raceColors,
+  sizeColors,
+  tailShapeColors,
+  type SkinMetadata,
+} from "./skin-metadata.js";
+import { normalizeSkinPixels, documentCanvas } from "./skin-image.js";
+const hex = (value: number) => value.toString(16).padStart(6, "0");
 export class PonySkin {
-  // eslint-disable-next-line no-useless-constructor
+  sourceUrl?: string;
+  private _document?: SkinDocument;
+  private cachedRevision = -1;
+  private cachedMetadata?: SkinMetadata;
   constructor(
     readonly source: ImageTransformer,
-    readonly race: Race,
-    readonly tailLength: TailLength,
-    readonly snout: Snout,
-    readonly body: Body,
-    readonly magicGlow: string,
-    readonly slim: boolean,
-    readonly wearables: Wearables,
-    readonly tailShape: TailShape,
+    private readonly initialRace: Race,
+    private readonly initialTail: TailLength,
+    private readonly initialSnout: Snout,
+    private readonly initialBody: Body,
+    private readonly initialGlow: string,
+    private readonly initialSlim: boolean,
+    private readonly initialWearables: Wearables,
+    private readonly initialShape: TailShape,
   ) {}
-
-  static async fromUrl(imageUrl: string) {
-    const image = await loadImage(imageUrl);
-    return this.fromImage(image);
+  get document(): SkinDocument {
+    if (!this._document) {
+      const canvas = this.source.canvas;
+      this._document = canvas
+        ? normalizeSkinPixels(
+            canvas.width,
+            canvas.height,
+            canvas.getContext("2d")!.getImageData(0, 0, canvas.width, canvas.height).data,
+          )
+        : new SkinDocument(64, 64, new Uint8ClampedArray(64 * 64 * 4));
+    }
+    return this._document;
   }
-
-  static fromImage(imageElement: HTMLImageElement) {
-    const transformer = new ImageTransformer(imageElement);
-
-    const racePixel = transformer.getPixelRGBA(0, 0);
-    const tailLengthPixel = transformer.getPixelRGBA(1, 0);
-    const snoutPixel = transformer.getPixelRGBA(2, 0);
-    const bodyPixel = transformer.getPixelRGBA(3, 0);
-    const magicGlowPixel = transformer.getPixelRGBA(0, 1);
-    const wearablesPixel = transformer.getPixelRGBA(1, 1);
-    const tailShapePixel = transformer.getPixelRGBA(2, 1);
-
-    const multiplier = imageElement.width / 64;
-
-    // Average color of part of the skin that should be empty if skin is slim
-    // ( the square of 4 top left pixels of back side of back right leg -
-    // right below the front part of the ear )
-    const averageColor = transformer.getAverageRGBA(
-      14 * multiplier,
-      20 * multiplier,
-      2 * multiplier,
-      2 * multiplier,
-    );
-    const isSlim = averageColor[3] < 10; // average alpha shold be low
-
-    return new PonySkin(
-      transformer,
-      Race.fromPixel(racePixel),
-      TailLength.fromPixel(tailLengthPixel),
-      Snout.fromPixel(snoutPixel),
-      Body.fromPixel(bodyPixel),
-      toHexColor(magicGlowPixel, false, false),
-      isSlim,
-      Wearables.fromPixel(wearablesPixel),
-      TailShape.fromPixel(tailShapePixel),
+  get metadata(): SkinMetadata {
+    const doc = this.document;
+    if (this.cachedRevision !== doc.getSnapshot()) {
+      this.cachedMetadata = decodeSkinMetadata(doc);
+      this.cachedRevision = doc.getSnapshot();
+    }
+    return this.cachedMetadata!;
+  }
+  get race() {
+    return this._document ? Race.fromPixel(hex(raceColors[this.metadata.race])) : this.initialRace;
+  }
+  get body() {
+    return this._document ? Body.fromPixel(hex(sizeColors[this.metadata.size])) : this.initialBody;
+  }
+  get tailLength() {
+    return this._document
+      ? TailLength.fromPixel(
+          ["425844", "d19fe4", "534b76", "8a6b7f", "000000"][this.metadata.tailLength],
+        )
+      : this.initialTail;
+  }
+  get snout() {
+    return this._document
+      ? Snout.fromPixel(
+          this.metadata.snout === "stallion"
+            ? "ffffff"
+            : this.metadata.snout === "flat"
+              ? "888888"
+              : "000000",
+        )
+      : this.initialSnout;
+  }
+  get magicGlow() {
+    return this._document ? this.metadata.glow : this.initialGlow;
+  }
+  get slim() {
+    return this._document ? this.metadata.slim : this.initialSlim;
+  }
+  get wearables() {
+    return this._document
+      ? Wearables.fromPixel(
+          this.metadata.wearables
+            .map((v) => v.toString(16).padStart(2, "0"))
+            .join("")
+            .padEnd(6, "0"),
+        )
+      : this.initialWearables;
+  }
+  get tailShape() {
+    return this._document
+      ? TailShape.fromPixel(hex(tailShapeColors[this.metadata.tailShape]))
+      : this.initialShape;
+  }
+  static async fromUrl(url: string) {
+    const skin = this.fromImage(await loadImage(url));
+    skin.sourceUrl = url;
+    return skin;
+  }
+  static fromImage(image: HTMLImageElement) {
+    const transformer = new ImageTransformer(image),
+      canvas = transformer.canvas!;
+    return this.fromDocument(
+      normalizeSkinPixels(
+        canvas.width,
+        canvas.height,
+        canvas.getContext("2d")!.getImageData(0, 0, canvas.width, canvas.height).data,
+      ),
     );
   }
-
+  static fromDocument(document: SkinDocument) {
+    const source = new ImageTransformer();
+    const canvas = documentCanvas(document);
+    source.setCanvas(canvas);
+    document.subscribe(() =>
+      canvas
+        .getContext("2d")!
+        .putImageData(
+          new ImageData(new Uint8ClampedArray(document.pixels), document.width, document.height),
+          0,
+          0,
+        ),
+    );
+    const skin = new PonySkin(
+      source,
+      Race.fromPixel(RacePixel.Earthpony),
+      TailLength.fromPixel(TailLengthPixel.Full),
+      Snout.fromPixel(SnoutPixel.Rounded),
+      Body.fromPixel(BodyPixel.Normal),
+      "000000",
+      false,
+      Wearables.fromPixel("000000"),
+      TailShape.fromPixel(TailShapePixel.Straight),
+    );
+    skin._document = document;
+    return skin;
+  }
   static readonly DEFAULT = new PonySkin(
     new ImageTransformer(),
     Race.fromPixel(RacePixel.Pegasus),

@@ -1,0 +1,7 @@
+{
+  "name": "@striped-skins/model-compiler",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "exports": "./src/compiler.mjs"
+}

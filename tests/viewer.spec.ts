@@ -108,6 +108,8 @@ test("signed skin URLs retain every query parameter on submit and reload", async
   expect(query.get("second-skin")).toBe(secondSkin);
 
   proxyRequests = [];
+  // This case verifies URL decoding on a fresh load; editor restoration has a separate test.
+  await page.addInitScript(() => localStorage.removeItem("striped.editor.documents.v1"));
   await page.reload();
   await expect
     .poll(() => proxyRequests.map((url) => url.searchParams.get("url")))

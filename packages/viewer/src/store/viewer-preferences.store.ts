@@ -33,6 +33,7 @@ export const createViewerPreferencesStore = (
     },
   };
 
+  const requests = { default: 0, first: 0, second: 0 };
   const store = createStore<ViewerPreferencesStoreState>()((set, get) => ({
     ...DEFAULT_PROPS,
     ...initProps,
@@ -46,50 +47,77 @@ export const createViewerPreferencesStore = (
       ...initProps?.userOptions,
     },
 
+    defaultSkinError: null,
+    firstSkinError: null,
+    secondSkinError: null,
     loadingDefaultSkin: false,
     loadingFirstSkin: false,
     loadingSecondSkin: false,
 
     setDefaultSkin: (url) => {
-      set(() => ({ loadingDefaultSkin: true }));
+      const request = ++requests.default;
+      set(() => ({ loadingDefaultSkin: true, defaultSkinError: null }));
       PonySkin.fromUrl(url)
         .then((skin) => {
+          if (request !== requests.default) return;
           ponyStore.getState().defaultPony.setSkin(skin);
           set(() => ({ loadingDefaultSkin: false, defaultSkinUrl: url }));
         })
         .catch((reason) => {
-          console.error(reason);
-          set(() => ({ loadingDefaultSkin: false }));
+          if (request !== requests.default) return;
+          set(() => ({ loadingDefaultSkin: false, defaultSkinError: String(reason) }));
         });
     },
 
     setFirstSkin: (url) => {
       const skinUrl = url || get().defaultSkinUrl;
-      set(() => ({ loadingFirstSkin: true }));
+      const request = ++requests.first;
+      const previous = ponyStore.getState().firstPony.skin;
+      set(() => ({ loadingFirstSkin: true, firstSkinError: null }));
 
       PonySkin.fromUrl(skinUrl)
         .then((skin) => {
+          if (request !== requests.first) return;
+          const current = ponyStore.getState().firstPony.skin;
+          if (
+            current !== previous &&
+            !(previous === PonySkin.DEFAULT && current.sourceUrl === get().defaultSkinUrl)
+          ) {
+            set({ loadingFirstSkin: false });
+            return;
+          }
           ponyStore.getState().firstPony.setSkin(skin);
           set(() => ({ loadingFirstSkin: false, firstSkinUrl: skinUrl }));
         })
         .catch((reason) => {
-          console.error(reason);
-          set(() => ({ loadingFirstSkin: false }));
+          if (request !== requests.first) return;
+          set(() => ({ loadingFirstSkin: false, firstSkinError: String(reason) }));
         });
     },
 
     setSecondSkin: (url) => {
       const skinUrl = url || get().defaultSkinUrl;
-      set(() => ({ loadingSecondSkin: true }));
+      const request = ++requests.second;
+      const previous = ponyStore.getState().secondPony.skin;
+      set(() => ({ loadingSecondSkin: true, secondSkinError: null }));
 
       PonySkin.fromUrl(skinUrl)
         .then((skin) => {
+          if (request !== requests.second) return;
+          const current = ponyStore.getState().secondPony.skin;
+          if (
+            current !== previous &&
+            !(previous === PonySkin.DEFAULT && current.sourceUrl === get().defaultSkinUrl)
+          ) {
+            set({ loadingSecondSkin: false });
+            return;
+          }
           ponyStore.getState().secondPony.setSkin(skin);
           set(() => ({ loadingSecondSkin: false, secondSkinUrl: skinUrl }));
         })
         .catch((reason) => {
-          console.error(reason);
-          set(() => ({ loadingSecondSkin: false }));
+          if (request !== requests.second) return;
+          set(() => ({ loadingSecondSkin: false, secondSkinError: String(reason) }));
         });
     },
 
@@ -108,11 +136,11 @@ export const createViewerPreferencesStore = (
   }
 
   if (initProps?.firstSkinUrl) {
-    store.getState().setDefaultSkin(initProps.firstSkinUrl);
+    store.getState().setFirstSkin(initProps.firstSkinUrl);
   }
 
   if (initProps?.secondSkinUrl) {
-    store.getState().setDefaultSkin(initProps.secondSkinUrl);
+    store.getState().setSecondSkin(initProps.secondSkinUrl);
   }
 
   return store;

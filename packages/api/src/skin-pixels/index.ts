@@ -1,5 +1,5 @@
 export enum RacePixel {
-  Human = "none",
+  Human = "000000",
   Earthpony = "f9b131",
   Pegasus = "88caf0",
   Unicorn = "d19fe4",
