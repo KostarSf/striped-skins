@@ -3,7 +3,10 @@
 The SVG icons are original UI assets exported from the user-provided Figma design:
 https://www.figma.com/design/7ZqpYdHWnQuAYr3YMWhbId?node-id=4-2
 
-Their native sizes are preserved: brand 18×18, visibility 16×16, tools 20×20.
+Their native sizes are preserved: visibility 16×16, tools 20×20.
+The brush accent is adapted to the application’s orange theme. The header uses
+the original orange striped logo from `/icon.png`; `brand.svg` is retained as a
+reference asset from the supplied design.
 The model illustration and illustrative texture atlas in Figma are placeholders;
 the application renders the actual model and editable skin instead.
 

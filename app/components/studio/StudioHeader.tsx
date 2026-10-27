@@ -1,6 +1,6 @@
 import { Link, useSearchParams } from "react-router";
 import { ArrowDownTrayIcon, FolderOpenIcon } from "@heroicons/react/24/outline";
-import { Button, DesignIcon } from "./ui";
+import { Button } from "./ui";
 export function StudioHeader({
   mode,
   second,
@@ -30,9 +30,15 @@ export function StudioHeader({
         to={viewer.size ? `/?${viewer}` : "/"}
         aria-label="Striped Skins — просмотрщик"
       >
-        <span className="brand-mark">
-          <DesignIcon name="brand" />
-        </span>
+        <img
+          className="brand-mark"
+          src="/icon.png"
+          width={28}
+          height={28}
+          alt=""
+          aria-hidden="true"
+          draggable={false}
+        />
         <span>Striped Skins</span>
       </Link>
       <nav className="mode-tabs" aria-label="Режим приложения">
