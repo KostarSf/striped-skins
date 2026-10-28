@@ -267,22 +267,29 @@ function ViewerWorkspace({
           groundGrid={prefs.userOptions.groundGrid}
           shading="studio"
           title={null}
+          headerActions={
+            <div className="viewer-top-actions">
+              <Button
+                title="Сравнить скины"
+                aria-label="Сравнить скины"
+                aria-pressed={comparison}
+                onClick={() => prefs.setMode(comparison ? "first-model" : "side-by-side")}
+              >
+                <ScaleIcon />
+                <span>Сравнить</span>
+              </Button>
+              <Button
+                title="Параметры скина"
+                aria-label="Параметры скина"
+                aria-expanded={settings}
+                onClick={() => setSettings((v) => !v)}
+              >
+                <AdjustmentsHorizontalIcon />
+                <span>Параметры скина</span>
+              </Button>
+            </div>
+          }
         >
-          <div className="viewer-top-actions">
-            <Button
-              title="Comparison mode"
-              aria-label="Сравнить скины"
-              aria-pressed={comparison}
-              onClick={() => prefs.setMode(comparison ? "first-model" : "side-by-side")}
-            >
-              <ScaleIcon />
-              <span>Сравнить</span>
-            </Button>
-            <Button aria-expanded={settings} onClick={() => setSettings((v) => !v)}>
-              <AdjustmentsHorizontalIcon />
-              <span>Параметры скина</span>
-            </Button>
-          </div>
           {comparison ? (
             <div className="comparison-picker">
               <Button

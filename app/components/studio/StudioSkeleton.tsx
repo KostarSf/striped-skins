@@ -112,7 +112,7 @@ function EditorBody() {
           <Control width={54} />
         </div>
       </div>
-      <div className="editor-workspace layout-split" aria-hidden="true">
+      <div className="editor-workspace layout-split mobile-view-3d" aria-hidden="true">
         <div className="tool-rail">
           {[0, 1, 2, 3].map((i) => (
             <span key={i} className="icon-button skeleton-tool">
@@ -133,13 +133,6 @@ function EditorBody() {
             </div>
           </div>
           <div className="palette-panel">
-            <div className="brush-color">
-              <Bone width={58} height={7} />
-              <div className="inline-controls">
-                <Bone width={26} height={26} />
-                <Control width={100} />
-              </div>
-            </div>
             <div className="skin-palette">
               <Bone width={80} height={7} />
               <div>
@@ -176,6 +169,15 @@ function EditorBody() {
             </div>
           </div>
         </div>
+      </div>
+      <div className="mobile-editor-footer skeleton-mobile-footer" aria-hidden="true">
+        <div className="inline-controls">
+          <Control width={52} />
+          <Control width={52} />
+          <Control width={52} />
+        </div>
+        <Control width={36} />
+        <Control width={40} />
       </div>
     </>
   );

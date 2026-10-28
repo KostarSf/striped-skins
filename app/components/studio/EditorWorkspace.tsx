@@ -17,7 +17,14 @@ import { PartsVisibility } from "./PartsVisibility";
 import { buildPartTree } from "./part-tree";
 import { SkinSettings } from "./SkinSettings";
 import { TextureEditor, type PaintTool } from "./TextureEditor";
-import { Button, DesignIcon, Field, HexInput, IconButton, PanelHeading } from "./ui";
+import { Button, DesignIcon, Field, IconButton, PanelHeading } from "./ui";
+import {
+  BrushColors,
+  MobileEditorFooter,
+  MobileToolMenu,
+  type MobileEditorView,
+} from "./MobileEditorControls";
+import { usePhoneLayout } from "./usePhoneLayout";
 import { useViewerPreferencesContext } from "../striped-viewer.client";
 function paletteFor(skin: SkinDocument) {
   const counts = new Map<string, number>();
@@ -114,6 +121,8 @@ export default function EditorWorkspace({
 }) {
   const meta = decodeSkinMetadata(skin),
     options = useViewerPreferencesContext((s) => s.userOptions);
+  const isPhone = usePhoneLayout();
+  const [mobileView, setMobileView] = useState<MobileEditorView>("3d");
   const [showMini, setShowMini] = useState(true);
   const [showUV, setShowUV] = useState(true);
   const [slim, setSlim] = useState(meta.slim),
@@ -133,6 +142,7 @@ export default function EditorWorkspace({
     [customColors, setCustomColors] = useState<string[]>([]);
   const hex = colors.primary;
   const setHex = useCallback((primary: string) => setColors((c) => ({ ...c, primary })), []);
+  const setSecondary = (secondary: string) => setColors((c) => ({ ...c, secondary }));
   const swapColors = useCallback(
     () => setColors((c) => ({ primary: c.secondary, secondary: c.primary })),
     [],
@@ -238,141 +248,135 @@ export default function EditorWorkspace({
   const onPaint = useCallback((p: { x: number; y: number; part: string }) => setLastPixel(p), []);
   return (
     <>
-      <div className="brush-toolbar" role="toolbar" aria-label="Настройки инструментов">
-        <div className="current-tool">
-          <DesignIcon name={tool === "drop" ? "drop" : tool} />
-          <strong>
-            {{ brush: "Кисть", eraser: "Ластик", drop: "Пипетка", hand: "Перемещение" }[tool]}
-          </strong>
-        </div>
-        <span className="toolbar-divider" />
-        <label className="inline-field">
-          Размер{" "}
-          <input
-            aria-label="Размер кисти"
-            type="number"
-            min={1}
-            max={32}
-            value={brushSize}
-            onChange={(e) => setBrushSize(Math.max(1, Math.min(32, +e.target.value || 1)))}
-          />
-          <span>px</span>
-        </label>
-        <label className="inline-field opacity-field">
-          Непрозрачность{" "}
-          <select
-            aria-label="Непрозрачность кисти"
-            value={opacity}
-            onChange={(e) => setOpacity(+e.target.value)}
-          >
-            {[25, 50, 75, 100].map((v) => (
-              <option key={v} value={v}>
-                {v}%
-              </option>
-            ))}
-          </select>
-        </label>
-        <div className="inline-controls">
-          <IconButton
-            label="Отменить штрих"
-            title="Отменить · Ctrl+Z / ⌘Z"
-            disabled={!skin.canUndo}
-            onClick={() => skin.undo()}
-          >
-            <ArrowUturnLeftIcon />
-          </IconButton>
-          <IconButton
-            label="Повторить штрих"
-            title="Повторить · Ctrl+Shift+Z / ⇧⌘Z"
-            disabled={!skin.canRedo}
-            onClick={() => skin.redo()}
-          >
-            <ArrowUturnRightIcon />
-          </IconButton>
-        </div>
-        <Button
-          className="paint-mode"
-          aria-pressed={painting}
-          onClick={() => {
-            setPainting((v) => !v);
-            if (tool === "hand") setTool("brush");
-          }}
-        >
-          {painting ? "Режим: кисть" : "Режим: вращение"}
-        </Button>
-        {layout === "2d" && !showMini ? (
-          <Button onClick={() => setShowMini(true)}>3D-превью</Button>
-        ) : null}
-        <div className="mode-tabs layout-tabs" aria-label="Расположение видов">
-          {(
-            [
-              ["3d", "3D"],
-              ["split", "Рядом"],
-              ["2d", "2D"],
-            ] as const
-          ).map(([id, label]) => (
-            <Button key={id} aria-pressed={layout === id} onClick={() => setLayout(id)}>
-              {label}
-            </Button>
-          ))}
-        </div>
-      </div>
-      <div className={`editor-workspace layout-${layout}`}>
-        <aside className="tool-rail" aria-label="Инструменты">
-          {(
-            [
-              ["hand", "Перемещение · H"],
-              ["brush", "Кисть · B"],
-              ["eraser", "Ластик · E"],
-              ["drop", "Пипетка · I"],
-            ] as const
-          ).map(([id, label]) => (
-            <IconButton
-              key={id}
-              label={label}
-              aria-pressed={tool === id}
-              onClick={() => selectTool(id)}
-            >
-              <DesignIcon name={id} />
-            </IconButton>
-          ))}
-          <span className="rail-divider" />
-          <div className="rail-colors">
-            <label className="rail-color secondary-color" title="Дополнительный цвет">
-              <input
-                type="color"
-                aria-label="Дополнительный цвет"
-                value={colors.secondary}
-                onChange={(e) => setColors((c) => ({ ...c, secondary: e.target.value }))}
-              />
-            </label>
-            <label className="rail-color primary-color" title="Цвет кисти">
-              <input
-                type="color"
-                aria-label="Цвет кисти"
-                value={hex}
-                onChange={(e) => setHex(e.target.value)}
-              />
-            </label>
+      {!isPhone ? (
+        <div className="brush-toolbar" role="toolbar" aria-label="Настройки инструментов">
+          <div className="current-tool">
+            <DesignIcon name={tool === "drop" ? "drop" : tool} />
+            <strong>
+              {{ brush: "Кисть", eraser: "Ластик", drop: "Пипетка", hand: "Перемещение" }[tool]}
+            </strong>
           </div>
-          <IconButton label="Поменять цвета · X" onClick={swapColors}>
-            ⇄
-          </IconButton>
-          <span className="rail-spacer" />
-          <IconButton label="Добавить цвет в палитру" onClick={addColor}>
-            <DesignIcon name="plus" />
-          </IconButton>
-        </aside>
+          <span className="toolbar-divider" />
+          <label className="inline-field">
+            Размер{" "}
+            <input
+              aria-label="Размер кисти"
+              type="number"
+              min={1}
+              max={32}
+              value={brushSize}
+              onChange={(e) => setBrushSize(Math.max(1, Math.min(32, +e.target.value || 1)))}
+            />
+            <span>px</span>
+          </label>
+          <label className="inline-field opacity-field">
+            Непрозрачность{" "}
+            <select
+              aria-label="Непрозрачность кисти"
+              value={opacity}
+              onChange={(e) => setOpacity(+e.target.value)}
+            >
+              {[25, 50, 75, 100].map((v) => (
+                <option key={v} value={v}>
+                  {v}%
+                </option>
+              ))}
+            </select>
+          </label>
+          <div className="inline-controls">
+            <IconButton
+              label="Отменить штрих"
+              title="Отменить · Ctrl+Z / ⌘Z"
+              disabled={!skin.canUndo}
+              onClick={() => skin.undo()}
+            >
+              <ArrowUturnLeftIcon />
+            </IconButton>
+            <IconButton
+              label="Повторить штрих"
+              title="Повторить · Ctrl+Shift+Z / ⇧⌘Z"
+              disabled={!skin.canRedo}
+              onClick={() => skin.redo()}
+            >
+              <ArrowUturnRightIcon />
+            </IconButton>
+          </div>
+          <Button
+            className="paint-mode"
+            aria-pressed={painting}
+            onClick={() => {
+              setPainting((v) => !v);
+              if (tool === "hand") setTool("brush");
+            }}
+          >
+            {painting ? "Режим: кисть" : "Режим: вращение"}
+          </Button>
+          {layout === "2d" && !showMini ? (
+            <Button onClick={() => setShowMini(true)}>3D-превью</Button>
+          ) : null}
+          <div className="mode-tabs layout-tabs" aria-label="Расположение видов">
+            {(
+              [
+                ["3d", "3D"],
+                ["split", "Рядом"],
+                ["2d", "2D"],
+              ] as const
+            ).map(([id, label]) => (
+              <Button key={id} aria-pressed={layout === id} onClick={() => setLayout(id)}>
+                {label}
+              </Button>
+            ))}
+          </div>
+        </div>
+      ) : null}
+      <div
+        className={`editor-workspace layout-${isPhone ? "split" : layout} mobile-view-${mobileView}`}
+      >
+        {!isPhone ? (
+          <aside className="tool-rail" aria-label="Инструменты">
+            {(
+              [
+                ["hand", "Перемещение · H"],
+                ["brush", "Кисть · B"],
+                ["eraser", "Ластик · E"],
+                ["drop", "Пипетка · I"],
+              ] as const
+            ).map(([id, label]) => (
+              <IconButton
+                key={id}
+                label={label}
+                aria-pressed={tool === id}
+                onClick={() => selectTool(id)}
+              >
+                <DesignIcon name={id} />
+              </IconButton>
+            ))}
+            <span className="rail-divider" />
+            <BrushColors
+              primary={hex}
+              secondary={colors.secondary}
+              onPrimary={setHex}
+              onSecondary={setSecondary}
+            />
+            <IconButton label="Поменять цвета · X" onClick={swapColors}>
+              ⇄
+            </IconButton>
+            <span className="rail-spacer" />
+            <IconButton label="Добавить цвет в палитру" onClick={addColor}>
+              <DesignIcon name="plus" />
+            </IconButton>
+          </aside>
+        ) : null}
         <div className="editor-center">
           <div className="editor-views">
-            {layout !== "2d" || showMini ? (
+            {isPhone || layout !== "2d" || showMini ? (
               <ModelViewport
                 onFileDrop={onFileDrop}
                 document={skin}
                 overrides={appearance}
                 preview={preview}
                 hidden={hidden}
-                painting={painting && tool !== "hand"}
+                painting={(isPhone || painting) && tool !== "hand"}
                 color={color}
                 brushSize={brushSize}
                 activePart={selected}
@@ -397,9 +401,9 @@ export default function EditorWorkspace({
                 animate={options.animations}
                 antialiasing={options.antialiasing}
                 smoothCamera={options.smoothCamera}
-                mini={layout === "2d"}
+                mini={!isPhone && layout === "2d"}
                 onClose={() => setShowMini(false)}
-                title={layout === "2d" ? "3D-превью" : "3D-модель"}
+                title={!isPhone && layout === "2d" ? "3D-превью" : "3D-модель"}
               />
             ) : null}
 
@@ -419,20 +423,11 @@ export default function EditorWorkspace({
                 onHover={setTextureHover}
               />
             </div>
+            {isPhone && mobileView !== "settings" ? (
+              <MobileToolMenu tool={tool} onTool={selectTool} />
+            ) : null}
           </div>
           <div className="palette-panel">
-            <div className="brush-color">
-              <small>Цвет кисти</small>
-              <div className="color-field">
-                <input
-                  type="color"
-                  aria-label="Цвет в палитре"
-                  value={hex}
-                  onChange={(e) => setHex(e.target.value)}
-                />
-                <HexInput value={hex} onChange={setHex} />
-              </div>
-            </div>
             <div className="skin-palette">
               <small>Палитра скина</small>
               <div>
@@ -502,6 +497,23 @@ export default function EditorWorkspace({
           />
         </aside>
       </div>
+      {isPhone ? (
+        <MobileEditorFooter
+          view={mobileView}
+          onView={setMobileView}
+          tool={tool}
+          skin={skin}
+          primary={hex}
+          secondary={colors.secondary}
+          onPrimary={setHex}
+          onSecondary={setSecondary}
+          onSwap={swapColors}
+          brushSize={brushSize}
+          onBrushSize={setBrushSize}
+          opacity={opacity}
+          onOpacity={setOpacity}
+        />
+      ) : null}
       <footer className="studio-status">
         <output
           data-testid="document-status"

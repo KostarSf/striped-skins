@@ -68,11 +68,17 @@ export function StudioHeader({
         </div>
       </div>
       <div className="file-actions">
-        <Button onClick={onImport}>
+        <Button aria-label="Открыть" title="Открыть скин" onClick={onImport}>
           <FolderOpenIcon />
           <span>Открыть</span>
         </Button>
-        <Button tone="primary" aria-label="Скачать PNG" disabled={saving} onClick={onExport}>
+        <Button
+          tone="primary"
+          aria-label="Скачать PNG"
+          title={saving ? "Сохранение…" : "Экспорт PNG"}
+          disabled={saving}
+          onClick={onExport}
+        >
           <ArrowDownTrayIcon />
           <span>{saving ? "Сохранение…" : "Экспорт PNG"}</span>
         </Button>

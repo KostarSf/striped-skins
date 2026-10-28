@@ -20,7 +20,7 @@ export default function App() {
     <html lang="ru">
       <head>
         <meta charSet="utf-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 
         <MetaThemeTags />
 
@@ -63,9 +63,9 @@ function MetaThemeTags() {
       <meta name="apple-mobile-web-app-title" content="Striped Skins" />
       <meta name="application-name" content="Striped Skins" />
       <meta name="msapplication-TileColor" content="#da532c" />
-      <meta name="theme-color" content="rgb(51, 51, 51)" />
-      <meta name="msapplication-navbutton-color" content="rgb(51, 51, 51)" />
-      <meta name="apple-mobile-web-app-status-bar-style" content="rgb(51, 51, 51)" />
+      <meta name="theme-color" content="#212228" />
+      <meta name="msapplication-navbutton-color" content="#212228" />
+      <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     </>
   );
 }

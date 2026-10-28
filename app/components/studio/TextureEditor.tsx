@@ -1,10 +1,11 @@
-import { useCallback, useEffect, useRef, useState, type PointerEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent } from "react";
 import { type SkinDocument, type Pixel } from "@striped-skins/api";
 import { type SurfaceHover } from "@striped-skins/viewer/experimental";
 import { type ModelQuad } from "@striped-skins/models";
 import { Button, DesignIcon, IconButton } from "./ui";
 import { useSkinDrop } from "./useSkinDrop";
 export type PaintTool = "brush" | "eraser" | "drop" | "hand";
+type TouchPoint = { x: number; y: number };
 export function TextureEditor({
   document: skin,
   color,
@@ -35,8 +36,11 @@ export function TextureEditor({
   const drop = useSkinDrop(onFileDrop);
   const canvas = useRef<HTMLCanvasElement>(null),
     area = useRef<HTMLDivElement>(null);
-  const mode = useRef<"draw" | "pan" | null>(null),
+  const mode = useRef<"draw" | "pan" | "pinch" | "sample" | null>(null),
     origin = useRef({ x: 0, y: 0, px: 0, py: 0 });
+  const pointer = useRef<number | null>(null);
+  const touches = useRef(new Map<number, TouchPoint>());
+  const pinch = useRef<{ distance: number; center: TouchPoint } | null>(null);
   const [size, setSize] = useState({ width: 500, height: 600 }),
     [view, setView] = useState({ zoom: 1, pan: { x: 0, y: 0 } }),
     [grid, setGrid] = useState(true),
@@ -49,7 +53,14 @@ export function TextureEditor({
     onHover?.(tool === "brush" && !space ? cursor : null);
   }, [cursor, tool, space, onHover]);
   useEffect(() => {
-    const clear = () => setCursor(null);
+    const clear = () => {
+      skin.cancelStroke();
+      touches.current.clear();
+      pinch.current = null;
+      pointer.current = null;
+      mode.current = null;
+      setCursor(null);
+    };
     window.addEventListener("blur", clear);
     return () => {
       window.removeEventListener("blur", clear);
@@ -65,6 +76,12 @@ export function TextureEditor({
     Math.min((size.width - 64) / skin.width, (size.height - 112) / skin.height),
   );
   const scale = fit * zoom;
+  const gridPath = useMemo(
+    () =>
+      Array.from({ length: skin.width + 1 }, (_, x) => `M${x} 0V${skin.height}`).join("") +
+      Array.from({ length: skin.height + 1 }, (_, y) => `M0 ${y}H${skin.width}`).join(""),
+    [skin.width, skin.height],
+  );
   useEffect(() => {
     const update = () =>
       canvas.current
@@ -152,6 +169,39 @@ export function TextureEditor({
   const end = () => {
     if (mode.current === "draw") skin.endStroke();
     mode.current = null;
+    pointer.current = null;
+  };
+  const touchFrame = () => {
+    const [first, second] = [...touches.current.values()];
+    if (!first || !second) return null;
+    const rect = area.current!.getBoundingClientRect();
+    return {
+      distance: Math.max(1, Math.hypot(second.x - first.x, second.y - first.y)),
+      center: {
+        x: (first.x + second.x) / 2 - rect.left - rect.width / 2,
+        y: (first.y + second.y) / 2 - rect.top - rect.height / 2,
+      },
+    };
+  };
+  const finishPointer = (event: PointerEvent<HTMLDivElement>, cancelled = false) => {
+    const tracked = touches.current.delete(event.pointerId);
+    if (!tracked && pointer.current !== event.pointerId) return;
+    if (mode.current === "pinch") {
+      pinch.current = touchFrame();
+      // Wait until every finger lifts before allowing another stroke or pan.
+      if (!touches.current.size) end();
+    } else if (pointer.current === event.pointerId) {
+      if (cancelled && mode.current === "draw") skin.cancelStroke();
+      if (!cancelled && mode.current === "sample") {
+        const p = point(event);
+        if (p.x >= 0 && p.y >= 0 && p.x < skin.width && p.y < skin.height)
+          onSample(skin.readPixel(p.x, p.y));
+      }
+      end();
+    }
+    if (event.currentTarget.hasPointerCapture(event.pointerId))
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    if (cancelled || event.pointerType === "touch") setCursor(null);
   };
   return (
     <section className="texture-viewport" aria-label="Редактирование текстуры" {...drop.handlers}>
@@ -174,7 +224,22 @@ export function TextureEditor({
         className={`texture-area ${tool === "hand" || space ? "panning" : ""}`}
         onContextMenu={(e) => e.preventDefault()}
         onPointerDown={(e) => {
+          if (e.pointerType === "touch") {
+            touches.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+            e.currentTarget.setPointerCapture(e.pointerId);
+            if (touches.current.size >= 2) {
+              if (mode.current === "draw") skin.cancelStroke();
+              mode.current = "pinch";
+              pointer.current = null;
+              pinch.current = touchFrame();
+              setCursor(null);
+              e.preventDefault();
+              return;
+            }
+          }
+          if (pointer.current !== null && pointer.current !== e.pointerId) return;
           if (e.button === 2 || e.button === 1 || space || tool === "hand") {
+            pointer.current = e.pointerId;
             setCursor(null);
             mode.current = "pan";
             origin.current = { x: e.clientX, y: e.clientY, px: pan.x, py: pan.y };
@@ -185,38 +250,59 @@ export function TextureEditor({
           if (e.button !== 0) return;
           const p = point(e);
           if (p.x < 0 || p.y < 0 || p.x >= skin.width || p.y >= skin.height) return;
+          pointer.current = e.pointerId;
+          e.currentTarget.setPointerCapture(e.pointerId);
           if (tool === "drop") {
-            onSample(skin.readPixel(p.x, p.y));
+            if (e.pointerType === "touch") mode.current = "sample";
+            else onSample(skin.readPixel(p.x, p.y));
             return;
           }
           mode.current = "draw";
           skin.beginStroke();
-          e.currentTarget.setPointerCapture(e.pointerId);
           paint(e);
         }}
         onPointerMove={(e) => {
+          if (touches.current.has(e.pointerId)) {
+            touches.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+          }
+          if (mode.current === "pinch") {
+            const previous = pinch.current;
+            const next = touchFrame();
+            pinch.current = next;
+            if (previous && next) {
+              setView((v) => {
+                const zoom = Math.max(
+                  0.15,
+                  Math.min(32, (v.zoom * next.distance) / previous.distance),
+                );
+                const ratio = zoom / v.zoom;
+                return {
+                  zoom,
+                  pan: {
+                    x: next.center.x - (previous.center.x - v.pan.x) * ratio,
+                    y: next.center.y - (previous.center.y - v.pan.y) * ratio,
+                  },
+                };
+              });
+            }
+            e.preventDefault();
+            return;
+          }
+          if (pointer.current !== null && pointer.current !== e.pointerId) return;
           if (mode.current === "pan") {
             setPan({
               x: origin.current.px + e.clientX - origin.current.x,
               y: origin.current.py + e.clientY - origin.current.y,
             });
           } else if (mode.current === "draw") paint(e);
-          else {
+          else if (mode.current !== "sample") {
             const p = point(e);
             setCursor(p.x >= 0 && p.y >= 0 && p.x < skin.width && p.y < skin.height ? p : null);
           }
         }}
-        onPointerUp={(e) => {
-          end();
-          if (e.currentTarget.hasPointerCapture(e.pointerId))
-            e.currentTarget.releasePointerCapture(e.pointerId);
-        }}
-        onPointerCancel={() => {
-          skin.cancelStroke();
-          mode.current = null;
-          setCursor(null);
-        }}
-        onLostPointerCapture={end}
+        onPointerUp={(e) => finishPointer(e)}
+        onPointerCancel={(e) => finishPointer(e, true)}
+        onLostPointerCapture={(e) => finishPointer(e, true)}
         onPointerLeave={() => setCursor(null)}
       >
         <div
@@ -258,7 +344,21 @@ export function TextureEditor({
             </svg>
           ) : null}
           {grid && scale >= 3 ? (
-            <div className="pixel-grid" style={{ backgroundSize: `${scale}px ${scale}px` }} />
+            <svg
+              aria-hidden="true"
+              className="pixel-grid"
+              viewBox={`0 0 ${skin.width} ${skin.height}`}
+              preserveAspectRatio="none"
+              shapeRendering="crispEdges"
+            >
+              <path
+                d={gridPath}
+                fill="none"
+                stroke="#ffffff20"
+                strokeWidth={1}
+                vectorEffect="non-scaling-stroke"
+              />
+            </svg>
           ) : null}
           {uv && hover ? (
             <svg
