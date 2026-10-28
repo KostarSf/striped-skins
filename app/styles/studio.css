@@ -206,25 +206,7 @@ button:disabled {
   min-width: 155px;
 }
 .studio-status {
-  flex: 0 0 40px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 0 24px;
-  background: var(--studio-panel);
-  color: var(--studio-muted);
-  font-size: 10px;
-  border-top: 1px solid #2b2d35;
-  overflow: hidden;
-  white-space: nowrap;
-}
-.studio-status a {
-  color: var(--studio-muted);
-  text-decoration: none;
-}
-.studio-status a:hover {
-  color: var(--studio-accent);
+  display: none;
 }
 .viewer-content {
   padding: 16px;
@@ -327,12 +309,11 @@ button:disabled {
 .viewer-content .viewport-heading {
   top: 22px;
   left: 24px;
-  right: auto;
-  width: 230px;
-  max-width: calc(100% - 48px);
+  right: 24px;
 }
 .viewer-content .viewport-heading-actions {
   margin-top: 0;
+  flex: 1;
 }
 .viewer-content .view-options {
   position: static;
@@ -340,7 +321,7 @@ button:disabled {
 .viewer-content .view-options > div {
   left: 0;
   right: auto;
-  max-width: 100%;
+  max-width: calc(100% - 16px);
 }
 .viewer-content .viewport-heading select {
   width: 164px;
@@ -348,10 +329,8 @@ button:disabled {
 .viewer-top-actions {
   display: flex;
   gap: 8px;
-  position: absolute;
-  z-index: 2;
-  right: 24px;
-  top: 20px;
+  margin-left: auto;
+  flex: none;
 }
 .viewer-content .viewport-footer {
   left: 24px;
@@ -414,6 +393,18 @@ button:disabled {
 }
 .skin-settings {
   min-width: 0;
+}
+.skin-dimensions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 4px 12px;
+  grid-column: 1 / -1;
+  margin: 0;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--studio-border);
+  color: var(--studio-muted);
+  font-size: 11px;
 }
 .settings-group {
   padding: 18px 0;
@@ -1293,63 +1284,72 @@ input[type="color"]::-webkit-color-swatch {
   .viewer-content .viewport-hint {
     display: none;
   }
-  .studio-status > :nth-child(2) {
-    display: none;
-  }
 }
 @media (max-width: 600px) {
   .studio-header {
-    grid-template-columns: 1fr auto;
-    min-height: 100px;
-    padding: 12px;
-    gap: 10px;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    min-height: 60px;
+    padding: 8px 12px;
+    gap: 8px;
     flex-basis: auto;
   }
-  .studio-brand {
-    font-size: 14px;
+  .studio-brand > span {
+    display: none;
   }
   .studio-header .mode-tabs {
-    grid-row: 2;
-    grid-column: 1;
+    justify-content: center;
   }
-  .studio-header .mode-tabs a {
-    min-width: 82px;
-    padding: 7px 12px;
+  .studio-header .mode-tabs a,
+  .studio-header .skeleton-tab {
+    min-width: 0;
+    padding: 11px 8px;
+    font-size: 11px;
   }
   .file-actions {
-    grid-column: 2;
-    grid-row: 1/span 2;
-    flex-direction: column;
-    gap: 5px;
+    gap: 4px;
   }
   .file-actions .studio-button {
-    min-width: 120px;
-    min-height: 32px;
-    padding: 6px 10px;
-    font-size: 11px;
+    min-width: 40px;
+    width: 40px;
+    min-height: 40px;
+    padding: 10px;
+  }
+  .file-actions button > span {
+    display: none;
   }
   .viewer-content {
     padding: 8px;
   }
   .viewer-top-actions {
-    top: 14px;
-    right: 12px;
-    gap: 5px;
+    gap: 6px;
   }
   .viewer-top-actions button {
-    min-height: 32px;
-    padding: 6px 9px;
-    font-size: 10px;
+    width: 40px;
+    min-height: 40px;
+    padding: 10px;
   }
-  .viewer-top-actions button[aria-label="Сравнить скины"] span {
+  .viewer-top-actions button > span {
     display: none;
   }
   .viewer-content .viewport-heading {
-    top: 64px;
-    left: 16px;
+    top: 12px;
+    left: 12px;
+    right: 12px;
   }
-  .viewer-content .viewport-heading select {
-    width: 140px;
+  .viewer-content .viewport-heading-actions {
+    gap: 6px;
+  }
+  .viewer-content .viewport-heading select,
+  .viewer-content .view-options summary {
+    min-height: 40px;
+  }
+  .viewer-content .view-options summary {
+    width: 40px;
+    justify-content: center;
+    padding: 10px;
+  }
+  .viewer-content .view-options summary > span {
+    display: none;
   }
   .viewer-content .viewport-footer {
     bottom: 16px;
@@ -1364,7 +1364,7 @@ input[type="color"]::-webkit-color-swatch {
     max-height: calc(100% - 70px);
   }
   .comparison-picker {
-    top: 108px;
+    top: 64px;
     left: 12px;
     right: 12px;
     max-width: 100%;
@@ -1486,16 +1486,6 @@ input[type="color"]::-webkit-color-swatch {
     width: 22px;
     height: 22px;
   }
-  .studio-status {
-    flex-basis: 34px;
-    padding-inline: 12px;
-    font-size: 9px;
-    gap: 8px;
-  }
-  .studio-status > :last-child {
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
   .studio-dialog {
     padding: 20px;
   }
@@ -1520,6 +1510,9 @@ input[type="color"]::-webkit-color-swatch {
   max-width: 162px;
   flex: 1 1 150px;
   min-width: 0;
+}
+.viewer-content .viewport-heading select {
+  flex: 0 1 164px;
 }
 .studio-app .viewport-heading h2 {
   flex: 1;
@@ -1903,21 +1896,36 @@ input[type="color"]::-webkit-color-swatch {
     padding: 7px 12px;
   }
   .skeleton-viewer-controls {
-    top: 64px;
-    left: 16px;
-    right: 16px;
-    align-items: flex-start;
+    top: 12px;
+    left: 12px;
+    right: 12px;
+    gap: 6px;
+  }
+  .skeleton-viewer-controls > .inline-controls {
+    gap: 6px;
+  }
+  .skeleton-viewer-controls > .inline-controls:first-child {
+    min-width: 0;
+    flex: 0 1 210px;
+  }
+  .skeleton-viewer-controls .skeleton-control {
+    height: 40px;
+    min-width: 0;
+    flex-shrink: 1;
+  }
+  .skeleton-viewer-controls > .inline-controls:first-child .skeleton-control:last-child {
+    width: 40px !important;
+    flex: none;
   }
   .skeleton-viewer-controls > .inline-controls:last-child {
-    position: absolute;
-    right: 0;
-    top: -50px;
+    flex: none;
+    margin-left: auto;
   }
-  .skeleton-viewer-controls > .inline-controls:last-child .skeleton-control:first-child {
-    width: 32px !important;
+  .skeleton-viewer-controls > .inline-controls:last-child .skeleton-control {
+    width: 40px !important;
   }
-  .skeleton-viewer-controls > .inline-controls:last-child .skeleton-control:last-child {
-    width: 145px !important;
+  .studio-skeleton .file-actions .skeleton-bone {
+    width: 16px !important;
   }
   .studio-skeleton .inline-field > span {
     display: inline-flex;

@@ -50,6 +50,12 @@ export function SkinSettings({
   const write = (patch: Partial<Omit<SkinMetadata, "slim">>) => writeSkinMetadata(document, patch);
   return (
     <div className="skin-settings">
+      <p className="skin-dimensions">
+        <span>Размер текстуры</span>
+        <span>
+          {document.width} × {document.height} px · PNG
+        </span>
+      </p>
       <div className="settings-group">
         <Field label="Раса">
           <select

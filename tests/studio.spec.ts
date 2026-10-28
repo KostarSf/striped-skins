@@ -1102,9 +1102,37 @@ test("viewer camera controls replace the title overlay and the view popup stays 
   await expect(panel.locator(".viewport-heading h2")).toHaveCount(0);
   await expect(panel.locator(".viewer-description")).toHaveCount(0);
   await expect(panel.getByText(/Minecraft 1\.20\.1/)).toHaveCount(0);
-  for (const width of [1440, 700, 390]) {
+  for (const width of [1440, 700, 600, 390, 320]) {
     await page.setViewportSize({ width, height: 960 });
     await page.keyboard.press("Escape");
+    await expect(page.locator(".studio-status")).toBeHidden();
+    const controls = [
+      page.getByLabel("Ракурс модели"),
+      page.locator(".view-options summary"),
+      page.getByRole("button", { name: "Сравнить скины", exact: true }),
+      page.getByRole("button", { name: "Параметры скина", exact: true }),
+    ];
+    const boxes = await Promise.all(
+      controls.map(async (control) => (await control.boundingBox())!),
+    );
+    for (const box of boxes) expect(Math.abs(box.y - boxes[0].y)).toBeLessThanOrEqual(2);
+    for (let i = 1; i < boxes.length; i++)
+      expect(boxes[i].x).toBeGreaterThanOrEqual(boxes[i - 1].x + boxes[i - 1].width);
+    if (width <= 600) {
+      const headerControls = [
+        page.getByRole("link", { name: "Striped Skins — просмотрщик", exact: true }),
+        page.getByRole("link", { name: "← Просмотрщик", exact: true }),
+        page.getByRole("button", { name: "Открыть", exact: true }),
+        page.getByRole("button", { name: "Скачать PNG", exact: true }),
+      ];
+      const headerBoxes = await Promise.all(
+        headerControls.map(async (control) => (await control.boundingBox())!),
+      );
+      for (const box of headerBoxes) {
+        expect(Math.abs(box.y + box.height / 2 - 30)).toBeLessThanOrEqual(1);
+        expect(box.x + box.width).toBeLessThanOrEqual(width - 8);
+      }
+    }
     await page.locator(".view-options summary").click();
     const host = (await panel.boundingBox())!;
     const projection = (await page.getByLabel("Ракурс модели").boundingBox())!;
@@ -1115,6 +1143,12 @@ test("viewer camera controls replace the title overlay and the view popup stays 
     expect(popup.x + popup.width).toBeLessThanOrEqual(host.x + host.width - 8);
     await expect(page.getByRole("checkbox", { name: "Сглаживание", exact: true })).toBeVisible();
   }
+  await page.keyboard.press("Escape");
+  await page.getByRole("button", { name: "Параметры скина", exact: true }).click();
+  await expect(page.locator(".quick-settings .skin-settings > :first-child")).toHaveClass(
+    "skin-dimensions",
+  );
+  await expect(page.locator(".quick-settings .skin-dimensions")).toContainText("64 × 64 px · PNG");
 });
 
 test("viewport parts popup groups model nodes and faces, preserves pixels and fits narrow panels", async ({

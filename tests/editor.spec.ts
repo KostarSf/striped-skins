@@ -305,7 +305,7 @@ test("legacy localStorage recovery migrates only after a successful IndexedDB sa
   await expect.poll(() => pixel(page, 12, 12)).toEqual([71, 82, 93, 255]);
 });
 
-test("failed recovery is dismissible, leaves the footer clear and does not reopen on each stroke", async ({
+test("failed recovery is dismissible, fits the viewport and does not reopen on each stroke", async ({
   page,
 }) => {
   await page.addInitScript(() => {
@@ -324,9 +324,9 @@ test("failed recovery is dismissible, leaves the footer clear and does not reope
   await expect(page.getByTestId("skin-texture")).toBeVisible();
   const warning = page.locator(".recovery-warning");
   await expect(warning).toBeVisible();
-  const bounds = (await warning.boundingBox())!,
-    footer = (await page.locator(".studio-status").boundingBox())!;
-  expect(bounds.y + bounds.height).toBeLessThan(footer.y);
+  const bounds = (await warning.boundingBox())!;
+  expect(bounds.y + bounds.height).toBeLessThan(page.viewportSize()!.height);
+  await expect(page.locator(".studio-status")).toBeHidden();
   await page
     .getByRole("button", { name: "Закрыть предупреждение о сохранении", exact: true })
     .click();
