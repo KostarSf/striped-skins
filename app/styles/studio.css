@@ -986,11 +986,6 @@ input[type="color"]::-webkit-color-swatch {
   width: 100%;
   height: 100%;
 }
-.pixel-grid {
-  background-image:
-    linear-gradient(to right, #ffffff20 1px, transparent 1px),
-    linear-gradient(to bottom, #ffffff20 1px, transparent 1px);
-}
 .brush-cursor {
   position: absolute;
   pointer-events: none;

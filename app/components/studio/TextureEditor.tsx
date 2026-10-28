@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, type PointerEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent } from "react";
 import { type SkinDocument, type Pixel } from "@striped-skins/api";
 import { type SurfaceHover } from "@striped-skins/viewer/experimental";
 import { type ModelQuad } from "@striped-skins/models";
@@ -76,6 +76,12 @@ export function TextureEditor({
     Math.min((size.width - 64) / skin.width, (size.height - 112) / skin.height),
   );
   const scale = fit * zoom;
+  const gridPath = useMemo(
+    () =>
+      Array.from({ length: skin.width + 1 }, (_, x) => `M${x} 0V${skin.height}`).join("") +
+      Array.from({ length: skin.height + 1 }, (_, y) => `M0 ${y}H${skin.width}`).join(""),
+    [skin.width, skin.height],
+  );
   useEffect(() => {
     const update = () =>
       canvas.current
@@ -338,7 +344,21 @@ export function TextureEditor({
             </svg>
           ) : null}
           {grid && scale >= 3 ? (
-            <div className="pixel-grid" style={{ backgroundSize: `${scale}px ${scale}px` }} />
+            <svg
+              aria-hidden="true"
+              className="pixel-grid"
+              viewBox={`0 0 ${skin.width} ${skin.height}`}
+              preserveAspectRatio="none"
+              shapeRendering="crispEdges"
+            >
+              <path
+                d={gridPath}
+                fill="none"
+                stroke="#ffffff20"
+                strokeWidth={1}
+                vectorEffect="non-scaling-stroke"
+              />
+            </svg>
           ) : null}
           {uv && hover ? (
             <svg
