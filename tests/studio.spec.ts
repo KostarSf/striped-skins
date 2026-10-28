@@ -135,6 +135,8 @@ for (const route of ["/", "/editor"]) {
     page,
   }) => {
     await enter(page, route);
+    if (route === "/editor")
+      await page.getByRole("tab", { name: "Параметры скина", exact: true }).click();
     if (route === "/")
       await page.getByRole("button", { name: "Параметры скина", exact: true }).click();
     await page.getByLabel("Раса", { exact: true }).selectOption("KIRIN");
@@ -164,6 +166,8 @@ for (const route of ["/", "/editor"]) {
     expect((await download).suggestedFilename()).toMatch(/\.striped$/);
     await expect(page.locator(".document-name strong")).toHaveText("dropped.png");
     await expect(page.getByRole("dialog")).not.toBeVisible();
+    if (route === "/editor")
+      await page.getByRole("tab", { name: "Параметры скина", exact: true }).click();
     await page.getByLabel("Раса", { exact: true }).selectOption("KIRIN");
     await dropSkin(page, target, "replacement.png");
     await page.getByRole("button", { name: "Заменить", exact: true }).click();
@@ -268,6 +272,7 @@ test("viewer quick settings are nonmodal, retain all options, and share changes 
   await expect(panel.getByLabel("Раса", { exact: true })).toHaveValue("ALICORN");
   await page.getByRole("link", { name: "Редактировать", exact: true }).click();
   await expect(tex(page)).toBeVisible();
+  await page.getByRole("tab", { name: "Параметры скина", exact: true }).click();
   await expect(page.getByLabel("Раса", { exact: true })).toHaveValue("ALICORN");
   await expect(page.getByRole("checkbox", { name: "Корона", exact: true })).toBeChecked();
 });
@@ -420,7 +425,8 @@ test("mobile editor exposes texture, metadata and import without horizontal over
   await tex(page).scrollIntoViewIfNeeded();
   await paint(page);
   await expect.poll(() => pixel(page)).toEqual([255, 0, 255, 255]);
-  await page.getByRole("button", { name: "Параметры модели", exact: true }).click();
+  await page.getByRole("button", { name: "Параметры документа", exact: true }).click();
+  await page.getByRole("tab", { name: "Параметры скина", exact: true }).click();
   await page.getByLabel("Раса", { exact: true }).selectOption("KIRIN");
   await expect(page.getByLabel("Раса", { exact: true })).toHaveValue("KIRIN");
   await page.getByRole("button", { name: "Открыть", exact: true }).click();

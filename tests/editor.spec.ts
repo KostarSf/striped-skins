@@ -34,6 +34,7 @@ async function edit(page: Page, second = false) {
     .getByRole("link", { name: second ? "Редактировать второй" : "Редактировать", exact: true })
     .click();
   await expect(page.getByTestId("skin-texture")).toBeVisible();
+  await page.getByRole("tab", { name: "Параметры скина", exact: true }).click();
 }
 async function paint(page: Page, x = 12, y = 12) {
   await page.getByLabel("Цвет кисти", { exact: true }).fill("#ff00ff");
@@ -90,6 +91,7 @@ test("local recovery and PNG round-trip retain edited content without reloading 
   await ready(page);
   await edit(page);
   await paint(page);
+  await page.getByRole("tab", { name: "Параметры скина", exact: true }).click();
   await page.getByLabel("Раса", { exact: true }).selectOption("KIRIN");
   for (const name of ["Корона", "Маффин", "Stetson"])
     await page.getByRole("checkbox", { name, exact: true }).check();
@@ -103,6 +105,7 @@ test("local recovery and PNG round-trip retain edited content without reloading 
   });
   await page.reload();
   await expect(page.getByTestId("skin-texture")).toBeVisible();
+  await page.getByRole("tab", { name: "Параметры скина", exact: true }).click();
   await expect(page.getByLabel("Раса", { exact: true })).toHaveValue("KIRIN");
   await expect.poll(() => pixel(page, 12, 12)).toEqual([255, 0, 255, 255]);
   await expect(page.getByRole("button", { name: "Отменить штрих" })).toBeEnabled();
@@ -114,6 +117,7 @@ test("local recovery and PNG round-trip retain edited content without reloading 
   await page.getByRole("button", { name: "Открыть", exact: true }).click();
   await page.getByLabel("Открыть PNG", { exact: true }).setInputFiles(file);
   await page.getByRole("button", { name: "Заменить", exact: true }).click();
+  await page.getByRole("tab", { name: "Параметры скина", exact: true }).click();
   await expect(page.getByLabel("Раса", { exact: true })).toHaveValue("KIRIN");
   for (const name of ["Корона", "Маффин", "Stetson"])
     await expect(page.getByRole("checkbox", { name, exact: true })).toBeChecked();
@@ -135,6 +139,7 @@ test("all races, wing forms and accessories render; returning to Earth releases 
   });
   await page.goto("/editor");
   await expect(page.getByTestId("skin-texture")).toBeVisible();
+  await page.getByRole("tab", { name: "Параметры скина", exact: true }).click();
   await page.getByRole("button", { name: "UV", exact: true }).click();
   await page.getByLabel("Раса", { exact: true }).selectOption("EARTH");
   const stats = page.getByTestId("render-stats");
@@ -193,6 +198,7 @@ test("legacy import upgrades to square PNG and a malformed import preserves the 
 }) => {
   await page.goto("/editor");
   await expect(page.getByTestId("skin-texture")).toBeVisible();
+  await page.getByRole("tab", { name: "Параметры скина", exact: true }).click();
   const data = await page.evaluate(() => {
     const c = document.createElement("canvas");
     c.width = 64;
@@ -208,6 +214,7 @@ test("legacy import upgrades to square PNG and a malformed import preserves the 
     mimeType: "image/png",
     buffer: Buffer.from(data, "base64"),
   });
+  await page.getByRole("tab", { name: "Параметры скина", exact: true }).click();
   await expect(page.getByText("Legacy-скин преобразован", { exact: false })).toBeVisible();
   await expect(page.getByTestId("document-status")).toContainText("64 × 64");
   const before = await pixel(page, 12, 12);
@@ -253,6 +260,7 @@ test("HD recovery stores binary pixels beyond localStorage limits and restores a
 }) => {
   await page.goto("/editor");
   await expect(page.getByTestId("skin-texture")).toBeVisible();
+  await page.getByRole("tab", { name: "Параметры скина", exact: true }).click();
   const png = await page.evaluate(() => {
     const canvas = document.createElement("canvas");
     canvas.width = canvas.height = 1024;
@@ -266,6 +274,7 @@ test("HD recovery stores binary pixels beyond localStorage limits and restores a
     .getByLabel("Открыть PNG", { exact: true })
     .setInputFiles({ name: "hd.png", mimeType: "image/png", buffer: Buffer.from(png, "base64") });
   await expect(page.getByTestId("skin-texture")).toHaveAttribute("width", "1024");
+  await page.getByRole("tab", { name: "Параметры скина", exact: true }).click();
   await page.getByLabel("Раса", { exact: true }).selectOption("KIRIN");
   await expect.poll(() => savedPixel(page, 12, 12)).toEqual([145, 76, 56, 255]);
   await expect(page.locator(".recovery-warning")).toHaveCount(0);
@@ -296,6 +305,7 @@ test("legacy localStorage recovery migrates only after a successful IndexedDB sa
   });
   await page.goto("/editor");
   await expect(page.getByTestId("skin-texture")).toBeVisible();
+  await page.getByRole("tab", { name: "Параметры скина", exact: true }).click();
   await expect.poll(() => pixel(page, 12, 12)).toEqual([71, 82, 93, 255]);
   await expect.poll(() => savedPixel(page, 12, 12)).toEqual([71, 82, 93, 255]);
   await expect
@@ -303,6 +313,7 @@ test("legacy localStorage recovery migrates only after a successful IndexedDB sa
     .toBeNull();
   await page.reload();
   await expect(page.getByTestId("skin-texture")).toBeVisible();
+  await page.getByRole("tab", { name: "Параметры скина", exact: true }).click();
   await expect.poll(() => pixel(page, 12, 12)).toEqual([71, 82, 93, 255]);
 });
 
@@ -323,6 +334,7 @@ test("failed recovery is dismissible, fits the viewport and does not reopen on e
   });
   await page.goto("/editor");
   await expect(page.getByTestId("skin-texture")).toBeVisible();
+  await page.getByRole("tab", { name: "Параметры скина", exact: true }).click();
   const warning = page.locator(".recovery-warning");
   await expect(warning).toBeVisible();
   const bounds = (await warning.boundingBox())!;
@@ -367,10 +379,12 @@ test("recovered edits stay dirty until the project is saved and require confirma
     );
   await page.goto("/editor");
   await expect(page.getByTestId("skin-texture")).toBeVisible();
+  await page.getByRole("tab", { name: "Параметры скина", exact: true }).click();
   await paint(page);
   await expect.poll(savedDirty).toBe(true);
   await page.reload();
   await expect(page.getByTestId("skin-texture")).toBeVisible();
+  await page.getByRole("tab", { name: "Параметры скина", exact: true }).click();
   await expect.poll(() => pixel(page, 12, 12)).toEqual([255, 0, 255, 255]);
   await expect(page.getByText("Есть изменения", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Открыть", exact: true }).click();
@@ -388,6 +402,7 @@ test("recovered edits stay dirty until the project is saved and require confirma
   await expect.poll(savedDirty).toBe(false);
   await page.reload();
   await expect(page.getByTestId("skin-texture")).toBeVisible();
+  await page.getByRole("tab", { name: "Параметры скина", exact: true }).click();
   await expect(page.getByText("Есть изменения", { exact: true })).toHaveCount(0);
   await expect.poll(() => pixel(page, 12, 12)).toEqual([255, 0, 255, 255]);
 });

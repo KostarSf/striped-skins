@@ -167,7 +167,7 @@ export function MobileEditorFooter({
             [
               ["3d", "3D вид", "3D", CubeIcon],
               ["2d", "2D вид", "2D", PhotoIcon],
-              ["settings", "Параметры модели", "Модель", AdjustmentsHorizontalIcon],
+              ["settings", "Параметры документа", "Документ", AdjustmentsHorizontalIcon],
             ] as const
           ).map(([id, label, text, Icon]) => (
             <Button

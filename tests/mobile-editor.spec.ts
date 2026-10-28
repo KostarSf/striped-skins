@@ -40,13 +40,13 @@ test("phone tabs fill the workspace, keep the palette and footer reachable, and 
   await expect(page.locator(".tool-rail, .brush-toolbar, .brush-color")).toHaveCount(0);
   for (const width of [390, 320, 600]) {
     await page.setViewportSize({ width, height: 844 });
-    for (const name of ["3D вид", "2D вид", "Параметры модели"]) {
+    for (const name of ["3D вид", "2D вид", "Параметры документа"]) {
       await footer.getByRole("button", { name, exact: true }).tap();
       await expect(footer.getByRole("button", { name, exact: true })).toHaveAttribute(
         "aria-pressed",
         "true",
       );
-      const settings = name === "Параметры модели";
+      const settings = name === "Параметры документа";
       await expect(page.locator(".palette-panel")).toBeVisible({ visible: !settings });
       await expect(page.locator(".inspector")).toBeVisible({ visible: settings });
       await expect(page.locator(".model-viewport")).toBeVisible({ visible: name === "3D вид" });
@@ -74,9 +74,10 @@ test("phone tabs fill the workspace, keep the palette and footer reachable, and 
       }
     }
   }
+  await page.getByRole("tab", { name: "Параметры скина", exact: true }).tap();
   await page.getByLabel("Раса", { exact: true }).selectOption("KIRIN");
   await footer.getByRole("button", { name: "3D вид", exact: true }).tap();
-  await footer.getByRole("button", { name: "Параметры модели", exact: true }).tap();
+  await footer.getByRole("button", { name: "Параметры документа", exact: true }).tap();
   await expect(page.getByLabel("Раса", { exact: true })).toHaveValue("KIRIN");
   await page.setViewportSize({ width: 1440, height: 1000 });
   await expect(footer).toHaveCount(0);
@@ -126,7 +127,7 @@ test("touch tools update the floating icon, edit the same pixels across views, a
     page.getByRole("button", { name: "Параметры инструмента", exact: true }),
   ).toBeFocused();
   await page.getByRole("button", { name: "3D вид", exact: true }).tap();
-  await page.getByRole("button", { name: "Параметры модели", exact: true }).tap();
+  await page.getByRole("button", { name: "Параметры документа", exact: true }).tap();
   await page.getByRole("button", { name: "2D вид", exact: true }).tap();
   await expect.poll(() => pixel(page)).toEqual([255, 0, 255, 255]);
   await page.getByRole("button", { name: "Параметры инструмента", exact: true }).tap();

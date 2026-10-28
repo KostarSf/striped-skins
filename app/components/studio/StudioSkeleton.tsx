@@ -148,43 +148,34 @@ function EditorBody() {
             </div>
           </div>
         </div>
-        <div className="inspector studio-panel">
-          <div className="layers-panel">
-            <div className="layers-heading">
-              <Bone width={80} height={13} />
-            </div>
-            <div className="layer-list">
-              <Bone height={30} />
-              <Bone height={30} />
-            </div>
-            <div className="layer-properties">
-              <Bone height={28} />
-              <Bone height={28} />
-            </div>
+        <div className="inspector studio-panel editor-inspector">
+          <div className="inspector-tabs">
+            <span className="skeleton-inspector-tab">
+              <Bone width={55} height={9} />
+            </span>
+            <span className="skeleton-inspector-tab">
+              <Bone width={95} height={9} />
+            </span>
           </div>
-          <Bone width={80} height={13} />
-          <Bone width={170} height={7} />
-          <div className="skin-settings">
-            {[0, 1, 2].map((i) => (
-              <div key={i} className="settings-group skeleton-settings">
-                <Bone width={55 + i * 10} height={8} />
-                <Control width={240} />
+          <div className="inspector-panel">
+            <div className="layers-panel">
+              <div className="layers-heading">
+                <Bone width={80} height={13} />
               </div>
-            ))}
-            <div className="settings-group skeleton-settings">
-              <Bone width={100} />
-              <Bone width={180} height={7} />
-              <div className="skeleton-accessories">
-                {[0, 1, 2, 3, 4, 5, 6, 7].map((i) => (
-                  <Control key={i} width={105} />
-                ))}
+              <div className="layer-list">
+                <Bone height={30} />
+                <Bone height={30} />
+              </div>
+              <div className="layer-properties">
+                <Bone height={28} />
+                <Bone height={28} />
               </div>
             </div>
             <div className="settings-group skeleton-settings">
-              <Bone width={110} />
-              <Bone width="100%" height={32} />
-              <Bone width="80%" height={6} />
+              <Bone width={150} height={9} />
+              <Control width={240} />
             </div>
+            <Bone width={90} height={9} />
           </div>
         </div>
       </div>

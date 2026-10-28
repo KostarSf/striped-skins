@@ -46,7 +46,9 @@ test("layered project survives save, reload and reopen with settings, history an
   await page.getByLabel("Непрозрачность слоя", { exact: true }).fill("60");
   await page.getByLabel("Размер кисти", { exact: true }).fill("3");
   await page.getByRole("button", { name: "Добавить цвет в палитру", exact: true }).click();
+  await page.getByRole("tab", { name: "Параметры скина", exact: true }).click();
   await page.getByLabel("Раса", { exact: true }).selectOption("KIRIN");
+  await page.getByRole("tab", { name: "Текстура", exact: true }).click();
   await page.getByLabel("Имя слоя", { exact: true }).scrollIntoViewIfNeeded();
   const composite = await pixel(page);
   const pngDownload = page.waitForEvent("download");
@@ -130,7 +132,7 @@ test("malformed project leaves the current document intact", async ({ page }) =>
 test("mobile can create and save drawing layers without horizontal overflow", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await ready(page);
-  await page.getByRole("button", { name: "Параметры модели", exact: true }).click();
+  await page.getByRole("button", { name: "Параметры документа", exact: true }).click();
   await page.getByRole("button", { name: "Новая группа", exact: true }).click();
   await rename(page, "Грива");
   await page.getByRole("button", { name: "Новый слой", exact: true }).click();
@@ -183,3 +185,46 @@ test("camera, 2D view and display settings restore from a project", async ({ pag
   expect(nextCamera!.position[0] - nextCamera!.target[0]).toBeCloseTo(0);
   expect(nextCamera!.position[2]).toBeLessThan(camera!.position[2]);
 });
+
+for (const width of [1280, 390]) {
+  test(`inspector tabs separate texture tools from skin settings at ${width}px`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width, height: 844 });
+    await ready(page);
+    if (width < 641)
+      await page.getByRole("button", { name: "Параметры документа", exact: true }).click();
+    const texture = page.getByRole("tab", { name: "Текстура", exact: true });
+    const skin = page.getByRole("tab", { name: "Параметры скина", exact: true });
+    await expect(texture).toHaveAttribute("aria-selected", "true");
+    await expect(page.getByRole("region", { name: "Слои рисунка", exact: true })).toBeVisible();
+    await expect(page.getByLabel("Раса", { exact: true })).toBeHidden();
+    await page.getByRole("button", { name: "Новый слой", exact: true }).click();
+    await rename(page, "Детали");
+    await texture.focus();
+    await page.keyboard.press("ArrowRight");
+    await expect(skin).toBeFocused();
+    await expect(skin).toHaveAttribute("aria-selected", "true");
+    await expect(page.getByLabel("Раса", { exact: true })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Новый слой", exact: true })).toBeHidden();
+    await page.getByLabel("Раса", { exact: true }).selectOption("KIRIN");
+    await texture.click();
+    await expect(
+      page.getByRole("button", { name: "Выбрать слой Детали", exact: true }),
+    ).toHaveAttribute("aria-pressed", "true");
+    await skin.click();
+    await expect(page.getByLabel("Раса", { exact: true })).toHaveValue("KIRIN");
+    const tabs = (await page.getByRole("tablist", { name: "Разделы документа" }).boundingBox())!;
+    await page.locator(".inspector-panel:not([hidden])").evaluate((panel) => {
+      panel.scrollTop = panel.scrollHeight;
+    });
+    expect((await texture.boundingBox())!.y).toBeGreaterThanOrEqual(tabs.y);
+    await texture.focus();
+    await page.keyboard.press("End");
+    await expect(skin).toBeFocused();
+    await page.keyboard.press("Home");
+    await expect(texture).toBeFocused();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(width);
+    await page.screenshot({ path: `/tmp/striped-inspector-${width}.png` });
+  });
+}

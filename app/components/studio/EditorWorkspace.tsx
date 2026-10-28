@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useState } from "react";
 import { ArrowUturnLeftIcon, ArrowUturnRightIcon } from "@heroicons/react/24/outline";
 import { decodeSkinMetadata, type SkinDocument, type Pixel } from "@striped-skins/api";
 import {
@@ -128,6 +128,8 @@ export default function EditorWorkspace({
   const defaults = useViewerPreferencesContext((s) => s.userOptions);
   const [options] = useDocumentSetting(skin, "viewOptions", { ...defaults });
   const isPhone = usePhoneLayout();
+  const [inspectorTab, setInspectorTab] = useState<"texture" | "skin">("texture");
+  const inspectorId = useId();
   const [mobileView, setMobileView] = useDocumentSetting<MobileEditorView>(
     skin,
     "mobileView",
@@ -484,33 +486,84 @@ export default function EditorWorkspace({
             </div>
           </div>
         </div>
-        <aside className="inspector studio-panel" aria-label="Параметры модели">
-          <LayerPanel document={skin} />
-          <HistoryPanel document={skin} />
-          <PanelHeading title="Модель" description="Геометрия и метаданные MLP" />
-          <SkinSettings
-            document={skin}
-            preview={preview}
-            onPreview={onPreview}
-            slim={slim}
-            onSlim={setSlim}
-          />
-          <div className="settings-group">
-            <h3>Рисование по поверхности</h3>
-            <Field label="Рисовать по">
-              <select
-                aria-label="Слой рисования"
-                value={selected ?? ""}
-                onChange={(e) => setActivePart(e.target.value || null)}
+        <aside className="inspector studio-panel editor-inspector" aria-label="Параметры документа">
+          <div className="inspector-tabs" role="tablist" aria-label="Разделы документа">
+            {(
+              [
+                ["texture", "Текстура"],
+                ["skin", "Параметры скина"],
+              ] as const
+            ).map(([id, label]) => (
+              <button
+                key={id}
+                type="button"
+                role="tab"
+                id={`${inspectorId}-${id}-tab`}
+                aria-controls={`${inspectorId}-${id}-panel`}
+                aria-selected={inspectorTab === id}
+                tabIndex={inspectorTab === id ? 0 : -1}
+                onClick={() => setInspectorTab(id)}
+                onKeyDown={(event) => {
+                  if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+                  event.preventDefault();
+                  const tabs =
+                    event.currentTarget.parentElement!.querySelectorAll<HTMLButtonElement>(
+                      '[role="tab"]',
+                    );
+                  const index =
+                    event.key === "Home" ? 0 : event.key === "End" ? 1 : id === "texture" ? 1 : 0;
+                  tabs[index].focus();
+                  tabs[index].click();
+                }}
               >
-                <option value="">Видимой поверхности</option>
-                {parts.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {labelFor(p.id)}
-                  </option>
-                ))}
-              </select>
-            </Field>
+                {label}
+              </button>
+            ))}
+          </div>
+          <div
+            className="inspector-panel"
+            role="tabpanel"
+            id={`${inspectorId}-texture-panel`}
+            aria-labelledby={`${inspectorId}-texture-tab`}
+            hidden={inspectorTab !== "texture"}
+            tabIndex={0}
+          >
+            <LayerPanel document={skin} />
+            <div className="settings-group">
+              <h3>Рисование по поверхности</h3>
+              <Field label="Рисовать по">
+                <select
+                  aria-label="Слой рисования"
+                  value={selected ?? ""}
+                  onChange={(e) => setActivePart(e.target.value || null)}
+                >
+                  <option value="">Видимой поверхности</option>
+                  {parts.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {labelFor(p.id)}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+            </div>
+            <HistoryPanel document={skin} />
+          </div>
+          <div
+            className="inspector-panel"
+            role="tabpanel"
+            id={`${inspectorId}-skin-panel`}
+            aria-labelledby={`${inspectorId}-skin-tab`}
+            hidden={inspectorTab !== "skin"}
+            tabIndex={0}
+          >
+            <PanelHeading title="Параметры скина" description="Внешность и метаданные MLP" />
+            <SkinSettings
+              document={skin}
+              preview={preview}
+              onPreview={onPreview}
+              slim={slim}
+              onSlim={setSlim}
+            />
           </div>
           <output
             hidden
