@@ -14,6 +14,7 @@ import { type SkinDocument, type SkinMetadata, type Pixel } from "@striped-skins
 import { type BodySize, type PreviewSettings, type MotionLayer } from "@striped-skins/models";
 import { GeneratedPony } from "../models/GeneratedPony.js";
 import { GroundGrid } from "./GroundGrid.js";
+import { PremultipliedAlpha } from "./PremultipliedAlpha.js";
 import { PreviewLighting } from "./PreviewLighting.js";
 import type { ModelShading } from "../models/SkinMaterial.js";
 export type PreviewStats = {
@@ -162,6 +163,7 @@ function ModelScene(props: PonyPreviewProps) {
       {props.antialiasing ? (
         <EffectComposer ref={invalidateComposer} multisampling={0}>
           <SMAA />
+          <PremultipliedAlpha />
         </EffectComposer>
       ) : null}
       {props.groundGrid ? <GroundGrid contextKey={contextKey} /> : null}
@@ -227,6 +229,8 @@ export function PonyPreview(props: PonyPreviewProps) {
       frameloop="demand"
       camera={{ position: [8, 4, 12], fov: 42 }}
       gl={{ antialias: false }}
+      // SMAA renders without tone mapping. Keep direct rendering identical.
+      flat
       aria-label="3D pony preview"
     >
       <ModelScene {...props} />

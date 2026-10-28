@@ -105,10 +105,12 @@ export default function EditorWorkspace({
   document: skin,
   preview,
   onPreview,
+  onFileDrop,
 }: {
   document: SkinDocument;
   preview: PreviewSettings;
   onPreview: (patch: Partial<PreviewSettings>) => void;
+  onFileDrop: (file: File) => void;
 }) {
   const meta = decodeSkinMetadata(skin),
     options = useViewerPreferencesContext((s) => s.userOptions);
@@ -365,6 +367,7 @@ export default function EditorWorkspace({
           <div className="editor-views">
             {layout !== "2d" || showMini ? (
               <ModelViewport
+                onFileDrop={onFileDrop}
                 document={skin}
                 overrides={appearance}
                 preview={preview}
@@ -402,6 +405,7 @@ export default function EditorWorkspace({
 
             <div className="texture-slot">
               <TextureEditor
+                onFileDrop={onFileDrop}
                 document={skin}
                 color={color}
                 tool={tool}

@@ -78,6 +78,158 @@ async function enter(page: Page, path = "/editor") {
     .toBe(true);
 }
 
+async function dropSkin(page: Page, selector: string, name = "dropped.png", valid = true) {
+  const transfer = await page.evaluateHandle(
+    ({ name, valid }) => {
+      const canvas = document.createElement("canvas");
+      canvas.width = canvas.height = 64;
+      const ctx = canvas.getContext("2d")!;
+      ctx.fillStyle = "#808080";
+      ctx.fillRect(0, 0, 64, 64);
+      const bytes = valid
+        ? Uint8Array.from(atob(canvas.toDataURL().split(",")[1]), (c) => c.charCodeAt(0))
+        : new Uint8Array([0, 1, 2]);
+      const transfer = new DataTransfer();
+      transfer.items.add(new File([bytes], name, { type: "image/png" }));
+      return transfer;
+    },
+    { name, valid },
+  );
+  const target = page.locator(selector);
+  await target.dispatchEvent("dragover", { dataTransfer: transfer });
+  await expect(page.locator(".skin-drop-overlay")).toBeVisible();
+  await target.dispatchEvent("drop", { dataTransfer: transfer });
+  await expect(page.locator(".skin-drop-overlay")).toHaveCount(0);
+  await transfer.dispose();
+}
+
+for (const surface of ["viewer", "split-2d", "split-3d", "2d", "3d", "mini"] as const) {
+  test(`file drop opens a clean skin directly in ${surface}`, async ({ page }) => {
+    await enter(page, surface === "viewer" ? "/" : "/editor");
+    if (surface === "2d" || surface === "mini")
+      await page.getByRole("button", { name: "2D", exact: true }).click();
+    if (surface === "3d") await page.getByRole("button", { name: "3D", exact: true }).click();
+    const target =
+      surface === "2d" || surface === "split-2d"
+        ? '.texture-area canvas[data-testid="skin-texture"]'
+        : ".model-viewport canvas";
+    await dropSkin(page, target);
+    await expect(page.locator(".document-name strong")).toHaveText("dropped.png");
+    await expect(page.getByRole("dialog")).not.toBeVisible();
+    await expect(page.locator(".document-dot")).toHaveAttribute("data-dirty", "false");
+    if (surface !== "viewer") await expect.poll(() => pixel(page)).toEqual([128, 128, 128, 255]);
+  });
+}
+
+for (const route of ["/", "/editor"]) {
+  test(`drop protects unsaved edits and supports cancel, Escape, export and replacement on ${route}`, async ({
+    page,
+  }) => {
+    await enter(page, route);
+    if (route === "/")
+      await page.getByRole("button", { name: "Параметры скина", exact: true }).click();
+    await page.getByLabel("Раса", { exact: true }).selectOption("KIRIN");
+    await expect(page.locator(".document-dot")).toHaveAttribute("data-dirty", "true");
+    const target = route === "/editor" ? ".texture-area canvas" : ".model-viewport canvas";
+    const name = await page.locator(".document-name strong").textContent();
+    for (const cancel of ["button", "escape"] as const) {
+      await dropSkin(page, target);
+      await expect(page.getByText(/Несохранённые изменения будут потеряны/)).toBeVisible();
+      if (cancel === "button")
+        await page.getByRole("button", { name: "Отмена", exact: true }).click();
+      else await page.keyboard.press("Escape");
+      await expect(page.getByRole("dialog")).not.toBeVisible();
+      await expect(page.locator(".document-name strong")).toHaveText(name!);
+      await expect(page.getByLabel("Раса", { exact: true })).toHaveValue("KIRIN");
+      await expect(page.locator(".document-dot")).toHaveAttribute("data-dirty", "true");
+    }
+    await dropSkin(page, target, "broken.png", false);
+    await page.getByRole("button", { name: "Заменить", exact: true }).click();
+    await expect(page.getByRole("dialog").getByRole("alert")).toBeVisible();
+    await expect(page.locator(".document-name strong")).toHaveText(name!);
+    await expect(page.locator(".document-dot")).toHaveAttribute("data-dirty", "true");
+    await page.keyboard.press("Escape");
+    await dropSkin(page, target);
+    const download = page.waitForEvent("download");
+    await page.getByRole("button", { name: "Экспортировать и открыть", exact: true }).click();
+    expect((await download).suggestedFilename()).toMatch(/\.png$/);
+    await expect(page.locator(".document-name strong")).toHaveText("dropped.png");
+    await expect(page.getByRole("dialog")).not.toBeVisible();
+    await page.getByLabel("Раса", { exact: true }).selectOption("KIRIN");
+    await dropSkin(page, target, "replacement.png");
+    await page.getByRole("button", { name: "Заменить", exact: true }).click();
+    await expect(page.locator(".document-name strong")).toHaveText("replacement.png");
+    await expect(page.locator(".document-dot")).toHaveAttribute("data-dirty", "false");
+  });
+}
+
+test("file drop replaces only the selected comparison slot and clears its URL", async ({
+  page,
+}) => {
+  await enter(page, "/?skin=/steve_pony.png&second-skin=/steve_pony.png&slot=second");
+  await dropSkin(page, ".model-viewport canvas", "second-drop.png");
+  await expect(page.locator(".document-name strong")).toHaveText("second-drop.png");
+  await expect.poll(() => new URL(page.url()).searchParams.get("second-skin")).toBeNull();
+  expect(new URL(page.url()).searchParams.get("skin")).toBe("/steve_pony.png");
+  await page.getByRole("button", { name: "Скин 1", exact: true }).click();
+  await expect(page.locator(".document-name strong")).toHaveText("steve_pony.png");
+  await page.getByRole("button", { name: "Скин 2", exact: true }).click();
+  await expect(page.locator(".document-name strong")).toHaveText("second-drop.png");
+});
+
+test("antialiasing preserves material colors in viewer, editor and mini preview", async ({
+  page,
+}) => {
+  await enter(page, "/");
+  await dropSkin(page, ".model-viewport canvas");
+  const meanColor = () =>
+    page.locator(".model-viewport canvas").evaluate((c) => {
+      const canvas = c as HTMLCanvasElement,
+        gl = canvas.getContext("webgl2")!;
+      const pixels = new Uint8Array(canvas.width * canvas.height * 4);
+      gl.readPixels(0, 0, canvas.width, canvas.height, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
+      const sum = [0, 0, 0];
+      let count = 0;
+      for (let i = 0; i < pixels.length; i += 4) {
+        if (pixels[i + 3] !== 255) continue;
+        count++;
+        for (let channel = 0; channel < 3; channel++) sum[channel] += pixels[i + channel];
+      }
+      return sum.map((v) => v / count);
+    });
+  for (const mode of ["viewer", "editor", "mini"]) {
+    if (mode === "editor") {
+      await page.getByRole("link", { name: "Редактировать", exact: true }).click();
+      await expect(tex(page)).toBeVisible();
+      await page.getByRole("button", { name: "UV", exact: true }).click();
+    }
+    if (mode === "mini") await page.getByRole("button", { name: "2D", exact: true }).click();
+    for (const projection of ["perspective", "orthographic"]) {
+      // Mini previews have no projection selector.
+      if (mode !== "mini") await page.getByLabel("Ракурс модели").selectOption(projection);
+      await page.locator(".model-viewport canvas").screenshot();
+      const before = await meanColor();
+      expect(before.every(Number.isFinite)).toBe(true);
+      for (const enabled of [false, true, false, true]) {
+        const previous = await image(page);
+        if (mode === "mini") await page.getByRole("button", { name: "Рядом", exact: true }).click();
+        await page.locator(".view-options summary").click();
+        await page.getByRole("checkbox", { name: "Сглаживание", exact: true }).setChecked(enabled);
+        await page.keyboard.press("Escape");
+        if (mode === "mini") await page.getByRole("button", { name: "2D", exact: true }).click();
+        await expect.poll(() => image(page)).not.toBe(previous);
+        await expect
+          .poll(async () => {
+            const after = await meanColor();
+            return Math.max(...after.map((v, i) => Math.abs(v - before[i])));
+          })
+          .toBeLessThan(1);
+      }
+      if (mode === "mini") break;
+    }
+  }
+});
+
 test("viewer quick settings are nonmodal, retain all options, and share changes with editor", async ({
   page,
 }) => {
@@ -552,6 +704,80 @@ test("3D brush preview matches every shared UV target shown by the 2D brush", as
   expect(await tex(page).evaluate((c) => (c as HTMLCanvasElement).toDataURL())).toBe(pixels);
   await expect(page.getByRole("button", { name: "Отменить штрих", exact: true })).toBeDisabled();
 });
+
+for (const route of ["/", "/editor"]) {
+  test(`ground grid retains the unsmoothed line colors and contrast with SMAA on ${route}`, async ({
+    page,
+  }) => {
+    await enter(page, route);
+    const antialiased = await image(page);
+    await page.locator(".view-options summary").click();
+    await page.getByRole("checkbox", { name: "Сглаживание", exact: true }).uncheck();
+    await page.keyboard.press("Escape");
+    await expect.poll(() => image(page)).not.toBe(antialiased);
+    // SMAA can extend the model silhouette into previously transparent pixels.
+    // Keep a guard band around the model so those pixels cannot be counted as grid.
+    const mask = await page.locator(".model-viewport canvas").evaluateHandle((c) => {
+      const canvas = c as HTMLCanvasElement,
+        gl = canvas.getContext("webgl2")!;
+      const pixels = new Uint8Array(canvas.width * canvas.height * 4);
+      gl.readPixels(0, 0, canvas.width, canvas.height, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
+      const mask = new Uint8Array(pixels.length / 4).fill(1);
+      for (let y = 0; y < canvas.height; y++)
+        for (let x = 0; x < canvas.width; x++) {
+          if (pixels[(y * canvas.width + x) * 4 + 3] === 0) continue;
+          for (let dy = -3; dy <= 3; dy++)
+            for (let dx = -3; dx <= 3; dx++) {
+              const nx = x + dx,
+                ny = y + dy;
+              if (nx >= 0 && nx < canvas.width && ny >= 0 && ny < canvas.height)
+                mask[ny * canvas.width + nx] = 0;
+            }
+        }
+      return mask;
+    });
+    await page.locator(".view-options summary").click();
+    await page.getByRole("checkbox", { name: "Сетка под моделью", exact: true }).check();
+    await page.keyboard.press("Escape");
+    const gridColors = () =>
+      page.locator(".model-viewport canvas").evaluate((c, mask) => {
+        const canvas = c as HTMLCanvasElement,
+          gl = canvas.getContext("webgl2")!;
+        const pixels = new Uint8Array(canvas.width * canvas.height * 4);
+        gl.readPixels(0, 0, canvas.width, canvas.height, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
+        const colors: number[] = [];
+        for (let i = 0; i < mask.length; i++) {
+          const a = pixels[i * 4 + 3];
+          if (!mask[i] || a < 64 || a > 220) continue;
+          // Unpremultiply the displayed pixel to measure color independently of line coverage.
+          colors.push(((pixels[i * 4] + pixels[i * 4 + 1] + pixels[i * 4 + 2]) * 255) / (3 * a));
+        }
+        colors.sort((a, b) => a - b);
+        return {
+          count: colors.length,
+          levels: [0.1, 0.5, 0.9].map((q) => colors[Math.floor(q * colors.length)]),
+        };
+      }, mask);
+    await page.locator(".model-viewport canvas").screenshot();
+    const reference = await gridColors();
+    expect(reference.count).toBeGreaterThan(100);
+    expect(reference.levels[2] - reference.levels[0]).toBeGreaterThan(5);
+    for (const enabled of [true, false, true]) {
+      const previous = await image(page);
+      await page.locator(".view-options summary").click();
+      await page.getByRole("checkbox", { name: "Сглаживание", exact: true }).setChecked(enabled);
+      await page.keyboard.press("Escape");
+      await expect.poll(() => image(page)).not.toBe(previous);
+      await expect
+        .poll(async () => {
+          const current = await gridColors();
+          return Math.max(...current.levels.map((v, i) => Math.abs(v - reference.levels[i])));
+        })
+        .toBeLessThan(3);
+    }
+    await mask.dispose();
+  });
+}
 
 test("ground grid toggles without changing camera scale and persists across modes and reload", async ({
   page,

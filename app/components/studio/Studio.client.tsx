@@ -28,7 +28,7 @@ export default function Studio({ mode }: { mode: "viewer" | "editor" }) {
     pony = isSecond ? second : first,
     document = pony.skin.document;
   const info = useDocumentInfo(document, skinName(pony.skin.sourceUrl));
-  const [importOpen, setImportOpen] = useState(false),
+  const [importRequest, setImportRequest] = useState<{ file?: File } | null>(null),
     [saving, setSaving] = useState(false),
     [error, setError] = useState(""),
     [pending, setPending] = useState(0);
@@ -151,7 +151,7 @@ export default function Studio({ mode }: { mode: "viewer" | "editor" }) {
         name={info.name}
         dirty={info.dirty}
         saving={saving}
-        onImport={() => setImportOpen(true)}
+        onImport={() => setImportRequest({})}
         onExport={() => void exportPNG().catch((e) => setError(String(e)))}
       />
       {error || preferences.defaultSkinError ? (
@@ -166,6 +166,7 @@ export default function Studio({ mode }: { mode: "viewer" | "editor" }) {
             document={document}
             preview={pony.preview}
             onPreview={pony.setPreview}
+            onFileDrop={(file) => setImportRequest({ file })}
           />
         </Suspense>
       ) : (
@@ -177,7 +178,8 @@ export default function Studio({ mode }: { mode: "viewer" | "editor" }) {
             next.set("slot", value);
             setParams(next);
           }}
-          onImport={() => setImportOpen(true)}
+          onImport={() => setImportRequest({})}
+          onFileDrop={(file) => setImportRequest({ file })}
           onExport={() => void exportPNG().catch((e) => setError(String(e)))}
         />
       )}
@@ -188,8 +190,9 @@ export default function Studio({ mode }: { mode: "viewer" | "editor" }) {
         </output>
       ) : null}
       <ImportDialog
-        open={importOpen}
-        onClose={() => setImportOpen(false)}
+        open={importRequest !== null}
+        initialFile={importRequest?.file}
+        onClose={() => setImportRequest(null)}
         onFile={importFile}
         onURL={importURL}
         dirty={info.dirty}
@@ -206,12 +209,14 @@ function ViewerWorkspace({
   setSlot,
   onImport,
   onExport,
+  onFileDrop,
 }: {
   document: SkinDocument;
   isSecond: boolean;
   setSlot: (slot: "first" | "second") => void;
   onImport: () => void;
   onExport: () => void;
+  onFileDrop: (file: File) => void;
 }) {
   const [settings, setSettings] = useState(false),
     [slimBySlot, setSlimBySlot] = useState<{ first?: boolean; second?: boolean }>({});
@@ -230,6 +235,7 @@ function ViewerWorkspace({
     <>
       <div className="viewer-content">
         <ModelViewport
+          onFileDrop={onFileDrop}
           document={visibleSkin}
           comparison={
             comparison
