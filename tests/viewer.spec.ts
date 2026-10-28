@@ -37,13 +37,13 @@ test("comparison changes the rendered image in both directions without touching 
   await page.waitForTimeout(500);
   const single = await image();
 
-  await page.getByTitle("Comparison mode").click();
+  await page.getByRole("button", { name: "Сравнить скины", exact: true }).click();
   await expect(page.getByRole("button", { name: "Скин 2", exact: true })).toBeVisible();
   await expect.poll(image).not.toBe(single);
   await page.waitForTimeout(500);
   const comparison = await image();
 
-  await page.getByTitle("Comparison mode").click();
+  await page.getByRole("button", { name: "Сравнить скины", exact: true }).click();
   await expect(page.getByRole("button", { name: "Скин 2", exact: true })).toHaveCount(0);
   await expect.poll(image).not.toBe(comparison);
 });
@@ -54,7 +54,7 @@ test("changing the first skin preserves an explicit exit from comparison mode", 
   await page.goto("/?skin=/steve_pony.png&second-skin=/steve_pony.png");
   await waitForSkin(page);
   await expect(page.getByRole("button", { name: "Скин 2", exact: true })).toBeVisible();
-  await page.getByTitle("Comparison mode").click();
+  await page.getByRole("button", { name: "Сравнить скины", exact: true }).click();
   await expect(page.getByRole("button", { name: "Скин 2", exact: true })).toHaveCount(0);
 
   await page.getByRole("button", { name: "Открыть", exact: true }).click();
@@ -89,7 +89,7 @@ test("signed skin URLs retain every query parameter on submit and reload", async
     .toContain(firstSkin);
   await waitForSkin(page);
 
-  await page.getByTitle("Comparison mode").click();
+  await page.getByRole("button", { name: "Сравнить скины", exact: true }).click();
   await expect(page.getByRole("button", { name: "Скин 2", exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Скин 2", exact: true }).click();
   await openURL(page, secondSkin);

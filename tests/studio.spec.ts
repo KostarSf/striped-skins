@@ -406,11 +406,12 @@ test("mobile editor exposes texture, metadata and import without horizontal over
   await enter(page);
   await expect(page.getByRole("link", { name: "Striped Skins — просмотрщик" })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)).toBe(false);
-  await page.getByRole("button", { name: "2D", exact: true }).click();
+  await page.getByRole("button", { name: "2D вид", exact: true }).click();
   await page.getByLabel("Цвет кисти", { exact: true }).fill("#ff00ff");
   await tex(page).scrollIntoViewIfNeeded();
   await paint(page);
   await expect.poll(() => pixel(page)).toEqual([255, 0, 255, 255]);
+  await page.getByRole("button", { name: "Параметры модели", exact: true }).click();
   await page.getByLabel("Раса", { exact: true }).selectOption("KIRIN");
   await expect(page.getByLabel("Раса", { exact: true })).toHaveValue("KIRIN");
   await page.getByRole("button", { name: "Открыть", exact: true }).click();
@@ -571,7 +572,7 @@ test("X swaps primary and secondary colors; removing palette entries leaves docu
   await expect.poll(() => pixel(page)).toEqual([171, 205, 239, 255]);
   await page.getByRole("button", { name: "Поменять цвета · X", exact: true }).click();
   await expect(page.getByLabel("Цвет кисти", { exact: true })).toHaveValue("#123456");
-  await page.getByRole("textbox", { name: "HEX цвета кисти", exact: true }).focus();
+  await page.getByLabel("Цвет кисти", { exact: true }).focus();
   await page.keyboard.press("x");
   await expect(page.getByLabel("Цвет кисти", { exact: true })).toHaveValue("#123456");
 });
@@ -1085,12 +1086,14 @@ test("viewport headings stay inside panels, texture covers the panel, and 3D rep
     const button = (await page.locator(".view-options summary").boundingBox())!;
     expect(button.x + button.width).toBeLessThanOrEqual(panel.x + panel.width - 8);
     expect(button.x).toBeGreaterThanOrEqual(panel.x + 8);
+    if (width <= 600) await page.getByRole("button", { name: "2D вид", exact: true }).click();
     const texturePanel = (await page
       .getByRole("region", { name: "Редактирование текстуры", exact: true })
       .boundingBox())!;
     const area = (await page.locator(".texture-area").boundingBox())!;
     expect(area.y).toBeCloseTo(texturePanel.y, 1);
     expect(area.height).toBeCloseTo(texturePanel.height, 1);
+    if (width <= 600) await page.getByRole("button", { name: "3D вид", exact: true }).click();
   }
 });
 

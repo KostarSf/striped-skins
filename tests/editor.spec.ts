@@ -74,7 +74,7 @@ test("viewer → editor → viewer keeps pixels, metadata, history and independe
   await page.getByRole("button", { name: "Повторить штрих" }).click();
   await page.getByRole("link", { name: "← Просмотрщик" }).click();
   await ready(page);
-  await page.getByTitle("Comparison mode").click();
+  await page.getByRole("button", { name: "Сравнить скины", exact: true }).click();
   await edit(page, true);
   await expect.poll(() => pixel(page, 12, 12)).toEqual(before);
   await expect(page.getByLabel("Раса", { exact: true })).not.toHaveValue("UNICORN");
