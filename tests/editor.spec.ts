@@ -2,6 +2,7 @@ import { test, expect, type Page } from "@playwright/test";
 
 test.use({ viewport: { width: 1280, height: 900 } });
 test.beforeEach(async ({ page }) => {
+  page.on("dialog", (dialog) => void dialog.accept());
   await page.addInitScript(() => {
     localStorage.setItem("viewer.options.animations", "");
     localStorage.setItem("viewer.options.smoothCamera", "");
@@ -104,7 +105,7 @@ test("local recovery and PNG round-trip retain edited content without reloading 
   await expect(page.getByTestId("skin-texture")).toBeVisible();
   await expect(page.getByLabel("Раса", { exact: true })).toHaveValue("KIRIN");
   await expect.poll(() => pixel(page, 12, 12)).toEqual([255, 0, 255, 255]);
-  await expect(page.getByRole("button", { name: "Отменить штрих" })).toBeDisabled();
+  await expect(page.getByRole("button", { name: "Отменить штрих" })).toBeEnabled();
   await expect.poll(() => pixel(page, 1, 1)).toEqual([22, 50, 250, 255]);
   const png = page.waitForEvent("download");
   await page.getByRole("button", { name: "Скачать PNG" }).click();
@@ -340,7 +341,7 @@ test("failed recovery is dismissible, fits the viewport and does not reopen on e
   await expect.poll(() => pixel(page, 12, 12)).toEqual([255, 0, 255, 255]);
 });
 
-test("recovered edits stay dirty until exported and require confirmation before replacement", async ({
+test("recovered edits stay dirty until the project is saved and require confirmation before replacement", async ({
   page,
 }) => {
   const savedDirty = () =>
@@ -380,6 +381,10 @@ test("recovered edits stay dirty until exported and require confirmation before 
   const download = page.waitForEvent("download");
   await page.getByRole("button", { name: "Скачать PNG" }).click();
   await download;
+  await expect.poll(savedDirty).toBe(true);
+  const project = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Сохранить проект", exact: true }).click();
+  await project;
   await expect.poll(savedDirty).toBe(false);
   await page.reload();
   await expect(page.getByTestId("skin-texture")).toBeVisible();

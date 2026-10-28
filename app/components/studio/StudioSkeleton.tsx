@@ -45,7 +45,12 @@ function SkeletonHeader({ mode }: { mode: Mode }) {
         <span className="studio-button">
           <Bone width={60} height={9} />
         </span>
-        <span className="studio-button primary skeleton-export">
+        {mode === "editor" ? (
+          <span className="studio-button primary skeleton-project">
+            <Bone width={100} height={9} />
+          </span>
+        ) : null}
+        <span className={`studio-button skeleton-export ${mode === "viewer" ? "primary" : ""}`}>
           <Bone width={90} height={9} />
         </span>
       </div>
@@ -144,6 +149,19 @@ function EditorBody() {
           </div>
         </div>
         <div className="inspector studio-panel">
+          <div className="layers-panel">
+            <div className="layers-heading">
+              <Bone width={80} height={13} />
+            </div>
+            <div className="layer-list">
+              <Bone height={30} />
+              <Bone height={30} />
+            </div>
+            <div className="layer-properties">
+              <Bone height={28} />
+              <Bone height={28} />
+            </div>
+          </div>
           <Bone width={80} height={13} />
           <Bone width={170} height={7} />
           <div className="skin-settings">
@@ -231,6 +249,12 @@ export function StudioSkeleton({
     >
       <output className="sr-only">{label}</output>
       <SkeletonHeader mode={mode} />
+      {mode === "editor" ? (
+        <div className="editor-menubar" aria-hidden="true">
+          <Bone width={38} height={8} />
+          <Bone width={48} height={8} />
+        </div>
+      ) : null}
       {content}
     </main>
   );

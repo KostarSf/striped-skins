@@ -8,7 +8,7 @@ import {
 import { useLocation } from "react-router";
 import {
   DocumentSession,
-  markRecoveredDirty,
+  markRecoveredDocument,
   useDocumentInfo,
   skinName,
 } from "./studio/DocumentSession";
@@ -27,8 +27,8 @@ async function restore() {
       if (!value || value.url !== params.get(param)) return PonySkin.DEFAULT;
       const skin = PonySkin.fromDocument(SkinDocument.restore(value.document));
       skin.sourceUrl = getSafeSkinUrl(params.get(param)) ?? undefined;
-      // Old snapshots have no dirty flag; protect them conservatively until exported.
-      if (value.dirty !== false) markRecoveredDirty(skin.document);
+      // Old snapshots have no dirty flag; protect them conservatively until the project is saved.
+      markRecoveredDocument(skin.document, value.dirty !== false, value.name);
       return skin;
     } catch {
       return PonySkin.DEFAULT;
@@ -42,6 +42,7 @@ async function restore() {
 }
 function Autosave() {
   const [warning, setWarning] = useState(false);
+  const [status, setStatus] = useState<"saving" | "saved" | "error">("saving");
   const [dismissed, setDismissed] = useState(false);
   const first = usePonyContext((s) => s.firstPony.skin),
     second = usePonyContext((s) => s.secondPony.skin),
@@ -52,7 +53,7 @@ function Autosave() {
   useEffect(() => {
     if (first === PonySkin.DEFAULT && second === PonySkin.DEFAULT) return;
     const params = new URLSearchParams(route.search);
-    const snapshot = (skin: PonySkin, key: string, dirty: boolean) => {
+    const snapshot = (skin: PonySkin, key: string, dirty: boolean, name: string) => {
       const url = params.get(key);
       if (skin === PonySkin.DEFAULT || (url && skin.sourceUrl !== getSafeSkinUrl(url))) return null;
       if (
@@ -62,27 +63,32 @@ function Autosave() {
         !skin.sourceUrl.startsWith("blob:")
       )
         return null;
-      return { url, dirty, document: recoverySnapshot(skin.document) };
+      return { url, dirty, name, document: recoverySnapshot(skin.document) };
     };
     let active = true;
     const save = () => {
       // Copy pixels now; later edits must not alter a queued recovery write.
       void saveDocuments({
-        first: snapshot(first, "skin", firstInfo.dirty),
-        second: snapshot(second, "second-skin", secondInfo.dirty),
+        first: snapshot(first, "skin", firstInfo.dirty, firstInfo.name),
+        second: snapshot(second, "second-skin", secondInfo.dirty, secondInfo.name),
       })
         .then(() => {
           if (active) {
+            setStatus("saved");
             setWarning(false);
             setDismissed(false);
           }
         })
         .catch(() => {
-          if (active) setWarning(true);
+          if (active) {
+            setStatus("error");
+            setWarning(true);
+          }
         });
     };
     let timer: ReturnType<typeof setTimeout> | undefined;
     const schedule = () => {
+      if (active) setStatus("saving");
       clearTimeout(timer);
       timer = setTimeout(save, 300);
     };
@@ -92,6 +98,7 @@ function Autosave() {
       if (document.visibilityState === "hidden") save();
     };
     window.addEventListener("pagehide", save);
+    window.addEventListener("beforeunload", save);
     document.addEventListener("visibilitychange", background);
     schedule();
     return () => {
@@ -99,19 +106,57 @@ function Autosave() {
       b();
       clearTimeout(timer);
       window.removeEventListener("pagehide", save);
+      window.removeEventListener("beforeunload", save);
       document.removeEventListener("visibilitychange", background);
       save();
       active = false;
     };
-  }, [first, second, route.search, defaultURL, firstInfo.dirty, secondInfo.dirty]);
-  return warning && !dismissed ? (
-    <section role="alert" className="recovery-warning">
-      <p>Браузер не смог сохранить локальную копию. Скачайте PNG перед закрытием страницы.</p>
-      <IconButton label="Закрыть предупреждение о сохранении" onClick={() => setDismissed(true)}>
-        <XMarkIcon />
-      </IconButton>
-    </section>
-  ) : null;
+  }, [
+    first,
+    second,
+    route.search,
+    defaultURL,
+    firstInfo.dirty,
+    secondInfo.dirty,
+    firstInfo.name,
+    secondInfo.name,
+  ]);
+  useEffect(() => {
+    if (!firstInfo.dirty && !secondInfo.dirty) return;
+    const warn = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = "";
+    };
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [firstInfo.dirty, secondInfo.dirty]);
+  return (
+    <>
+      {firstInfo.dirty || secondInfo.dirty ? (
+        <output className="autosave-status" data-testid="autosave-status">
+          {status === "saving"
+            ? "Локальная копия: сохранение…"
+            : status === "saved"
+              ? "Локальная копия сохранена"
+              : "Локальная копия недоступна"}
+        </output>
+      ) : null}
+      {warning && !dismissed ? (
+        <section role="alert" className="recovery-warning">
+          <p>
+            Браузер не смог сохранить локальную копию. Сохраните проект .striped перед закрытием
+            страницы.
+          </p>
+          <IconButton
+            label="Закрыть предупреждение о сохранении"
+            onClick={() => setDismissed(true)}
+          >
+            <XMarkIcon />
+          </IconButton>
+        </section>
+      ) : null}
+    </>
+  );
 }
 export default function Workspace({ children }: { children: ReactNode }) {
   const location = useLocation();

@@ -19,6 +19,7 @@ export type CameraAction = {
   id: number;
   kind: "reset" | "in" | "out" | "front" | "back" | "left" | "right";
 };
+export type CameraState = { position: number[]; target: number[]; zoom: number };
 export type PreviewCameraProps = {
   cameraAction?: CameraAction;
   fitKey?: string;
@@ -27,6 +28,8 @@ export type PreviewCameraProps = {
   painting: boolean;
   comparison?: boolean;
   onScale?: (scale: number) => void;
+  cameraState?: CameraState | null;
+  onCameraState?: (state: CameraState) => void;
 };
 export function PreviewCamera({
   cameraAction,
@@ -36,8 +39,25 @@ export function PreviewCamera({
   painting,
   comparison,
   onScale,
+  cameraState,
+  onCameraState,
 }: PreviewCameraProps) {
   const controls = useRef<CameraControls>(null);
+  const initialState = useRef(cameraState);
+  const restored = useRef(false);
+  const interacted = useRef(false);
+  if (cameraAction?.id) interacted.current = true;
+  const cameraListener = useRef(onCameraState);
+  cameraListener.current = onCameraState;
+  const reportCamera = useCallback(() => {
+    const c = controls.current;
+    if (!c || !interacted.current) return;
+    cameraListener.current?.({
+      position: c.getPosition(new Vector3(), true).toArray(),
+      target: c.getTarget(new Vector3(), true).toArray(),
+      zoom: c.camera.zoom,
+    });
+  }, []);
   const referenceScale = useRef({ distance: 0, zoom: 0 });
   const scaleListener = useRef(onScale);
   scaleListener.current = onScale;
@@ -84,6 +104,25 @@ export function PreviewCamera({
   const scene = useThree((s) => s.scene);
   const distance = comparison ? 21 : 11.5;
   const fit = () => {
+    const saved = initialState.current,
+      c0 = controls.current;
+    if (!restored.current && saved && c0) {
+      restored.current = true;
+      void c0.setLookAt(
+        saved.position[0],
+        saved.position[1],
+        saved.position[2],
+        saved.target[0],
+        saved.target[1],
+        saved.target[2],
+        false,
+      );
+      void c0.zoomTo(saved.zoom, false);
+      reportScale();
+      invalidate();
+      return;
+    }
+    restored.current = true;
     const box = new Box3();
     scene.updateMatrixWorld(true);
     scene.traverse((object) => {
@@ -139,11 +178,21 @@ export function PreviewCamera({
     const c = controls.current;
     if (!c) return;
     const smoothCamera = smooth.current;
+    if (initialState.current && !cameraAction?.id) return;
     const kind = cameraAction?.kind ?? "reset";
+    let active = true;
+    const finish = () => {
+      if (active) {
+        reportCamera();
+        invalidate();
+      }
+    };
     if (kind === "in" || kind === "out") {
-      if (projection === "orthographic")
-        c.zoomTo(c.camera.zoom * (kind === "in" ? 1.2 : 1 / 1.2), smoothCamera);
-      else c.dolly((kind === "in" ? 1 : -1) * c.distance * 0.18, smoothCamera);
+      const movement =
+        projection === "orthographic"
+          ? c.zoomTo(c.camera.zoom * (kind === "in" ? 1.2 : 1 / 1.2), smoothCamera)
+          : c.dolly((kind === "in" ? 1 : -1) * c.distance * 0.18, smoothCamera);
+      void movement.then(finish);
     } else {
       const positions = {
         reset: [distance * 0.53, distance * 0.27, distance * 0.8],
@@ -153,12 +202,28 @@ export function PreviewCamera({
         right: [-distance, 0, 0],
       } as const;
       const [x, y, z] = positions[kind];
-      c.setLookAt(x, y, z, 0, 0, 0, smoothCamera);
-      if (fitKey) requestAnimationFrame(() => fitRef.current());
-      else if (projection === "orthographic") c.zoomTo(50, smoothCamera);
+      void c.setLookAt(x, y, z, 0, 0, 0, smoothCamera).then(() => {
+        if (!active) return;
+        if (fitKey) fitRef.current();
+        else if (projection === "orthographic") void c.zoomTo(50, smoothCamera).then(finish);
+        finish();
+      });
     }
     invalidate();
-  }, [cameraAction, activeCamera, projection, comparison, distance, invalidate, fitKey]);
+    return () => {
+      active = false;
+    };
+  }, [
+    cameraAction,
+    activeCamera,
+    projection,
+    comparison,
+    distance,
+    invalidate,
+    fitKey,
+    reportCamera,
+  ]);
+
   return (
     <>
       {projection === "orthographic" ? (
@@ -180,6 +245,11 @@ export function PreviewCamera({
         ref={controls}
         makeDefault
         onUpdate={reportScale}
+        onRest={reportCamera}
+        onControlStart={() => {
+          interacted.current = true;
+        }}
+        onControlEnd={reportCamera}
         mouseButtons={mouseButtons}
         touches={touches}
         minDistance={5}

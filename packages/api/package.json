@@ -16,6 +16,9 @@
   "scripts": {
     "build": "tsc --build ./tsconfig.esm.json ./tsconfig.types.json"
   },
+  "dependencies": {
+    "fflate": "^0.8.3"
+  },
   "devDependencies": {
     "typescript": "^7.0.2"
   }

@@ -107,7 +107,9 @@ async function dropSkin(page: Page, selector: string, name = "dropped.png", vali
 }
 
 for (const surface of ["viewer", "split-2d", "split-3d", "2d", "3d", "mini"] as const) {
-  test(`file drop opens a clean skin directly in ${surface}`, async ({ page }) => {
+  test(`file drop opens a skin and protects changed document settings in ${surface}`, async ({
+    page,
+  }) => {
     await enter(page, surface === "viewer" ? "/" : "/editor");
     if (surface === "2d" || surface === "mini")
       await page.getByRole("button", { name: "2D", exact: true }).click();
@@ -117,6 +119,10 @@ for (const surface of ["viewer", "split-2d", "split-3d", "2d", "3d", "mini"] as 
         ? '.texture-area canvas[data-testid="skin-texture"]'
         : ".model-viewport canvas";
     await dropSkin(page, target);
+    if (surface === "2d" || surface === "mini" || surface === "3d") {
+      await expect(page.getByText(/Несохранённые изменения будут потеряны/)).toBeVisible();
+      await page.getByRole("button", { name: "Заменить", exact: true }).click();
+    }
     await expect(page.locator(".document-name strong")).toHaveText("dropped.png");
     await expect(page.getByRole("dialog")).not.toBeVisible();
     await expect(page.locator(".document-dot")).toHaveAttribute("data-dirty", "false");
@@ -125,7 +131,7 @@ for (const surface of ["viewer", "split-2d", "split-3d", "2d", "3d", "mini"] as 
 }
 
 for (const route of ["/", "/editor"]) {
-  test(`drop protects unsaved edits and supports cancel, Escape, export and replacement on ${route}`, async ({
+  test(`drop protects unsaved edits and supports cancel, Escape, project save and replacement on ${route}`, async ({
     page,
   }) => {
     await enter(page, route);
@@ -154,8 +160,8 @@ for (const route of ["/", "/editor"]) {
     await page.keyboard.press("Escape");
     await dropSkin(page, target);
     const download = page.waitForEvent("download");
-    await page.getByRole("button", { name: "Экспортировать и открыть", exact: true }).click();
-    expect((await download).suggestedFilename()).toMatch(/\.png$/);
+    await page.getByRole("button", { name: "Сохранить проект и открыть", exact: true }).click();
+    expect((await download).suggestedFilename()).toMatch(/\.striped$/);
     await expect(page.locator(".document-name strong")).toHaveText("dropped.png");
     await expect(page.getByRole("dialog")).not.toBeVisible();
     await page.getByLabel("Раса", { exact: true }).selectOption("KIRIN");
@@ -395,8 +401,8 @@ test("dirty import can be cancelled or exported before replacement; Escape and f
   await page.getByRole("button", { name: "Открыть", exact: true }).click();
   await page.getByRole("button", { name: "Использовать пример скина" }).click();
   const download = page.waitForEvent("download");
-  await page.getByRole("button", { name: "Экспортировать и открыть", exact: true }).click();
-  expect((await download).suggestedFilename()).toMatch(/\.png$/);
+  await page.getByRole("button", { name: "Сохранить проект и открыть", exact: true }).click();
+  expect((await download).suggestedFilename()).toMatch(/\.striped$/);
   await expect(page.getByRole("dialog")).not.toBeVisible();
   await expect.poll(() => pixel(page)).not.toEqual([255, 0, 255, 255]);
   await expect(page.getByText("Есть изменения", { exact: true })).toHaveCount(0);
@@ -615,7 +621,6 @@ test("3D hovering previews brush color and synchronizes UV face/pixel without ch
     .toBe(true);
   const initial = await image(page);
   const pixels = await tex(page).evaluate((c) => (c as HTMLCanvasElement).toDataURL());
-  const revision = await page.getByTestId("document-status").getAttribute("data-revision");
   await page.mouse.move(point.x, point.y);
   const uv = page.getByTestId("uv-hover");
   await expect(uv).toBeVisible();
@@ -631,7 +636,6 @@ test("3D hovering previews brush color and synchronizes UV face/pixel without ch
   await expect(uv).toBeVisible();
   await expect.poll(() => image(page)).not.toBe(initial);
   expect(await tex(page).evaluate((c) => (c as HTMLCanvasElement).toDataURL())).toBe(pixels);
-  await expect(page.getByTestId("document-status")).toHaveAttribute("data-revision", revision!);
   await expect(page.getByRole("button", { name: "Отменить штрих", exact: true })).toBeDisabled();
   // The same picker drives painting, so the pixel under the preview is exactly the painted pixel.
   await page.mouse.click(point.x, point.y);
@@ -944,7 +948,6 @@ test("2D brush hover highlights the same 3D texel without painting, and clears o
   await expect(page.getByTestId("uv-hover")).toHaveCount(0);
   const initial = await image(page);
   const pixels = await tex(page).evaluate((c) => (c as HTMLCanvasElement).toDataURL());
-  const revision = await page.getByTestId("document-status").getAttribute("data-revision");
   const hoverPixel = async () => {
     const box = (await tex(page).boundingBox())!;
     await page.mouse.move(
@@ -955,7 +958,6 @@ test("2D brush hover highlights the same 3D texel without painting, and clears o
   };
   await hoverPixel();
   expect(await tex(page).evaluate((c) => (c as HTMLCanvasElement).toDataURL())).toBe(pixels);
-  await expect(page.getByTestId("document-status")).toHaveAttribute("data-revision", revision!);
   await expect(page.getByRole("button", { name: "Отменить штрих", exact: true })).toBeDisabled();
   await page.mouse.move(5, 5);
   await expect.poll(() => image(page)).toBe(initial);
@@ -1062,7 +1064,6 @@ test("mouse camera mapping works in rotation and brush modes without painting du
     .toBeGreaterThan(20);
 
   await page.getByRole("button", { name: "Режим: вращение", exact: true }).click();
-  const revision = await page.getByTestId("document-status").getAttribute("data-revision");
   const pixels = await tex(page).evaluate((c) => (c as HTMLCanvasElement).toDataURL());
   for (const button of ["middle", "right"] as const) {
     const before = await image(page);
@@ -1080,7 +1081,6 @@ test("mouse camera mapping works in rotation and brush modes without painting du
     })
     .toBeGreaterThan(beforeZoom[2] - beforeZoom[0] + 10);
   expect(await tex(page).evaluate((c) => (c as HTMLCanvasElement).toDataURL())).toBe(pixels);
-  await expect(page.getByTestId("document-status")).toHaveAttribute("data-revision", revision!);
   await expect(page.getByRole("button", { name: "Отменить штрих", exact: true })).toBeDisabled();
   // Switching smoothness updates controls without issuing another reset command.
   const beforeOptions = await image(page);

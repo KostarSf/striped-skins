@@ -2049,3 +2049,399 @@ input[type="color"]::-webkit-color-swatch {
     font-size: 16px;
   }
 }
+
+/* Compact editor chrome leaves the canvas and document layers in view. */
+.editor-app .studio-header {
+  flex-basis: 52px;
+  grid-template-columns: minmax(130px, 180px) 180px minmax(90px, 1fr) auto;
+  gap: 12px;
+  padding: 0 12px;
+}
+.editor-app .file-actions .studio-button {
+  min-width: 0;
+}
+.editor-menubar {
+  display: flex;
+  align-items: center;
+  flex: none;
+  min-height: 30px;
+  padding: 0 12px;
+  gap: 6px;
+  background: var(--studio-panel);
+  border-bottom: 1px solid var(--studio-border);
+  z-index: 20;
+}
+.editor-menubar details {
+  position: relative;
+}
+.editor-menubar summary {
+  padding: 3px 10px;
+  border-radius: 4px;
+  list-style: none;
+  cursor: pointer;
+}
+.editor-menubar summary:hover,
+.editor-menubar details[open] summary {
+  background: var(--studio-raised);
+}
+.editor-menu-popup {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  width: 280px;
+  max-width: calc(100vw - 28px);
+  display: grid;
+  gap: 4px;
+  background: var(--studio-panel);
+  padding: 6px;
+  border: 1px solid var(--studio-border);
+  border-radius: 6px;
+  box-shadow: 0 8px 24px #0008;
+}
+.editor-menu-popup .studio-button {
+  justify-content: space-between;
+  background: transparent;
+}
+.editor-menu-popup small,
+.editor-menu-hint {
+  color: var(--studio-muted);
+  font-size: 10px;
+  padding: 4px;
+}
+.editor-menu-hint {
+  margin-left: auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.editor-app .brush-toolbar {
+  min-height: 42px;
+  padding: 5px 12px;
+  gap: 12px;
+}
+.editor-app .editor-workspace {
+  grid-template-columns: 48px minmax(0, 1fr) 288px;
+  gap: 8px;
+  padding: 8px 8px 8px 0;
+}
+.editor-app .tool-rail {
+  padding: 8px 4px;
+  margin-block: -8px;
+  gap: 5px;
+}
+.editor-app .tool-rail .icon-button {
+  width: 36px;
+  height: 36px;
+}
+.editor-app .editor-center {
+  gap: 8px;
+}
+.editor-app .editor-views {
+  gap: 8px;
+}
+.editor-app .inspector {
+  padding: 10px 12px;
+  border-radius: 7px;
+}
+.editor-app .palette-panel {
+  padding: 7px 10px;
+}
+.layers-panel {
+  border-bottom: 1px solid var(--studio-border);
+  padding-bottom: 10px;
+  margin-bottom: 8px;
+}
+.layers-heading {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-bottom: 6px;
+}
+.layers-heading h2 {
+  margin: 0 auto 0 0;
+  font-size: 13px;
+}
+.layers-heading > span {
+  font-size: 10px;
+  color: var(--studio-muted);
+}
+.layers-panel .icon-button {
+  width: 26px;
+  height: 26px;
+  min-width: 26px;
+  padding: 4px;
+}
+.layers-panel .icon-button svg {
+  width: 16px;
+  height: 16px;
+}
+.layer-list {
+  max-height: clamp(100px, 24vh, 220px);
+  overflow: auto;
+  border: 1px solid var(--studio-border);
+  border-radius: 5px;
+}
+.layer-row {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  min-height: 30px;
+  padding-right: 3px;
+}
+.layer-row[data-active="true"] {
+  background: var(--studio-accent-bg);
+}
+.layer-select {
+  flex: 1;
+  background: transparent;
+  border: 0;
+  color: var(--studio-text);
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 4px;
+  font-size: 11px;
+  min-width: 20px;
+}
+.layer-fold {
+  background: transparent;
+  border: 0;
+  color: var(--studio-muted);
+  padding: 0;
+  width: 16px;
+}
+.layer-symbol {
+  color: var(--studio-muted);
+  font-size: 14px;
+  padding: 0 2px;
+}
+.layer-opacity {
+  color: var(--studio-muted);
+  font-size: 9px;
+}
+.layer-properties {
+  margin-top: 6px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 85px;
+  gap: 5px;
+  align-items: center;
+}
+.editor-app .layer-properties input:not([type="checkbox"]),
+.editor-app .layer-properties select {
+  padding: 4px 6px;
+  min-height: 28px;
+  width: 100%;
+  font-size: 11px;
+}
+.layer-name-field {
+  min-width: 0;
+}
+.layer-alpha {
+  display: flex;
+  gap: 3px;
+  align-items: center;
+  color: var(--studio-muted);
+  font-size: 10px;
+}
+.layer-parent {
+  grid-column: 1 / -1;
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  font-size: 10px;
+  color: var(--studio-muted);
+}
+.layer-alpha-lock {
+  grid-column: 1 / -1;
+  font-size: 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.layer-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 6px;
+}
+.layer-actions .studio-button {
+  min-height: 26px;
+  padding: 3px 6px;
+  font-size: 10px;
+}
+.layer-notice {
+  font-size: 10px;
+  color: #fdba74;
+  margin: 6px 0 0;
+}
+.history-panel {
+  border-bottom: 1px solid var(--studio-border);
+  padding: 2px 0 8px;
+  margin-bottom: 12px;
+  font-size: 11px;
+}
+.history-panel summary {
+  cursor: pointer;
+  color: var(--studio-muted);
+}
+.history-panel ol {
+  max-height: 130px;
+  overflow: auto;
+  padding-left: 22px;
+}
+.history-panel small {
+  color: var(--studio-muted);
+  font-size: 10px;
+}
+@media (max-width: 1100px) and (min-width: 641px) {
+  .editor-app .studio-header {
+    grid-template-columns: auto 160px minmax(90px, 1fr) auto;
+    gap: 8px;
+  }
+  .editor-app .studio-brand span {
+    display: none;
+  }
+  .editor-app .editor-workspace {
+    grid-template-columns: 44px minmax(0, 1fr) 260px;
+  }
+  .editor-app .brush-toolbar {
+    gap: 8px;
+  }
+  .editor-app .current-tool {
+    min-width: 0;
+  }
+  .editor-app .current-tool strong {
+    display: none;
+  }
+}
+@media (max-width: 640px) {
+  .editor-app .studio-header {
+    grid-template-columns: 30px 1fr auto;
+    padding: 6px 8px;
+    gap: 6px;
+    flex-basis: 54px;
+  }
+  .editor-app .studio-header .document-name {
+    display: none;
+  }
+  .editor-app .studio-header .studio-brand span {
+    display: none;
+  }
+  .editor-app .studio-header .mode-tabs {
+    width: auto;
+  }
+  .editor-app .studio-header .mode-tabs a {
+    min-width: 0;
+    padding: 5px 7px;
+  }
+  .editor-app .file-actions {
+    gap: 4px;
+  }
+  .editor-app .file-actions .studio-button {
+    padding: 5px 7px;
+    min-height: 32px;
+    font-size: 10px;
+  }
+  .editor-app .file-actions .studio-button[aria-label="Сохранить проект"] {
+    max-width: 76px;
+    white-space: normal;
+    line-height: 12px;
+  }
+  .editor-app .file-actions .studio-button[aria-label="Скачать PNG"] {
+    display: none;
+  }
+  .editor-app .editor-workspace {
+    display: flex;
+    padding: 8px;
+    gap: 0;
+  }
+  .editor-app .brush-toolbar {
+    display: none;
+  }
+  .editor-app .inspector {
+    padding: 10px 12px;
+  }
+  .layer-list {
+    max-height: 200px;
+  }
+  .layers-panel .icon-button {
+    width: 32px;
+    height: 32px;
+  }
+  .layer-row {
+    min-height: 36px;
+  }
+}
+.layer-notice {
+  display: block;
+}
+@media (min-width: 641px) {
+  .editor-app .editor-workspace {
+    grid-template-rows: minmax(0, 1fr);
+    overflow: hidden;
+  }
+  .editor-app .tool-rail {
+    grid-row: auto;
+    position: static;
+    height: auto;
+    align-self: stretch;
+  }
+  .editor-app .inspector {
+    grid-column: auto;
+  }
+  .editor-app .skin-settings {
+    display: block;
+  }
+}
+@media (min-width: 641px) and (max-width: 960px) {
+  .editor-app .studio-header {
+    grid-template-columns: 30px 160px minmax(0, 1fr);
+    min-height: 52px;
+  }
+  .editor-app .editor-views {
+    grid-template-columns: 1fr;
+    grid-template-rows: 1fr 1fr;
+  }
+  .editor-app .layout-3d .editor-views,
+  .editor-app .layout-2d .editor-views {
+    grid-template-rows: 1fr;
+  }
+}
+@media (max-width: 640px) {
+  .editor-app .file-actions .studio-button[aria-label="Сохранить проект"] {
+    width: auto;
+  }
+}
+@media (max-width: 640px) {
+  .editor-app .layer-properties input:not([type="checkbox"]),
+  .editor-app .layer-properties select {
+    font-size: 16px;
+  }
+}
+.autosave-status {
+  position: fixed;
+  bottom: 2px;
+  left: 58px;
+  z-index: 4;
+  font-size: 9px;
+  color: var(--studio-muted);
+  pointer-events: none;
+  background: var(--studio-bg);
+  border-radius: 3px;
+  padding: 0 4px;
+}
+@media (max-width: 640px) {
+  .autosave-status {
+    bottom: 72px;
+    left: 12px;
+  }
+}
+@media (max-width: 640px) {
+  .editor-app .skeleton-export {
+    display: none;
+  }
+  .editor-app .skeleton-project {
+    width: 76px;
+  }
+}

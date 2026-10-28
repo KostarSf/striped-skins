@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { addAfterEffect, useThree, type ThreeEvent } from "@react-three/fiber";
 import { PreviewCamera, type PreviewCameraProps } from "./PreviewCamera.js";
-export type { CameraAction } from "./PreviewCamera.js";
+export type { CameraAction, CameraState } from "./PreviewCamera.js";
 import {
   TextureBrushPreview,
   surfaceHit,
@@ -154,6 +154,8 @@ function ModelScene(props: PonyPreviewProps) {
         projection={props.projection}
         smoothCamera={props.smoothCamera}
         onScale={props.onScale}
+        cameraState={props.cameraState}
+        onCameraState={props.onCameraState}
         comparison={!!props.comparison}
       />
       {props.groundGrid ? <GroundGrid contextKey={contextKey} /> : null}

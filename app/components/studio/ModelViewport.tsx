@@ -3,11 +3,13 @@ import {
   PonyPreview,
   type PonyPreviewProps,
   type CameraAction,
+  type CameraState,
 } from "@striped-skins/viewer/experimental";
 import { decodeSkinMetadata } from "@striped-skins/api";
 import { XMarkIcon } from "@heroicons/react/24/outline";
 import { ViewOptions } from "./ViewOptions";
 import { Button, DesignIcon, IconButton } from "./ui";
+import { useDocumentSetting } from "./useDocumentSetting";
 import { useSkinDrop } from "./useSkinDrop";
 const DevPerformanceMonitor = import.meta.env.DEV
   ? lazy(() => import("../DevPerformanceMonitor"))
@@ -19,8 +21,10 @@ export function ModelViewport({
   children,
   headerActions,
   onFileDrop,
+  persistWorkspace = false,
   ...props
 }: PonyPreviewProps & {
+  persistWorkspace?: boolean;
   title?: string | null;
   mini?: boolean;
   onClose?: () => void;
@@ -46,9 +50,30 @@ export function ModelViewport({
     // Camera motion is transient; update the readout without rebuilding the React scene.
     if (scaleOutput.current) scaleOutput.current.textContent = `${Math.round(scale * 100)}%`;
   }, []);
-  const [projection, setProjection] = useState<"perspective" | "orthographic">("perspective");
+  const [savedProjection, setSavedProjection] = useDocumentSetting<"perspective" | "orthographic">(
+    props.document,
+    "projection",
+    "perspective",
+  );
+  const [localProjection, setLocalProjection] = useState<"perspective" | "orthographic">(
+    "perspective",
+  );
+  const projection = persistWorkspace ? savedProjection : localProjection;
+  const setProjection = persistWorkspace ? setSavedProjection : setLocalProjection;
+  const [cameraState, setCameraState] = useDocumentSetting<CameraState | null>(
+    props.document,
+    "cameraState",
+    null,
+  );
   const [maximized, setMaximized] = useState(false);
-  const [view, setView] = useState("perspective");
+  const [savedView, setSavedView] = useDocumentSetting<string>(
+    props.document,
+    "cameraView",
+    "perspective",
+  );
+  const [localView, setLocalView] = useState("perspective");
+  const view = persistWorkspace ? savedView : localView;
+  const setView = persistWorkspace ? setSavedView : setLocalView;
   const [action, setAction] = useState<CameraAction>({ id: 0, kind: "reset" });
   const command = (kind: CameraAction["kind"], nextProjection = projection) => {
     if (kind === "reset") setView(nextProjection);
@@ -80,6 +105,8 @@ export function ModelViewport({
         cameraAction={action}
         projection={projection}
         onScale={reportScale}
+        cameraState={persistWorkspace ? cameraState : undefined}
+        onCameraState={persistWorkspace ? setCameraState : undefined}
       >
         {DevPerformanceMonitor && new URLSearchParams(location.search).get("perf") === "1" ? (
           <Suspense fallback={null}>
@@ -118,7 +145,7 @@ export function ModelViewport({
               <option value="right">Справа</option>
             </select>
           ) : null}
-          {!mini ? <ViewOptions /> : null}
+          {!mini ? <ViewOptions document={persistWorkspace ? props.document : undefined} /> : null}
           {headerActions}
         </div>
       </div>

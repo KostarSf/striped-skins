@@ -24,6 +24,8 @@ import {
   MobileToolMenu,
   type MobileEditorView,
 } from "./MobileEditorControls";
+import { LayerPanel, HistoryPanel } from "./LayerPanel";
+import { useDocumentSetting } from "./useDocumentSetting";
 import { usePhoneLayout } from "./usePhoneLayout";
 import { useViewerPreferencesContext } from "../striped-viewer.client";
 function paletteFor(skin: SkinDocument) {
@@ -119,33 +121,49 @@ export default function EditorWorkspace({
   onPreview: (patch: Partial<PreviewSettings>) => void;
   onFileDrop: (file: File) => void;
 }) {
-  const meta = decodeSkinMetadata(skin),
-    options = useViewerPreferencesContext((s) => s.userOptions);
+  useEffect(() => {
+    skin.initializeWorkspace("preview", { ...preview });
+  }, [skin, preview]);
+  const meta = decodeSkinMetadata(skin);
+  const defaults = useViewerPreferencesContext((s) => s.userOptions);
+  const [options] = useDocumentSetting(skin, "viewOptions", { ...defaults });
   const isPhone = usePhoneLayout();
-  const [mobileView, setMobileView] = useState<MobileEditorView>("3d");
-  const [showMini, setShowMini] = useState(true);
-  const [showUV, setShowUV] = useState(true);
-  const [slim, setSlim] = useState(meta.slim),
-    [layout, setLayout] = useState<"3d" | "split" | "2d">("split"),
-    [tool, setTool] = useState<PaintTool>("brush"),
-    [painting, setPainting] = useState(false),
-    [brushSize, setBrushSize] = useState(1),
-    [opacity, setOpacity] = useState(100),
-    [colors, setColors] = useState({ primary: "#d8bb60", secondary: "#ffffff" }),
+  const [mobileView, setMobileView] = useDocumentSetting<MobileEditorView>(
+    skin,
+    "mobileView",
+    "3d",
+  );
+  const [showMini, setShowMini] = useDocumentSetting<boolean>(skin, "showMini", true);
+  const [showUV, setShowUV] = useDocumentSetting<boolean>(skin, "showUV", true);
+  const [slim, setSlim] = useDocumentSetting<boolean>(skin, "slim", meta.slim),
+    [layout, setLayout] = useDocumentSetting<"3d" | "split" | "2d">(skin, "layout", "split"),
+    [tool, setTool] = useDocumentSetting<PaintTool>(skin, "tool", "brush"),
+    [painting, setPainting] = useDocumentSetting<boolean>(skin, "painting", false),
+    [brushSize, setBrushSize] = useDocumentSetting<number>(skin, "brushSize", 1),
+    [opacity, setOpacity] = useDocumentSetting<number>(skin, "opacity", 100),
+    [colors, setColors] = useDocumentSetting(skin, "colors", {
+      primary: "#d8bb60",
+      secondary: "#ffffff",
+    }),
     [hover, setHover] = useState<SurfaceHover | null>(null),
     [textureHover, setTextureHover] = useState<{ x: number; y: number } | null>(null),
-    [removedColors, setRemovedColors] = useState<ReadonlySet<string>>(() => new Set()),
-    [hidden, setHidden] = useState<ReadonlySet<string>>(() => new Set()),
-    [activePart, setActivePart] = useState<string | null>(null),
+    [removedColorIds, setRemovedColorIds] = useDocumentSetting<string[]>(skin, "removedColors", []),
+    [hiddenIds, setHiddenIds] = useDocumentSetting<string[]>(skin, "hiddenParts", []),
+    [activePart, setActivePart] = useDocumentSetting<string | null>(skin, "activePart", null),
     [lastPixel, setLastPixel] = useState<{ x: number; y: number; part: string } | null>(null),
     [stats, setStats] = useState<PreviewStats | null>(null),
-    [customColors, setCustomColors] = useState<string[]>([]);
+    [customColors, setCustomColors] = useDocumentSetting<string[]>(skin, "customColors", []);
+  const hidden = useMemo(() => new Set(hiddenIds), [hiddenIds]);
+  const removedColors = useMemo(() => new Set(removedColorIds), [removedColorIds]);
+  const setHidden = (value: ReadonlySet<string>) => setHiddenIds([...value]);
+  const setRemovedColors = (update: (value: ReadonlySet<string>) => ReadonlySet<string>) =>
+    setRemovedColorIds((ids) => [...update(new Set(ids))]);
   const hex = colors.primary;
-  const setHex = useCallback((primary: string) => setColors((c) => ({ ...c, primary })), []);
+  const setHex = (primary: string) => setColors((c) => ({ ...c, primary }));
   const setSecondary = (secondary: string) => setColors((c) => ({ ...c, secondary }));
   const swapColors = useCallback(
     () => setColors((c) => ({ primary: c.secondary, secondary: c.primary })),
-    [],
+    [setColors],
   );
   const addColor = () => {
     setRemovedColors((v) => {
@@ -196,10 +214,13 @@ export default function EditorWorkspace({
           parseInt(hex.slice(5, 7), 16),
           Math.round((opacity * 255) / 100),
         ];
-  const selectTool = useCallback((value: PaintTool) => {
-    setTool(value);
-    setPainting(value !== "hand");
-  }, []);
+  const selectTool = useCallback(
+    (value: PaintTool) => {
+      setTool(value);
+      setPainting(value !== "hand");
+    },
+    [setTool, setPainting],
+  );
   useEffect(() => {
     const key = (e: KeyboardEvent) => {
       if ((e.target as HTMLElement).closest("input,select,textarea,dialog")) return;
@@ -222,7 +243,7 @@ export default function EditorWorkspace({
     };
     window.addEventListener("keydown", key);
     return () => window.removeEventListener("keydown", key);
-  }, [skin, selectTool, swapColors]);
+  }, [skin, selectTool, swapColors, setBrushSize]);
   const sample = (pixel: Pixel) => {
     setHex(
       "#" +
@@ -286,7 +307,7 @@ export default function EditorWorkspace({
           <div className="inline-controls">
             <IconButton
               label="Отменить штрих"
-              title="Отменить · Ctrl+Z / ⌘Z"
+              title={`Отменить: ${skin.undoLabel ?? "—"} · Ctrl+Z / ⌘Z`}
               disabled={!skin.canUndo}
               onClick={() => skin.undo()}
             >
@@ -294,7 +315,7 @@ export default function EditorWorkspace({
             </IconButton>
             <IconButton
               label="Повторить штрих"
-              title="Повторить · Ctrl+Shift+Z / ⇧⌘Z"
+              title={`Повторить: ${skin.redoLabel ?? "—"} · Ctrl+Shift+Z / ⇧⌘Z`}
               disabled={!skin.canRedo}
               onClick={() => skin.redo()}
             >
@@ -371,6 +392,7 @@ export default function EditorWorkspace({
           <div className="editor-views">
             {isPhone || layout !== "2d" || showMini ? (
               <ModelViewport
+                persistWorkspace
                 onFileDrop={onFileDrop}
                 document={skin}
                 overrides={appearance}
@@ -463,7 +485,9 @@ export default function EditorWorkspace({
           </div>
         </div>
         <aside className="inspector studio-panel" aria-label="Параметры модели">
-          <PanelHeading title="Модель" description="Настройки сохраняются в PNG" />
+          <LayerPanel document={skin} />
+          <HistoryPanel document={skin} />
+          <PanelHeading title="Модель" description="Геометрия и метаданные MLP" />
           <SkinSettings
             document={skin}
             preview={preview}
