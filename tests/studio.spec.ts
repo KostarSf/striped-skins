@@ -213,11 +213,11 @@ test("antialiasing preserves material colors in viewer, editor and mini preview"
       await page.locator(".model-viewport canvas").screenshot();
       const before = await meanColor();
       expect(before.every(Number.isFinite)).toBe(true);
-      for (const enabled of [false, true, false, true]) {
+      for (const enabled of ["off", "msaa", "smaa"]) {
         const previous = await image(page);
         if (mode === "mini") await page.getByRole("button", { name: "Рядом", exact: true }).click();
         await page.locator(".view-options summary").click();
-        await page.getByRole("checkbox", { name: "Сглаживание", exact: true }).setChecked(enabled);
+        await page.getByLabel("Сглаживание", { exact: true }).selectOption(enabled);
         await page.keyboard.press("Escape");
         if (mode === "mini") await page.getByRole("button", { name: "2D", exact: true }).click();
         await expect.poll(() => image(page)).not.toBe(previous);
@@ -653,11 +653,10 @@ test("3D hovering previews brush color and synchronizes UV face/pixel without ch
   expect(errors).toEqual([]);
 });
 
-test("native MSAA switches contexts, preserves the view and survives projection changes", async ({
-  page,
-}) => {
+test("all AA modes preserve the view across context and projection changes", async ({ page }) => {
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
+  await page.addInitScript(() => localStorage.setItem("viewer.options.antialiasing", "msaa"));
   await enter(page, "/");
   const contextAA = () =>
     page
@@ -678,25 +677,19 @@ test("native MSAA switches contexts, preserves the view and survives projection 
   await page.waitForTimeout(400);
   const scale = await page.getByTestId("model-scale").textContent();
   const framed = (await coverage(page)).slice(0, 4);
-  const smooth = await image(page);
   await page.locator(".view-options summary").click();
-  await page.getByRole("checkbox", { name: "Сглаживание", exact: true }).uncheck();
-  await paintedFrame(page);
-  await expect.poll(() => image(page)).not.toBe(smooth);
-  expect(await contextAA()).toBe(false);
-  await expect(page.getByTestId("model-scale")).toHaveText(scale!);
-  expect(
-    Math.max(...(await coverage(page)).slice(0, 4).map((v, i) => Math.abs(v - framed[i]))),
-  ).toBeLessThanOrEqual(2);
-  const sharp = await image(page);
-  await page.getByRole("checkbox", { name: "Сглаживание", exact: true }).check();
-  await paintedFrame(page);
-  await expect.poll(() => image(page)).not.toBe(sharp);
-  expect(await contextAA()).toBe(true);
-  await expect(page.getByTestId("model-scale")).toHaveText(scale!);
-  expect(
-    Math.max(...(await coverage(page)).slice(0, 4).map((v, i) => Math.abs(v - framed[i]))),
-  ).toBeLessThanOrEqual(2);
+  for (const mode of ["off", "smaa", "msaa", "smaa", "off", "msaa"]) {
+    const previous = await image(page);
+    await page.getByLabel("Сглаживание", { exact: true }).selectOption(mode);
+    await paintedFrame(page);
+    await expect.poll(() => image(page)).not.toBe(previous);
+    expect(await contextAA()).toBe(mode === "msaa");
+    await expect(page.getByTestId("model-scale")).toHaveText(scale!);
+    expect(
+      Math.max(...(await coverage(page)).slice(0, 4).map((v, i) => Math.abs(v - framed[i]))),
+    ).toBeLessThanOrEqual(2);
+  }
+  const smooth = await image(page);
   await page.getByLabel("Ракурс модели").selectOption("orthographic");
   await expect.poll(() => image(page)).not.toBe(smooth);
   const ortho = await image(page);
@@ -733,13 +726,13 @@ test("3D brush preview matches every shared UV target shown by the 2D brush", as
 });
 
 for (const route of ["/", "/editor"]) {
-  test(`ground grid retains the unsmoothed line colors and contrast with MSAA on ${route}`, async ({
+  test(`ground grid retains the unsmoothed line colors and contrast with MSAA and SMAA on ${route}`, async ({
     page,
   }) => {
     await enter(page, route);
     const antialiased = await image(page);
     await page.locator(".view-options summary").click();
-    await page.getByRole("checkbox", { name: "Сглаживание", exact: true }).uncheck();
+    await page.getByLabel("Сглаживание", { exact: true }).selectOption("off");
     await paintedFrame(page);
     await page.keyboard.press("Escape");
     await expect.poll(() => image(page)).not.toBe(antialiased);
@@ -790,10 +783,10 @@ for (const route of ["/", "/editor"]) {
     const reference = await gridColors();
     expect(reference.count).toBeGreaterThan(100);
     expect(reference.levels[2] - reference.levels[0]).toBeGreaterThan(5);
-    for (const enabled of [true, false, true]) {
+    for (const enabled of ["msaa", "off", "smaa"]) {
       const previous = await image(page);
       await page.locator(".view-options summary").click();
-      await page.getByRole("checkbox", { name: "Сглаживание", exact: true }).setChecked(enabled);
+      await page.getByLabel("Сглаживание", { exact: true }).selectOption(enabled);
       await paintedFrame(page);
       await page.keyboard.press("Escape");
       await expect.poll(() => image(page)).not.toBe(previous);
@@ -947,18 +940,18 @@ test("editor view options share preferences, tool order and smaller foreground s
   }
   await page.locator(".view-options summary").click();
   await expect(page.getByRole("checkbox", { name: "Анимации", exact: true })).not.toBeChecked();
-  await page.getByRole("checkbox", { name: "Сглаживание", exact: true }).uncheck();
+  await page.getByLabel("Сглаживание", { exact: true }).selectOption("off");
   await page.getByRole("checkbox", { name: "Плавная камера", exact: true }).check();
   await page.keyboard.press("Escape");
   await expect(page.locator(".view-options")).not.toHaveAttribute("open", "");
   await page.getByRole("link", { name: "← Просмотрщик", exact: true }).click();
   await expect(tex(page)).toHaveCount(0);
   await page.locator(".view-options summary").click();
-  await expect(page.getByRole("checkbox", { name: "Сглаживание", exact: true })).not.toBeChecked();
+  await expect(page.getByLabel("Сглаживание", { exact: true })).toHaveValue("off");
   await expect(page.getByRole("checkbox", { name: "Плавная камера", exact: true })).toBeChecked();
   await page.reload();
   await page.locator(".view-options summary").click();
-  await expect(page.getByRole("checkbox", { name: "Сглаживание", exact: true })).not.toBeChecked();
+  await expect(page.getByLabel("Сглаживание", { exact: true })).toHaveValue("off");
 });
 
 test("mouse camera mapping works in rotation and brush modes without painting during navigation", async ({
@@ -1172,7 +1165,7 @@ test("viewer camera controls replace the title overlay and the view popup stays 
     expect(projection.y - host.y).toBeLessThanOrEqual(64);
     expect(popup.x).toBeGreaterThanOrEqual(host.x + 8);
     expect(popup.x + popup.width).toBeLessThanOrEqual(host.x + host.width - 8);
-    await expect(page.getByRole("checkbox", { name: "Сглаживание", exact: true })).toBeVisible();
+    await expect(page.getByLabel("Сглаживание", { exact: true })).toBeVisible();
   }
   await page.keyboard.press("Escape");
   await page.getByRole("button", { name: "Параметры скина", exact: true }).click();

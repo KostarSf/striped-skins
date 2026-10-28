@@ -3,7 +3,7 @@ import type { Plugin } from "vite";
 /** Fail the build if optional development tooling leaks into any output chunk. */
 export function productionBundleGuard(): Plugin {
   const forbidden =
-    /\/node_modules\/(?:r3f-perf|troika-[^/]+|bidi-js|webgl-sdf-generator|@stitches\/react|@radix-ui\/react-icons|postprocessing|@react-three\/postprocessing)\//;
+    /\/node_modules\/(?:r3f-perf|troika-[^/]+|bidi-js|webgl-sdf-generator|@stitches\/react|@radix-ui\/react-icons)\//;
   return {
     name: "production-bundle-guard",
     apply: "build",

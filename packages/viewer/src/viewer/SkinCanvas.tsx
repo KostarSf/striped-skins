@@ -2,6 +2,8 @@ import { Canvas, useThree, type CanvasProps } from "@react-three/fiber";
 import { forwardRef, useEffect, useRef, type MutableRefObject } from "react";
 import type CameraControls from "camera-controls";
 import type { WebGLRenderer } from "three";
+import { normalizeAntialiasing, type AntialiasingMode } from "../antialiasing.js";
+import { SmaaPipeline } from "./SmaaPipeline.js";
 
 type SavedView = { renderer: WebGLRenderer; key: string; controls: string };
 
@@ -42,12 +44,15 @@ function KeepView({
 
 export const SkinCanvas = forwardRef<
   HTMLCanvasElement,
-  Omit<CanvasProps, "gl"> & { antialiasing: boolean; viewKey: string }
+  Omit<CanvasProps, "gl"> & { antialiasing: AntialiasingMode | boolean; viewKey: string }
 >(function SkinCanvas({ antialiasing, viewKey, children, ...props }, ref) {
   const saved = useRef<SavedView | null>(null);
+  const mode = normalizeAntialiasing(antialiasing, "off");
+  const msaa = mode === "msaa";
   return (
-    <Canvas {...props} ref={ref} key={String(antialiasing)} gl={{ antialias: antialiasing }}>
+    <Canvas {...props} ref={ref} key={String(msaa)} gl={{ antialias: msaa }}>
       {children}
+      {mode === "smaa" ? <SmaaPipeline /> : null}
       <KeepView saved={saved} viewKey={viewKey} />
     </Canvas>
   );

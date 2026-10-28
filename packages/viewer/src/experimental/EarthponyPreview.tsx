@@ -16,6 +16,7 @@ import { GroundGrid } from "./GroundGrid.js";
 import { SkinCanvas } from "../viewer/SkinCanvas.js";
 import { PreviewLighting } from "./PreviewLighting.js";
 import type { ModelShading } from "../models/SkinMaterial.js";
+import type { AntialiasingMode } from "../antialiasing.js";
 export type PreviewStats = {
   calls: number;
   geometries: number;
@@ -24,7 +25,7 @@ export type PreviewStats = {
 };
 export type PonyPreviewProps = Partial<Omit<PreviewCameraProps, "painting" | "comparison">> & {
   children?: ReactNode;
-  antialiasing?: boolean;
+  antialiasing?: AntialiasingMode | boolean;
   groundGrid?: boolean;
   showUV?: boolean;
   shading?: ModelShading;

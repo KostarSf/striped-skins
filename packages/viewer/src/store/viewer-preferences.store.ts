@@ -1,5 +1,6 @@
 import { PonySkin } from "@striped-skins/api";
 import { createStore } from "zustand";
+import { normalizeAntialiasing } from "../antialiasing.js";
 import type { PonyStore } from "./index.js";
 import type {
   ViewerPreferences,
@@ -28,7 +29,7 @@ export const createViewerPreferencesStore = (
     },
     userOptions: {
       animations: true,
-      antialiasing: true,
+      antialiasing: "smaa",
       smoothCamera: true,
       groundGrid: true,
     },
@@ -46,6 +47,7 @@ export const createViewerPreferencesStore = (
     userOptions: {
       ...DEFAULT_PROPS.userOptions,
       ...initProps?.userOptions,
+      antialiasing: normalizeAntialiasing(initProps?.userOptions?.antialiasing),
     },
 
     defaultSkinError: null,
@@ -127,7 +129,13 @@ export const createViewerPreferencesStore = (
     setCamera: (prefs) => set((state) => ({ camera: { ...state.camera, ...prefs } })),
 
     setUserOptions: (prefs) =>
-      set((state) => ({ userOptions: { ...state.userOptions, ...prefs } })),
+      set((state) => ({
+        userOptions: {
+          ...state.userOptions,
+          ...prefs,
+          antialiasing: normalizeAntialiasing(prefs.antialiasing, state.userOptions.antialiasing),
+        },
+      })),
 
     setPerformanceMonitor: (state) => set(() => ({ performanceMonitor: state })),
   }));

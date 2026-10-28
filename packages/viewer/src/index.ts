@@ -1,4 +1,5 @@
 export { StripedViewer } from "./StripedViewer.js";
+export { normalizeAntialiasing, type AntialiasingMode } from "./antialiasing.js";
 export {
   StripedContextProvider,
   usePonyContext,

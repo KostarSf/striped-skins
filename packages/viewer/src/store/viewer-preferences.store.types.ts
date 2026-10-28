@@ -1,5 +1,6 @@
 import type { XyzArray } from "../viewer/models/primitives/index.js";
 import type { createViewerPreferencesStore } from "./viewer-preferences.store.js";
+import type { AntialiasingMode } from "../antialiasing.js";
 
 export type ViewerMode = "first-model" | "second-model" | "side-by-side";
 
@@ -26,7 +27,7 @@ export type CameraPreferences = {
 };
 
 export type UserOptionsPreferences = {
-  antialiasing: boolean;
+  antialiasing: AntialiasingMode;
   smoothCamera: boolean;
   animations: boolean;
   groundGrid: boolean;
@@ -34,7 +35,11 @@ export type UserOptionsPreferences = {
 
 export type ViewerPreferencesProps = Partial<Omit<ViewerPreferences, "camera" | "userOptions">> & {
   camera?: Partial<CameraPreferences>;
-  userOptions?: Partial<UserOptionsPreferences>;
+  userOptions?: UserOptionsInput;
+};
+
+export type UserOptionsInput = Partial<Omit<UserOptionsPreferences, "antialiasing">> & {
+  antialiasing?: AntialiasingMode | boolean;
 };
 
 export type ViewerPreferencesStoreState = ViewerPreferences & {
@@ -50,7 +55,7 @@ export type ViewerPreferencesStoreState = ViewerPreferences & {
   setMode: (mode: ViewerMode) => void;
   setCamera: (preferences: Partial<CameraPreferences>) => void;
   setPerformanceMonitor: (state: boolean) => void;
-  setUserOptions: (preferences: Partial<UserOptionsPreferences>) => void;
+  setUserOptions: (preferences: UserOptionsInput) => void;
 };
 
 export type ViewerPreferencesStore = ReturnType<typeof createViewerPreferencesStore>;
