@@ -3,6 +3,17 @@
 Mine Little Pony skin viewer, built with React Router Framework Mode, React and Three.js.
 The npm workspace also contains the skin API, React viewer and standalone browser bundle.
 
+Production viewer and site bundles exclude performance diagnostics and screen-space
+postprocessing. Skin materials use centroid UV interpolation so native MSAA does
+not sample neighboring atlas regions at transparent polygon edges. The shared
+antialiasing preference switches MSAA on/off while preserving the camera view.
+
+On the application dev server, add `?perf=1` to show the optional `r3f-perf`
+overlay (for example, `http://localhost:5173/?perf=1`). It is a root development
+dependency and is never imported by the viewer library or standalone bundle.
+Both production builds fail if the monitor, its font/UI dependencies, or the old
+postprocessing stack enter any output chunk, including lazy chunks.
+
 The viewer renders all MLP 1.20.1 races, sizes and accessories from vendored Mson
 data. Use **Редактировать** to open `/editor` for shared 2D/3D painting, metadata
 editing, part visibility and PNG export. `/model-lab` remains the Earthpony regression

@@ -7,6 +7,7 @@ export type ViewerPreferences = {
   defaultSkinUrl: string;
   firstSkinUrl: string | null;
   secondSkinUrl: string | null;
+  /** @deprecated Diagnostics are available only on the app dev server with ?perf=1. */
   performanceMonitor: boolean;
   mode: ViewerMode;
 

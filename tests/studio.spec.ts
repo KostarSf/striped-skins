@@ -63,6 +63,9 @@ async function enter(page: Page, path = "/editor") {
   await page.goto(path);
   await expect(page.locator("canvas").first()).toBeVisible();
   await expect(page.locator(".studio-loading-badge")).toHaveCount(0);
+  await paintedFrame(page);
+}
+async function paintedFrame(page: Page) {
   // Wait for a painted frame without creating the WebGL context ourselves.
   // Reading getContext('webgl2') before R3F initializes would silently enable default MSAA.
   await expect
@@ -650,7 +653,7 @@ test("3D hovering previews brush color and synchronizes UV face/pixel without ch
   expect(errors).toEqual([]);
 });
 
-test("antialiasing uses screen-space SMAA with no MSAA and survives projection changes", async ({
+test("native MSAA switches contexts, preserves the view and survives projection changes", async ({
   page,
 }) => {
   const errors: string[] = [];
@@ -662,15 +665,38 @@ test("antialiasing uses screen-space SMAA with no MSAA and survives projection c
       .evaluate(
         (c) => (c as HTMLCanvasElement).getContext("webgl2")!.getContextAttributes()!.antialias,
       );
-  expect(await contextAA()).toBe(false);
+  expect(await contextAA()).toBe(true);
+  await page.getByRole("button", { name: "Приблизить модель", exact: true }).click();
+  await page.getByRole("button", { name: "Приблизить модель", exact: true }).click();
+  const bounds = (await page.locator(".model-viewport canvas").boundingBox())!;
+  await page.mouse.move(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(bounds.x + bounds.width / 2 + 80, bounds.y + bounds.height / 2 + 25, {
+    steps: 8,
+  });
+  await page.mouse.up();
+  await page.waitForTimeout(400);
+  const scale = await page.getByTestId("model-scale").textContent();
+  const framed = (await coverage(page)).slice(0, 4);
   const smooth = await image(page);
   await page.locator(".view-options summary").click();
   await page.getByRole("checkbox", { name: "Сглаживание", exact: true }).uncheck();
+  await paintedFrame(page);
   await expect.poll(() => image(page)).not.toBe(smooth);
+  expect(await contextAA()).toBe(false);
+  await expect(page.getByTestId("model-scale")).toHaveText(scale!);
+  expect(
+    Math.max(...(await coverage(page)).slice(0, 4).map((v, i) => Math.abs(v - framed[i]))),
+  ).toBeLessThanOrEqual(2);
   const sharp = await image(page);
   await page.getByRole("checkbox", { name: "Сглаживание", exact: true }).check();
+  await paintedFrame(page);
   await expect.poll(() => image(page)).not.toBe(sharp);
-  expect(await contextAA()).toBe(false);
+  expect(await contextAA()).toBe(true);
+  await expect(page.getByTestId("model-scale")).toHaveText(scale!);
+  expect(
+    Math.max(...(await coverage(page)).slice(0, 4).map((v, i) => Math.abs(v - framed[i]))),
+  ).toBeLessThanOrEqual(2);
   await page.getByLabel("Ракурс модели").selectOption("orthographic");
   await expect.poll(() => image(page)).not.toBe(smooth);
   const ortho = await image(page);
@@ -707,16 +733,17 @@ test("3D brush preview matches every shared UV target shown by the 2D brush", as
 });
 
 for (const route of ["/", "/editor"]) {
-  test(`ground grid retains the unsmoothed line colors and contrast with SMAA on ${route}`, async ({
+  test(`ground grid retains the unsmoothed line colors and contrast with MSAA on ${route}`, async ({
     page,
   }) => {
     await enter(page, route);
     const antialiased = await image(page);
     await page.locator(".view-options summary").click();
     await page.getByRole("checkbox", { name: "Сглаживание", exact: true }).uncheck();
+    await paintedFrame(page);
     await page.keyboard.press("Escape");
     await expect.poll(() => image(page)).not.toBe(antialiased);
-    // SMAA can extend the model silhouette into previously transparent pixels.
+    // Antialiasing can extend the model silhouette into previously transparent pixels.
     // Keep a guard band around the model so those pixels cannot be counted as grid.
     const mask = await page.locator(".model-viewport canvas").evaluateHandle((c) => {
       const canvas = c as HTMLCanvasElement,
@@ -767,6 +794,7 @@ for (const route of ["/", "/editor"]) {
       const previous = await image(page);
       await page.locator(".view-options summary").click();
       await page.getByRole("checkbox", { name: "Сглаживание", exact: true }).setChecked(enabled);
+      await paintedFrame(page);
       await page.keyboard.press("Escape");
       await expect.poll(() => image(page)).not.toBe(previous);
       await expect

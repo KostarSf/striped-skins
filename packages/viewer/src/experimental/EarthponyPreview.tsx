@@ -1,8 +1,7 @@
-import { useCallback, useEffect, useRef, useState } from "react";
-import { Canvas, addAfterEffect, useThree, type ThreeEvent } from "@react-three/fiber";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { addAfterEffect, useThree, type ThreeEvent } from "@react-three/fiber";
 import { PreviewCamera, type PreviewCameraProps } from "./PreviewCamera.js";
 export type { CameraAction } from "./PreviewCamera.js";
-import { EffectComposer, SMAA } from "@react-three/postprocessing";
 import {
   TextureBrushPreview,
   surfaceHit,
@@ -14,7 +13,7 @@ import { type SkinDocument, type SkinMetadata, type Pixel } from "@striped-skins
 import { type BodySize, type PreviewSettings, type MotionLayer } from "@striped-skins/models";
 import { GeneratedPony } from "../models/GeneratedPony.js";
 import { GroundGrid } from "./GroundGrid.js";
-import { PremultipliedAlpha } from "./PremultipliedAlpha.js";
+import { SkinCanvas } from "../viewer/SkinCanvas.js";
 import { PreviewLighting } from "./PreviewLighting.js";
 import type { ModelShading } from "../models/SkinMaterial.js";
 export type PreviewStats = {
@@ -24,6 +23,7 @@ export type PreviewStats = {
   triangles: number;
 };
 export type PonyPreviewProps = Partial<Omit<PreviewCameraProps, "painting" | "comparison">> & {
+  children?: ReactNode;
   antialiasing?: boolean;
   groundGrid?: boolean;
   showUV?: boolean;
@@ -67,11 +67,6 @@ function ModelScene(props: PonyPreviewProps) {
   } = props;
   const gl = useThree((s) => s.gl),
     dragging = useRef(false);
-  const invalidate = useThree((s) => s.invalidate);
-  const invalidateComposer = useCallback(() => invalidate(), [invalidate]);
-  useEffect(() => {
-    invalidate();
-  }, [props.antialiasing, invalidate]);
   useEffect(() => {
     if (!onStats) return;
     return addAfterEffect(() =>
@@ -160,12 +155,6 @@ function ModelScene(props: PonyPreviewProps) {
         onScale={props.onScale}
         comparison={!!props.comparison}
       />
-      {props.antialiasing ? (
-        <EffectComposer ref={invalidateComposer} multisampling={0}>
-          <SMAA />
-          <PremultipliedAlpha />
-        </EffectComposer>
-      ) : null}
       {props.groundGrid ? <GroundGrid contextKey={contextKey} /> : null}
       {props.shading === "studio" ? <PreviewLighting /> : null}
       {brushHover && props.brushPreview !== false && !onSample && color[3] > 0 ? (
@@ -225,16 +214,17 @@ function ModelScene(props: PonyPreviewProps) {
 }
 export function PonyPreview(props: PonyPreviewProps) {
   return (
-    <Canvas
+    <SkinCanvas
       frameloop="demand"
       camera={{ position: [8, 4, 12], fov: 42 }}
-      gl={{ antialias: false }}
-      // SMAA renders without tone mapping. Keep direct rendering identical.
+      antialiasing={props.antialiasing ?? false}
+      viewKey={JSON.stringify([props.fitKey, props.projection, !!props.comparison])}
       flat
       aria-label="3D pony preview"
     >
       <ModelScene {...props} />
-    </Canvas>
+      {props.children}
+    </SkinCanvas>
   );
 }
 export function EarthponyPreview({ size, slim, ...props }: EarthponyPreviewProps) {

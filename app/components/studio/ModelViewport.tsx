@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
 import {
   PonyPreview,
   type PonyPreviewProps,
@@ -9,6 +9,9 @@ import { XMarkIcon } from "@heroicons/react/24/outline";
 import { ViewOptions } from "./ViewOptions";
 import { Button, DesignIcon, IconButton } from "./ui";
 import { useSkinDrop } from "./useSkinDrop";
+const DevPerformanceMonitor = import.meta.env.DEV
+  ? lazy(() => import("../DevPerformanceMonitor"))
+  : null;
 export function ModelViewport({
   title = "3D-модель",
   mini = false,
@@ -77,7 +80,13 @@ export function ModelViewport({
         cameraAction={action}
         projection={projection}
         onScale={reportScale}
-      />
+      >
+        {DevPerformanceMonitor && new URLSearchParams(location.search).get("perf") === "1" ? (
+          <Suspense fallback={null}>
+            <DevPerformanceMonitor />
+          </Suspense>
+        ) : null}
+      </PonyPreview>
       {drop.dragging ? (
         <div className="skin-drop-overlay">Отпустите PNG, чтобы открыть скин</div>
       ) : null}

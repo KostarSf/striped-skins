@@ -1,7 +1,6 @@
 import { CameraControls, PerspectiveCamera } from "@react-three/drei";
 import { useThree } from "@react-three/fiber";
-import { EffectComposer, SMAA } from "@react-three/postprocessing";
-import { useCallback, useEffect, type PropsWithChildren } from "react";
+import { useEffect, type PropsWithChildren } from "react";
 import { useViewerPreferencesContext } from "../../../store/index.js";
 import { useIsMobileView } from "../../context/mobile-view.context.js";
 import { useThreeCanvas } from "../../context/canvas-ref.context.js";
@@ -17,12 +16,6 @@ export function ScenePreferences({ children }: PropsWithChildren) {
     invalidate();
   }, [mode, userOptions, invalidate]);
 
-  // A camera change rebuilds the composer asynchronously. Render its new instance
-  // once the ref is attached, after its render callback and passes are committed.
-  const invalidateComposer = useCallback(() => {
-    invalidate();
-  }, [invalidate]);
-
   useEffect(() => {
     if (!canvas) return;
 
@@ -32,8 +25,6 @@ export function ScenePreferences({ children }: PropsWithChildren) {
     return () => canvas.removeEventListener("pointerdown", unfreezeView);
   }, [canvas, invalidate]);
 
-  const smaa = userOptions.antialiasing;
-
   return (
     <>
       {mode === "side-by-side" ? (
@@ -41,10 +32,6 @@ export function ScenePreferences({ children }: PropsWithChildren) {
       ) : (
         <SingleModeScenePreferences />
       )}
-
-      <EffectComposer ref={invalidateComposer} multisampling={0} enabled={smaa}>
-        <SMAA />
-      </EffectComposer>
 
       {children}
     </>
@@ -60,6 +47,7 @@ function SingleModeScenePreferences() {
     <>
       {!camera.static && (
         <CameraControls
+          makeDefault
           minDistance={camera.minDistance}
           maxDistance={camera.maxDistance}
           distance={camera.distance}
