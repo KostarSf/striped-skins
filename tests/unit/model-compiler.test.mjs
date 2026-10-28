@@ -108,6 +108,96 @@ test("plane and planar mirror flags use Mson face-local horizontal and vertical 
   }
 });
 
+test("Mson planar fixtures only lock an axis whose outward stretch enters a neighbour", () => {
+  const model = compileModel("joined-floor", () => ({
+    data: {
+      floor: {
+        type: "mson:planar",
+        dilate: 0.25,
+        down: [
+          [-4, 12, 2, 8, 4],
+          [-4, 12, 6, 8, 4],
+        ],
+      },
+    },
+  }));
+  const bounds = (quad) =>
+    [0, 1, 2].map((axis) => {
+      const values = quad.positions.filter((_, i) => i % 3 === axis);
+      return [Math.min(...values), Math.max(...values)];
+    });
+  // Reference: Mson 1.9.3 JsonPlanar.Fixtures and QuadsBuilder.plane.
+  // Sharing a Z edge must not shrink the unrelated X edges.
+  assert.deepEqual(model.nodes[0].quads.map(bounds), [
+    [
+      [-4.25, 4.25],
+      [12.25, 12.25],
+      [1.75, 6.25],
+    ],
+    [
+      [-4.25, 4.25],
+      [12.25, 12.25],
+      [6.25, 10.25],
+    ],
+  ]);
+});
+
+test("pony jacket panels meet at the same dilated edges as pinned Mson", () => {
+  const source = JSON.parse(
+    readFileSync(
+      new URL("../../model-sources/minelittlepony/models/steve_pony.json", import.meta.url),
+      "utf8",
+    ),
+  );
+  const jacket = compileModel("jacket", () => ({ data: { jacket: source.data.jacket } })).nodes[0];
+  const bounds = (quad) =>
+    [0, 1, 2].map((axis) => {
+      const values = quad.positions.filter((_, i) => i % 3 === axis);
+      return [Math.min(...values), Math.max(...values)];
+    });
+  for (const [name, x] of [
+    ["left_side", 4.25],
+    ["right_side", -4.25],
+  ]) {
+    const side = jacket.children.find((node) => node.id.endsWith(`/${name}`));
+    const panels = side.quads.map(bounds).filter((b) => b[0][0] === b[0][1]);
+    assert.deepEqual(panels, [
+      [
+        [x, x],
+        [3.75, 8.25],
+        [1.75, 10.25],
+      ],
+      [
+        [x, x],
+        [8.25, 12.25],
+        [1.75, 10.25],
+      ],
+      [
+        [x, x],
+        [3.75, 8.25],
+        [10.25, 14.25],
+      ],
+      [
+        [x, x],
+        [8.25, 12.25],
+        [10.25, 14.25],
+      ],
+    ]);
+  }
+  assert.deepEqual(jacket.children.find((n) => n.id.endsWith("/butt")).quads.map(bounds), [
+    [
+      [-4.25, 4.25],
+      [3.75, 8.25],
+      [14.25, 14.25],
+    ],
+    [
+      [-4.25, 4.25],
+      [8.25, 12.25],
+      [14.25, 14.25],
+    ],
+  ]);
+});
+
 test("Earthpony right flank mirrors body and cutie mark horizontally without flipping height", () => {
   const source = JSON.parse(
     readFileSync(
