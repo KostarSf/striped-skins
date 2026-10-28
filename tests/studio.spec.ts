@@ -653,6 +653,73 @@ test("3D hovering previews brush color and synchronizes UV face/pixel without ch
   expect(errors).toEqual([]);
 });
 
+test("3D hover shows the brush footprint in 2D clipped to the current face", async ({ page }) => {
+  await enter(page);
+  await page.getByLabel("Цвет кисти", { exact: true }).fill("#ff00ff");
+  await page.getByRole("button", { name: "Режим: вращение", exact: true }).click();
+  const point = { x: 0, y: 0 };
+  await expect
+    .poll(async () => {
+      const hit = await opaquePoint(page);
+      if (hit) Object.assign(point, hit);
+      return !!hit;
+    })
+    .toBe(true);
+  const initial = await tex(page).evaluate((c) => (c as HTMLCanvasElement).toDataURL());
+  const hover = page.getByTestId("uv-hover");
+  let clipped = false;
+  for (const size of [1, 4, 5, 32]) {
+    await page.getByLabel("Размер кисти", { exact: true }).fill(String(size));
+    await page.mouse.move(point.x, point.y);
+    await expect(hover).toBeVisible();
+    const expected = await hover.evaluate((el, size) => {
+      const [x, y] = el.getAttribute("data-pixel")!.split(",").map(Number);
+      const points = Array.from(el.querySelector("polygon")!.points);
+      const offset = Math.floor((size - 1) / 2);
+      const left = Math.max(0, x - offset, Math.min(...points.map((p) => p.x)));
+      const top = Math.max(0, y - offset, Math.min(...points.map((p) => p.y)));
+      const right = Math.min(64, x - offset + size, Math.max(...points.map((p) => p.x)));
+      const bottom = Math.min(64, y - offset + size, Math.max(...points.map((p) => p.y)));
+      return { x: left, y: top, width: right - left, height: bottom - top };
+    }, size);
+    for (const rect of await hover.locator("rect").all()) {
+      for (const [attribute, value] of Object.entries(expected))
+        expect(Number(await rect.getAttribute(attribute))).toBeCloseTo(value, 6);
+    }
+    clipped ||= expected.width < size || expected.height < size;
+    expect(await tex(page).evaluate((c) => (c as HTMLCanvasElement).toDataURL())).toBe(initial);
+    await expect(page.getByRole("button", { name: "Отменить штрих", exact: true })).toBeDisabled();
+    // A click must paint exactly the highlighted texels, without spilling onto adjacent faces.
+    await page.mouse.click(point.x, point.y);
+    const painted = await tex(page).evaluate((c) => {
+      const canvas = c as HTMLCanvasElement;
+      const pixels = canvas.getContext("2d")!.getImageData(0, 0, canvas.width, canvas.height).data;
+      const result: string[] = [];
+      for (let y = 0; y < canvas.height; y++)
+        for (let x = 0; x < canvas.width; x++) {
+          const i = (y * canvas.width + x) * 4;
+          if (
+            pixels[i] === 255 &&
+            pixels[i + 1] === 0 &&
+            pixels[i + 2] === 255 &&
+            pixels[i + 3] === 255
+          )
+            result.push(`${x},${y}`);
+        }
+      return result;
+    });
+    const highlighted: string[] = [];
+    for (let y = expected.y; y < expected.y + expected.height; y++)
+      for (let x = expected.x; x < expected.x + expected.width; x++) highlighted.push(`${x},${y}`);
+    expect(painted).toEqual(highlighted);
+    await page.keyboard.press("Control+z");
+    await expect
+      .poll(() => tex(page).evaluate((c) => (c as HTMLCanvasElement).toDataURL()))
+      .toBe(initial);
+  }
+  expect(clipped).toBe(true);
+});
+
 test("all AA modes preserve the view across context and projection changes", async ({ page }) => {
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
