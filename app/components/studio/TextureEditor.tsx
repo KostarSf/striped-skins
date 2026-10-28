@@ -6,6 +6,18 @@ import { Button, DesignIcon, IconButton } from "./ui";
 import { useSkinDrop } from "./useSkinDrop";
 export type PaintTool = "brush" | "eraser" | "drop" | "hand";
 type TouchPoint = { x: number; y: number };
+function hoverBrushRect(hover: SurfaceHover, width: number, height: number, size: number) {
+  const xs = hover.uv.filter((_, i) => i % 2 === 0).map((u) => u * width);
+  const ys = hover.uv.filter((_, i) => i % 2 === 1).map((v) => (1 - v) * height);
+  const left = hover.x - Math.floor((size - 1) / 2);
+  const top = hover.y - Math.floor((size - 1) / 2);
+  // Match the 3D preview: intersect the brush with the source UV face and texture.
+  const x = Math.max(0, Math.min(...xs), left);
+  const y = Math.max(0, Math.min(...ys), top);
+  const right = Math.min(width, Math.max(...xs), left + size);
+  const bottom = Math.min(height, Math.max(...ys), top + size);
+  return { x, y, width: Math.max(0, right - x), height: Math.max(0, bottom - y) };
+}
 export function TextureEditor({
   document: skin,
   color,
@@ -76,6 +88,7 @@ export function TextureEditor({
     Math.min((size.width - 64) / skin.width, (size.height - 112) / skin.height),
   );
   const scale = fit * zoom;
+  const hoverRect = hover ? hoverBrushRect(hover, skin.width, skin.height, brushSize) : null;
   const gridPath = useMemo(
     () =>
       Array.from({ length: skin.width + 1 }, (_, x) => `M${x} 0V${skin.height}`).join("") +
@@ -360,7 +373,7 @@ export function TextureEditor({
               />
             </svg>
           ) : null}
-          {uv && hover ? (
+          {uv && hover && hoverRect ? (
             <svg
               aria-hidden="true"
               className="texture-guides uv-hover"
@@ -393,24 +406,13 @@ export function TextureEditor({
                 strokeWidth={2 / scale}
               />
               <rect
-                x={hover.x}
-                y={hover.y}
-                width={1}
-                height={1}
+                {...hoverRect}
                 fill="white"
                 fillOpacity={0.5}
                 stroke="#101014"
                 strokeWidth={2 / scale}
               />
-              <rect
-                x={hover.x}
-                y={hover.y}
-                width={1}
-                height={1}
-                fill="none"
-                stroke="white"
-                strokeWidth={1 / scale}
-              />
+              <rect {...hoverRect} fill="none" stroke="white" strokeWidth={1 / scale} />
             </svg>
           ) : null}
           {cursor && tool !== "hand" && !space ? (
