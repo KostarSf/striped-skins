@@ -241,7 +241,30 @@ export function MobileEditorFooter({
               </select>
             </Field>
             <Field label="Цвет кисти">
-              <HexInput value={primary} onChange={onPrimary} />
+              <div className="brush-color-field">
+                <input
+                  type="color"
+                  aria-label="Пикер цвета кисти"
+                  value={primary}
+                  onChange={(event) => onPrimary(event.target.value)}
+                />
+                <HexInput value={primary} onChange={onPrimary} />
+              </div>
+            </Field>
+            <Field label="Дополнительный цвет">
+              <div className="brush-color-field">
+                <input
+                  type="color"
+                  aria-label="Пикер дополнительного цвета"
+                  value={secondary}
+                  onChange={(event) => onSecondary(event.target.value)}
+                />
+                <HexInput
+                  value={secondary}
+                  onChange={onSecondary}
+                  label="HEX дополнительного цвета"
+                />
+              </div>
             </Field>
           </>
         ) : null}

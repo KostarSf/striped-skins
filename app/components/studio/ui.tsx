@@ -122,15 +122,17 @@ export function Toggle({
 export function HexInput({
   value,
   onChange,
+  label = "HEX цвета кисти",
 }: {
   value: string;
   onChange: (value: string) => void;
+  label?: string;
 }) {
   const [draft, setDraft] = useState(value.toUpperCase());
   useEffect(() => setDraft(value.toUpperCase()), [value]);
   return (
     <input
-      aria-label="HEX цвета кисти"
+      aria-label={label}
       value={draft}
       maxLength={7}
       spellCheck={false}
