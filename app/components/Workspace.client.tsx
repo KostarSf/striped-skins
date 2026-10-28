@@ -17,6 +17,7 @@ import { XMarkIcon } from "@heroicons/react/24/outline";
 import { IconButton } from "./studio/ui";
 import { readSavedDocuments, recoverySnapshot, saveDocuments } from "../document-recovery";
 import { StudioSkeleton } from "./studio/StudioSkeleton";
+import { initialAntialiasing } from "../antialiasing";
 async function restore() {
   const saved = await readSavedDocuments();
   const params = new URLSearchParams(location.search);
@@ -133,7 +134,10 @@ export default function Workspace({ children }: { children: ReactNode }) {
         defaultSkinUrl: "/steve_pony.png",
         userOptions: {
           animations: !!(localStorage.getItem("viewer.options.animations") ?? true),
-          antialiasing: !!(localStorage.getItem("viewer.options.antialiasing") ?? true),
+          antialiasing: initialAntialiasing(
+            localStorage.getItem("viewer.options.antialiasing"),
+            navigator.userAgent,
+          ),
           smoothCamera: !!(localStorage.getItem("viewer.options.smoothCamera") ?? true),
           groundGrid: !!(localStorage.getItem("viewer.options.groundGrid") ?? true),
         },

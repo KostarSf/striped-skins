@@ -23,7 +23,7 @@ test("standalone viewer composes a registered pose and a finite clip, then retur
     window.framesDrawn=0;
     const draw=WebGL2RenderingContext.prototype.drawElements;
     WebGL2RenderingContext.prototype.drawElements=function(...args){window.framesDrawn++;return draw.apply(this,args)};
-    window.viewer=new window.StripedViewer({targetElement:'#viewer',viewerOptions:{defaultSkinUrl:'/steve_pony.png',userOptions:{animations:false,smoothCamera:false}}});
+    window.viewer=new window.StripedViewer({targetElement:'#viewer',viewerOptions:{defaultSkinUrl:'/steve_pony.png',userOptions:{antialiasing:"msaa",animations:false,smoothCamera:false}}});
     window.viewer.attach();
   </script></body></html>`,
     }),
@@ -35,6 +35,14 @@ test("standalone viewer composes a registered pose and a finite clip, then retur
       page.evaluate(() => Boolean((window as any).viewer?.pony.firstPony.skin.source.hasImage)),
     )
     .toBe(true);
+  await expect(page.locator("canvas")).toHaveAttribute("data-engine", /^three.js/);
+  expect(
+    await page
+      .locator("canvas")
+      .evaluate(
+        (c) => (c as HTMLCanvasElement).getContext("webgl2")!.getContextAttributes()!.antialias,
+      ),
+  ).toBe(true);
   await page.waitForTimeout(500);
   await page.evaluate(() => {
     const w = window as any;

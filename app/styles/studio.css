@@ -692,6 +692,17 @@ input[type="color"]::-webkit-color-swatch {
   padding: 10px 14px;
   box-shadow: 0 8px 24px #0006;
 }
+.view-options .aa-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+.view-options .aa-option select {
+  min-width: 90px;
+  padding: 5px 8px;
+}
 .model-viewport:has(.view-options[open]) .viewport-heading {
   z-index: 5;
 }

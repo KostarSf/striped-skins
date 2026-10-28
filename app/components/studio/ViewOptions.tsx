@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { Cog6ToothIcon } from "@heroicons/react/24/outline";
 import { useViewerPreferencesContext } from "../striped-viewer.client";
 import { Toggle } from "./ui";
+import type { AntialiasingMode } from "@striped-skins/viewer";
 
 /** The same persisted display preferences in the viewer and editor. */
 export function ViewOptions() {
@@ -32,10 +33,25 @@ export function ViewOptions() {
         <span>Вид</span>
       </summary>
       <div className="studio-panel">
+        <label className="aa-option">
+          <span>Сглаживание</span>
+          <select
+            aria-label="Сглаживание"
+            value={options.antialiasing}
+            onChange={(event) => {
+              const value = event.target.value as AntialiasingMode;
+              setOptions({ antialiasing: value });
+              localStorage.setItem("viewer.options.antialiasing", value);
+            }}
+          >
+            <option value="off">Выкл</option>
+            <option value="msaa">MSAA</option>
+            <option value="smaa">SMAA</option>
+          </select>
+        </label>
         {(
           [
             ["animations", "Анимации"],
-            ["antialiasing", "Сглаживание"],
             ["smoothCamera", "Плавная камера"],
             ["groundGrid", "Сетка под моделью"],
           ] as const
