@@ -11,6 +11,8 @@ import {
 } from "@heroicons/react/24/outline";
 import type { SkinDocument } from "@striped-skins/api";
 import { Button, IconButton } from "./ui";
+import { NumberSlider } from "./NumberSlider";
+import { LayerThumbnail } from "./LayerThumbnail";
 import { useDocumentSetting } from "./useDocumentSetting";
 
 export function LayerPanel({ document: skin }: { document: SkinDocument }) {
@@ -91,11 +93,7 @@ export function LayerPanel({ document: skin }: { document: SkinDocument }) {
               >
                 {collapsed.includes(node.id) ? "▸" : "▾"}
               </button>
-            ) : (
-              <span className="layer-symbol" aria-hidden="true">
-                ▧
-              </span>
-            )}
+            ) : null}
             <button
               type="button"
               className="layer-select"
@@ -104,7 +102,15 @@ export function LayerPanel({ document: skin }: { document: SkinDocument }) {
               onClick={() => skin.setActiveLayer(node.id)}
               title={node.name}
             >
-              {node.name}
+              {node.kind === "layer" && node.pixels ? (
+                <LayerThumbnail
+                  pixels={node.pixels}
+                  width={skin.width}
+                  height={skin.height}
+                  revision={skin.getLayerRevision(node.id)}
+                />
+              ) : null}
+              <span className="layer-name">{node.name}</span>
             </button>
             <span className="layer-opacity">{node.opacity}%</span>
             <IconButton
@@ -156,13 +162,15 @@ export function LayerPanel({ document: skin }: { document: SkinDocument }) {
         </label>
         <label className="layer-alpha">
           α{" "}
-          <input
-            aria-label="Непрозрачность слоя"
-            type="number"
+          <NumberSlider
+            label="Непрозрачность слоя"
             min={0}
             max={100}
+            unit="%"
             value={active.opacity}
-            onChange={(e) => skin.updateLayer(active.id, { opacity: +e.target.value })}
+            onChange={(opacity, interaction) =>
+              skin.updateLayer(active.id, { opacity }, interaction)
+            }
           />
           %
         </label>

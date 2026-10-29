@@ -1,3 +1,4 @@
+import { NumberSlider } from "./studio/NumberSlider";
 import {
   useCallback,
   useEffect,
@@ -510,14 +511,14 @@ export function SkinEditor({ skin, lab = false }: { skin: SkinDocument; lab?: bo
         <div className="flex flex-wrap items-center gap-2 text-sm">
           <label>
             Кисть{" "}
-            <input
-              aria-label="Размер кисти"
-              type="number"
-              min="1"
-              max="32"
+            <NumberSlider
+              label="Размер кисти"
+              min={1}
+              max={32}
+              unit=" px"
               className={`${inputClass} w-16`}
               value={brushSize}
-              onChange={(e) => setBrushSize(Math.max(1, Math.min(32, Number(e.target.value) || 1)))}
+              onChange={setBrushSize}
             />
           </label>
           <button

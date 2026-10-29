@@ -9,6 +9,7 @@ import {
   XMarkIcon,
 } from "@heroicons/react/24/outline";
 import type { SkinDocument } from "@striped-skins/api";
+import { NumberSlider } from "./NumberSlider";
 import type { PaintTool } from "./TextureEditor";
 import { Button, DesignIcon, Field, HexInput, IconButton } from "./ui";
 
@@ -209,13 +210,13 @@ export function MobileEditorFooter({
         </div>
         {tool === "brush" || tool === "eraser" ? (
           <Field label="Размер кисти · px">
-            <input
-              aria-label="Размер кисти"
-              type="number"
+            <NumberSlider
+              label="Размер кисти"
               min={1}
               max={32}
+              unit=" px"
               value={brushSize}
-              onChange={(e) => onBrushSize(Math.max(1, Math.min(32, +e.target.value || 1)))}
+              onChange={onBrushSize}
             />
           </Field>
         ) : (
@@ -227,18 +228,15 @@ export function MobileEditorFooter({
         )}
         {tool === "brush" ? (
           <>
-            <Field label="Непрозрачность">
-              <select
-                aria-label="Непрозрачность кисти"
+            <Field label="Непрозрачность · %">
+              <NumberSlider
+                label="Непрозрачность кисти"
+                min={0}
+                max={100}
+                unit="%"
                 value={opacity}
-                onChange={(e) => onOpacity(+e.target.value)}
-              >
-                {[25, 50, 75, 100].map((value) => (
-                  <option key={value} value={value}>
-                    {value}%
-                  </option>
-                ))}
-              </select>
+                onChange={onOpacity}
+              />
             </Field>
             <Field label="Цвет кисти">
               <div className="brush-color-field">

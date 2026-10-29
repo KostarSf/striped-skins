@@ -72,6 +72,8 @@ export class SkinDocument {
   private workspace: Record<string, WorkspaceValue> = {};
   private listeners = new Set<() => void>();
   private revision = 0;
+  private rasterRevisions = new Map<string, number>();
+  private historyInteraction: string | undefined;
   private stroke: { layerId: string | null; changes: Map<number, Change> } | null = null;
   private undoStack: Command[] = [];
   private redoStack: Command[] = [];
@@ -119,6 +121,12 @@ export class SkinDocument {
     };
   };
   getSnapshot = () => this.revision;
+  getLayerRevision(id: string) {
+    return this.rasterRevisions.get(id) ?? 0;
+  }
+  private rasterChanged(id: string) {
+    this.rasterRevisions.set(id, this.getLayerRevision(id) + 1);
+  }
   private emit() {
     this.revision++;
     this.listeners.forEach((listener) => listener());
@@ -188,7 +196,21 @@ export class SkinDocument {
     this.nodes = state.layers.map((n) => ({ ...n }));
     this.active = state.activeLayerId;
   }
-  private push(command: Command) {
+  private push(command: Command, interaction?: string) {
+    const previous = this.undoStack.at(-1);
+    if (
+      interaction &&
+      interaction === this.historyInteraction &&
+      previous?.kind === "structure" &&
+      command.kind === "structure" &&
+      previous.afterId === command.beforeId &&
+      !this.redoStack.length
+    ) {
+      command.before = previous.before;
+      command.beforeId = previous.beforeId;
+      this.undoStack.pop();
+    }
+    this.historyInteraction = interaction;
     this.undoStack.push(command);
     this.redoStack = [];
     this.stateId = command.afterId;
@@ -210,7 +232,7 @@ export class SkinDocument {
     )
       this.undoStack.shift();
   }
-  private changeStructure(label: string, update: () => void) {
+  private changeStructure(label: string, update: () => void, interaction?: string) {
     this.endStroke();
     const before = this.structure();
     update();
@@ -221,14 +243,17 @@ export class SkinDocument {
       before.activeLayerId === after.activeLayerId
     )
       return;
-    this.push({
-      kind: "structure",
-      label,
-      before,
-      after,
-      beforeId: this.stateId,
-      afterId: this.nextId++,
-    });
+    this.push(
+      {
+        kind: "structure",
+        label,
+        before,
+        after,
+        beforeId: this.stateId,
+        afterId: this.nextId++,
+      },
+      interaction,
+    );
     this.compose();
     this.emit();
   }
@@ -278,6 +303,7 @@ export class SkinDocument {
   updateLayer(
     id: string,
     patch: Partial<Pick<LayerNode, "name" | "visible" | "locked" | "alphaLocked" | "opacity">>,
+    interaction?: string,
   ) {
     const node = this.nodes.find((n) => n.id === id);
     if (!node) return;
@@ -285,9 +311,13 @@ export class SkinDocument {
     if (values.name !== undefined) values.name = values.name.trim().slice(0, 100) || node.name;
     if (values.opacity !== undefined)
       values.opacity = Math.max(0, Math.min(100, Math.round(values.opacity) || 0));
-    this.changeStructure("Свойства слоя", () => {
-      Object.assign(node, values);
-    });
+    this.changeStructure(
+      "Свойства слоя",
+      () => {
+        Object.assign(node, values);
+      },
+      interaction,
+    );
   }
   deleteLayer(id: string) {
     const ids = this.descendants(id);
@@ -527,6 +557,7 @@ export class SkinDocument {
         }
     this.lastPoint = { x, y, surface };
     if (dirty.maxX >= 0) {
+      this.rasterChanged(layer.id);
       this.compose(dirty);
       this.emit();
     }
@@ -554,6 +585,7 @@ export class SkinDocument {
   cancelStroke() {
     if (!this.stroke) return;
     const target = this.target(this.stroke.layerId)!;
+    if (this.stroke.layerId !== null) this.rasterChanged(this.stroke.layerId);
     this.stroke.changes.forEach((c) => target.set(c.before, c.index));
     this.stroke = null;
     this.lastPoint = null;
@@ -565,12 +597,14 @@ export class SkinDocument {
     else {
       const target = this.target(command.layerId)!;
       command.changes.forEach((c) => target.set(c[direction], c.index));
+      if (command.layerId !== null) this.rasterChanged(command.layerId);
     }
     this.stateId = direction === "before" ? command.beforeId : command.afterId;
     this.compose();
     this.emit();
   }
   undo() {
+    this.historyInteraction = undefined;
     this.endStroke();
     const c = this.undoStack.pop();
     if (c) {
@@ -579,6 +613,7 @@ export class SkinDocument {
     }
   }
   redo() {
+    this.historyInteraction = undefined;
     this.endStroke();
     const c = this.redoStack.pop();
     if (c) {

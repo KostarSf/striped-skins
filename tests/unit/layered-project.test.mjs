@@ -168,3 +168,45 @@ test("malformed projects, cyclic parents, bad history targets and invalid dimens
   assert.throws(() => decodeSkinProject(strToU8("broken")));
   assert.throws(() => decodeSkinProject(zipSync({ "project.json": strToU8('{"version":9}') })));
 });
+
+test("one numeric adjustment coalesces layer properties without merging separate edits or redo", () => {
+  const doc = fresh();
+  doc.updateLayer(doc.activeLayerId, { opacity: 75 }, "slider-1");
+  doc.updateLayer(doc.activeLayerId, { opacity: 50 }, "slider-1");
+  doc.updateLayer(doc.activeLayerId, { opacity: 25 }, "slider-1");
+  assert.equal(doc.history.length, 1);
+  const restored = decodeSkinProject(encodeSkinProject(doc));
+  restored.undo();
+  assert.equal(restored.activeLayer.opacity, 100);
+  restored.redo();
+  assert.equal(restored.activeLayer.opacity, 25);
+  doc.updateLayer(doc.activeLayerId, { opacity: 10 }, "slider-2");
+  doc.undo();
+  assert.equal(doc.activeLayer.opacity, 25);
+  doc.redo();
+  assert.equal(doc.activeLayer.opacity, 10);
+  doc.updateLayer(doc.activeLayerId, { opacity: 5 }, "slider-2");
+  assert.equal(doc.history.length, 3);
+});
+
+test("raster revisions follow painting, cancellation and undo but ignore workspace and opacity changes", () => {
+  const doc = fresh(),
+    id = doc.activeLayerId;
+  const initial = doc.getLayerRevision(id);
+  doc.setWorkspace("brushSize", 4);
+  doc.updateLayer(id, { opacity: 50 });
+  assert.equal(doc.getLayerRevision(id), initial);
+  paint(doc, red);
+  assert.ok(doc.getLayerRevision(id) > initial);
+  const painted = doc.getLayerRevision(id);
+  doc.undo();
+  assert.ok(doc.getLayerRevision(id) > painted);
+  const undone = doc.getLayerRevision(id);
+  doc.redo();
+  assert.ok(doc.getLayerRevision(id) > undone);
+  doc.beginStroke();
+  doc.paint(20, 20, blue);
+  const partial = doc.getLayerRevision(id);
+  doc.cancelStroke();
+  assert.ok(doc.getLayerRevision(id) > partial);
+});

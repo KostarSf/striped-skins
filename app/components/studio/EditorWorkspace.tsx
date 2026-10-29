@@ -24,6 +24,7 @@ import {
   MobileToolMenu,
   type MobileEditorView,
 } from "./MobileEditorControls";
+import { NumberSlider } from "./NumberSlider";
 import { LayerPanel, HistoryPanel } from "./LayerPanel";
 import { useDocumentSetting } from "./useDocumentSetting";
 import { usePhoneLayout } from "./usePhoneLayout";
@@ -282,29 +283,27 @@ export default function EditorWorkspace({
           <span className="toolbar-divider" />
           <label className="inline-field">
             Размер{" "}
-            <input
-              aria-label="Размер кисти"
-              type="number"
+            <NumberSlider
+              label="Размер кисти"
               min={1}
               max={32}
+              unit=" px"
               value={brushSize}
-              onChange={(e) => setBrushSize(Math.max(1, Math.min(32, +e.target.value || 1)))}
+              onChange={setBrushSize}
             />
             <span>px</span>
           </label>
           <label className="inline-field opacity-field">
             Непрозрачность{" "}
-            <select
-              aria-label="Непрозрачность кисти"
+            <NumberSlider
+              label="Непрозрачность кисти"
+              min={0}
+              max={100}
+              unit="%"
               value={opacity}
-              onChange={(e) => setOpacity(+e.target.value)}
-            >
-              {[25, 50, 75, 100].map((v) => (
-                <option key={v} value={v}>
-                  {v}%
-                </option>
-              ))}
-            </select>
+              onChange={setOpacity}
+            />
+            <span>%</span>
           </label>
           <div className="inline-controls">
             <IconButton

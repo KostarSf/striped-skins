@@ -121,7 +121,8 @@ test("touch tools update the floating icon, edit the same pixels across views, a
   await expect(page.getByLabel("Цвет кисти", { exact: true })).toHaveValue("#ff00ff");
   await page.getByRole("button", { name: "Параметры инструмента", exact: true }).tap();
   await page.getByLabel("Размер кисти", { exact: true }).fill("3");
-  await page.getByLabel("Непрозрачность кисти", { exact: true }).selectOption("50");
+  await page.getByLabel("Непрозрачность кисти", { exact: true }).fill("50");
+  await page.keyboard.press("Escape");
   await page.keyboard.press("Escape");
   await expect(
     page.getByRole("button", { name: "Параметры инструмента", exact: true }),
