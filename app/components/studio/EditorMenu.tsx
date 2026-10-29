@@ -86,7 +86,6 @@ export function EditorMenu({
           </Button>
         </div>
       </details>
-      <span className="editor-menu-hint">Слой: {skin.activeLayer.name}</span>
     </nav>
   );
 }

@@ -89,6 +89,22 @@ function Viewport({ texture = false, viewer = false }: { texture?: boolean; view
     </div>
   );
 }
+function SkeletonPalette({ rail = false }: { rail?: boolean }) {
+  return (
+    <div className="palette-panel">
+      <div className="skin-palette">
+        {!rail ? <Bone width={80} height={7} /> : null}
+        <div>
+          {[0, 1, 2, 3, 4, 5, 6, 7].map((i) => (
+            <span key={i} className="palette-entry">
+              <Bone width={22} height={22} />
+            </span>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
 function EditorBody() {
   return (
     <>
@@ -124,11 +140,19 @@ function EditorBody() {
               <Bone width={18} height={18} />
             </span>
           ))}
-          <span className="rail-divider" />
-          <Bone width={30} height={30} />
-          <Bone width={18} height={18} />
-          <span className="rail-spacer" />
-          <Bone width={18} height={18} />
+          <div className="rail-bottom">
+            <div className="rail-color-controls">
+              <Bone width={38} height={38} />
+              <div className="rail-color-actions">
+                {[0, 1].map((i) => (
+                  <span key={i} className="icon-button skeleton-tool">
+                    <Bone width={18} height={18} />
+                  </span>
+                ))}
+              </div>
+            </div>
+            <SkeletonPalette rail />
+          </div>
         </div>
         <div className="editor-center">
           <div className="editor-views">
@@ -137,16 +161,7 @@ function EditorBody() {
               <Viewport texture />
             </div>
           </div>
-          <div className="palette-panel">
-            <div className="skin-palette">
-              <Bone width={80} height={7} />
-              <div>
-                {[0, 1, 2, 3, 4, 5, 6, 7].map((i) => (
-                  <Bone key={i} width={22} height={22} />
-                ))}
-              </div>
-            </div>
-          </div>
+          <SkeletonPalette />
         </div>
         <div className="inspector studio-panel editor-inspector">
           <div className="inspector-tabs">

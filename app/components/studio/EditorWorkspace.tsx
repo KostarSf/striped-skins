@@ -282,6 +282,42 @@ export default function EditorWorkspace({
     [],
   );
   const onPaint = useCallback((p: { x: number; y: number; part: string }) => setLastPixel(p), []);
+  const palettePanel = (
+    <section className="palette-panel" aria-label="Палитра скина">
+      <div className="skin-palette">
+        {isPhone ? <small>Палитра скина</small> : null}
+        <div>
+          {[...new Set([...palette, ...customColors])]
+            .filter((c) => !removedColors.has(c))
+            .map((c) => (
+              <span className="palette-entry" key={c}>
+                <button
+                  type="button"
+                  aria-label={`Цвет ${c}`}
+                  title={c}
+                  className="palette-swatch"
+                  style={{ background: c }}
+                  onClick={() => {
+                    setHex(c);
+                    setTool("brush");
+                  }}
+                />
+                <button
+                  type="button"
+                  className="palette-remove"
+                  aria-label={`Удалить цвет ${c}`}
+                  title="Удалить из палитры"
+                  onClick={() => setRemovedColors((v) => new Set([...v, c]))}
+                >
+                  ×
+                </button>
+              </span>
+            ))}
+          {isPhone ? <Button onClick={addColor}>+ Цвет</Button> : null}
+        </div>
+      </div>
+    </section>
+  );
   return (
     <>
       {!isPhone ? (
@@ -385,20 +421,25 @@ export default function EditorWorkspace({
                 <DesignIcon name={id} />
               </IconButton>
             ))}
-            <span className="rail-divider" />
-            <BrushColors
-              primary={hex}
-              secondary={colors.secondary}
-              onPrimary={setHex}
-              onSecondary={setSecondary}
-            />
-            <IconButton label="Поменять цвета · X" onClick={swapColors}>
-              ⇄
-            </IconButton>
-            <span className="rail-spacer" />
-            <IconButton label="Добавить цвет в палитру" onClick={addColor}>
-              <DesignIcon name="plus" />
-            </IconButton>
+            <div className="rail-bottom">
+              <div className="rail-color-controls">
+                <BrushColors
+                  primary={hex}
+                  secondary={colors.secondary}
+                  onPrimary={setHex}
+                  onSecondary={setSecondary}
+                />
+                <div className="rail-color-actions">
+                  <IconButton label="Поменять цвета · X" onClick={swapColors}>
+                    ⇄
+                  </IconButton>
+                  <IconButton label="Добавить цвет в палитру" onClick={addColor}>
+                    <DesignIcon name="plus" />
+                  </IconButton>
+                </div>
+              </div>
+              {palettePanel}
+            </div>
           </aside>
         ) : null}
         <div className="editor-center">
@@ -462,40 +503,7 @@ export default function EditorWorkspace({
               <MobileToolMenu tool={tool} lastTool={lastPaintTool} onTool={selectTool} />
             ) : null}
           </div>
-          <div className="palette-panel">
-            <div className="skin-palette">
-              <small>Палитра скина</small>
-              <div>
-                {[...new Set([...palette, ...customColors])]
-                  .filter((c) => !removedColors.has(c))
-                  .map((c) => (
-                    <span className="palette-entry" key={c}>
-                      <button
-                        type="button"
-                        aria-label={`Цвет ${c}`}
-                        title={c}
-                        className="palette-swatch"
-                        style={{ background: c }}
-                        onClick={() => {
-                          setHex(c);
-                          setTool("brush");
-                        }}
-                      />
-                      <button
-                        type="button"
-                        className="palette-remove"
-                        aria-label={`Удалить цвет ${c}`}
-                        title="Удалить из палитры"
-                        onClick={() => setRemovedColors((v) => new Set([...v, c]))}
-                      >
-                        ×
-                      </button>
-                    </span>
-                  ))}
-                <Button onClick={addColor}>+ Цвет</Button>
-              </div>
-            </div>
-          </div>
+          {isPhone ? palettePanel : null}
         </div>
         <aside className="inspector studio-panel editor-inspector" aria-label="Параметры документа">
           <div className="inspector-tabs" role="tablist" aria-label="Разделы документа">

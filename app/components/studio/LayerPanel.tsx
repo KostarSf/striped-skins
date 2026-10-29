@@ -353,7 +353,6 @@ export function HistoryPanel({ document: skin }: { document: SkinDocument }) {
             <li key={`${skin.history.length - i}-${label}`}>{label}</li>
           ))}
       </ol>
-      <small>До 100 операций; история включена в проект.</small>
     </details>
   );
 }

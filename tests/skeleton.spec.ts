@@ -39,7 +39,8 @@ for (const [path, mode] of [
     if (mode === "editor") {
       await expect(skeleton.locator('[data-skeleton-panel="texture"]')).toBeVisible();
       await expect(skeleton.locator(".tool-rail")).toBeVisible();
-      await expect(skeleton.locator(".palette-panel")).toBeVisible();
+      await expect(skeleton.locator(".tool-rail .palette-panel")).toBeVisible();
+      await expect(skeleton.locator(".editor-center > .palette-panel")).toBeHidden();
       await expect(skeleton.locator(".inspector")).toBeVisible();
     }
     // Let hydration replace its SSR fallback before recording the placeholder geometry.
