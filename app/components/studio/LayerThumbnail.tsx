@@ -1,6 +1,6 @@
 import { memo, useEffect, useRef } from "react";
 
-/** Pixels are mutable: revision changes only when this raster changes, not on workspace edits. */
+/** Mutable pixels: revision commits at stroke end so live painting skips thumbnail renders. */
 export const LayerThumbnail = memo(function LayerThumbnail({
   pixels,
   width,

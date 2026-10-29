@@ -189,15 +189,25 @@ test("one numeric adjustment coalesces layer properties without merging separate
   assert.equal(doc.history.length, 3);
 });
 
-test("raster revisions follow painting, cancellation and undo but ignore workspace and opacity changes", () => {
+test("raster revisions commit once per stroke and follow cancellation/undo, ignoring workspace edits", () => {
   const doc = fresh(),
     id = doc.activeLayerId;
   const initial = doc.getLayerRevision(id);
   doc.setWorkspace("brushSize", 4);
   doc.updateLayer(id, { opacity: 50 });
   assert.equal(doc.getLayerRevision(id), initial);
-  paint(doc, red);
-  assert.ok(doc.getLayerRevision(id) > initial);
+  doc.beginStroke();
+  doc.paint(20, 20, red);
+  assert.equal(doc.getLayerRevision(id), initial);
+  assert.deepEqual(doc.readPixel(20, 20), [255, 0, 0, 128]);
+  doc.paint(21, 20, blue);
+  assert.equal(doc.getLayerRevision(id), initial);
+  assert.deepEqual(doc.readPixel(21, 20), [0, 0, 255, 128]);
+  doc.endStroke();
+  assert.equal(doc.getLayerRevision(id), initial + 1);
+  doc.beginStroke();
+  doc.endStroke();
+  assert.equal(doc.getLayerRevision(id), initial + 1);
   const painted = doc.getLayerRevision(id);
   doc.undo();
   assert.ok(doc.getLayerRevision(id) > painted);

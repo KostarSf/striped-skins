@@ -121,6 +121,7 @@ export class SkinDocument {
     };
   };
   getSnapshot = () => this.revision;
+  /** Completed raster edits; live strokes still notify composite subscribers. */
   getLayerRevision(id: string) {
     return this.rasterRevisions.get(id) ?? 0;
   }
@@ -557,7 +558,6 @@ export class SkinDocument {
         }
     this.lastPoint = { x, y, surface };
     if (dirty.maxX >= 0) {
-      this.rasterChanged(layer.id);
       this.compose(dirty);
       this.emit();
     }
@@ -570,7 +570,8 @@ export class SkinDocument {
       );
     this.stroke = null;
     this.lastPoint = null;
-    if (changes.length)
+    if (changes.length) {
+      if (layerId !== null) this.rasterChanged(layerId);
       this.push({
         kind: "pixels",
         label,
@@ -579,6 +580,7 @@ export class SkinDocument {
         beforeId: this.stateId,
         afterId: this.nextId++,
       });
+    }
     if (layerId === null) this.compose();
     this.emit();
   }

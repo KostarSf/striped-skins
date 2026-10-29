@@ -23,7 +23,7 @@ async function selected(page: Page, label: string) {
   return field;
 }
 
-test("layer thumbnails crop nontransparent pixels, preserve aspect ratio, and update through erase/undo", async ({
+test("layer thumbnails crop nontransparent pixels, wait for stroke end, and update through erase/undo", async ({
   page,
 }) => {
   const pixels = new Uint8ClampedArray(64 * 64 * 4);
@@ -55,7 +55,26 @@ test("layer thumbnails crop nontransparent pixels, preserve aspect ratio, and up
   await page.getByRole("button", { name: "Показать слой Основа", exact: true }).click();
   await page.getByRole("button", { name: "Ластик · E", exact: true }).click();
   const box = (await page.getByTestId("skin-texture").boundingBox())!;
-  await page.mouse.click(box.x + (box.width * 20.5) / 64, box.y + (box.height * 20.5) / 64);
+  const beforeStroke = await thumbnail.evaluate((canvas) =>
+    (canvas as HTMLCanvasElement).toDataURL(),
+  );
+  await page.mouse.move(box.x + (box.width * 20.5) / 64, box.y + (box.height * 20.5) / 64);
+  await page.mouse.down();
+  await expect
+    .poll(() =>
+      page
+        .getByTestId("skin-texture")
+        .evaluate(
+          (canvas) =>
+            (canvas as HTMLCanvasElement).getContext("2d")!.getImageData(20, 20, 1, 1).data[3],
+        ),
+    )
+    .toBe(0);
+  await expect(thumbnail).toHaveAttribute("data-bounds", "20,20,3,1");
+  expect(await thumbnail.evaluate((canvas) => (canvas as HTMLCanvasElement).toDataURL())).toBe(
+    beforeStroke,
+  );
+  await page.mouse.up();
   await expect(thumbnail).toHaveAttribute("data-bounds", "21,20,2,1");
   await page.getByRole("button", { name: "Отменить штрих", exact: true }).click();
   await expect(thumbnail).toHaveAttribute("data-bounds", "20,20,3,1");
@@ -65,6 +84,18 @@ test("layer thumbnails crop nontransparent pixels, preserve aspect ratio, and up
   await expect(page.locator('.layer-row[data-active="true"] canvas')).toHaveAttribute(
     "data-empty",
     "true",
+  );
+  await page.getByRole("button", { name: "Кисть · B", exact: true }).click();
+  await page.mouse.move(box.x + (box.width * 20.5) / 64, box.y + (box.height * 20.5) / 64);
+  await page.mouse.down();
+  await expect(page.locator('.layer-row[data-active="true"] canvas')).toHaveAttribute(
+    "data-empty",
+    "true",
+  );
+  await page.mouse.up();
+  await expect(page.locator('.layer-row[data-active="true"] canvas')).toHaveAttribute(
+    "data-empty",
+    "false",
   );
 });
 
