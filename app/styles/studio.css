@@ -2197,6 +2197,7 @@ input[type="color"]::-webkit-color-swatch {
   border-radius: 5px;
 }
 .layer-row {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 2px;
@@ -2205,6 +2206,35 @@ input[type="color"]::-webkit-color-swatch {
 }
 .layer-row[data-active="true"] {
   background: var(--studio-accent-bg);
+}
+.layer-row[data-dragging="true"] {
+  opacity: 0.45;
+}
+.layer-drop-indicator {
+  position: absolute;
+  right: 3px;
+  height: 2px;
+  z-index: 1;
+  background: var(--studio-accent);
+  pointer-events: none;
+}
+.layer-drop-indicator[data-edge="top"] {
+  top: 0;
+}
+.layer-drop-indicator[data-edge="bottom"] {
+  bottom: 0;
+}
+.layer-drop-indicator::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: -2px;
+  width: 6px;
+  height: 6px;
+  box-sizing: border-box;
+  border: 2px solid var(--studio-accent);
+  border-radius: 50%;
+  background: var(--studio-panel);
 }
 .layer-select {
   flex: 1;
