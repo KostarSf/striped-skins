@@ -59,12 +59,13 @@ export function TextureEditor({
     [grid, setGrid] = useDocumentSetting<boolean>(skin, "pixelGrid", true),
     [space, setSpace] = useState(false),
     [cursor, storeCursor] = useState<{ x: number; y: number } | null>(null);
+  const paintBlocked = tool !== "drop" && !!skin.paintBlockedReason;
   const setCursor = useCallback((pixel: { x: number; y: number } | null) => {
     storeCursor((old) => (old?.x === pixel?.x && old?.y === pixel?.y ? old : pixel));
   }, []);
   useEffect(() => {
-    onHover?.(tool === "brush" && !space ? cursor : null);
-  }, [cursor, tool, space, onHover]);
+    onHover?.(tool === "brush" && !space && !paintBlocked ? cursor : null);
+  }, [cursor, tool, space, paintBlocked, onHover]);
   useEffect(() => {
     const clear = () => {
       skin.cancelStroke();
@@ -235,7 +236,7 @@ export function TextureEditor({
       </div>
       <div
         ref={area}
-        className={`texture-area ${tool === "hand" || space ? "panning" : ""}`}
+        className={`texture-area ${tool === "hand" || space ? "panning" : paintBlocked ? "painting-blocked" : ""}`}
         onContextMenu={(e) => e.preventDefault()}
         onPointerDown={(e) => {
           if (e.pointerType === "touch") {
@@ -416,7 +417,7 @@ export function TextureEditor({
               <rect {...hoverRect} fill="none" stroke="white" strokeWidth={1 / scale} />
             </svg>
           ) : null}
-          {cursor && tool !== "hand" && !space ? (
+          {cursor && tool !== "hand" && !space && !paintBlocked ? (
             <div
               className="brush-cursor"
               style={{

@@ -45,6 +45,32 @@ export function ModelViewport({
     props.comparison?.preview,
   ]);
   const host = useRef<HTMLElement>(null);
+  const cameraPointer = useRef<number | null>(null);
+  const [cameraDragging, setCameraDragging] = useState(false);
+  const cameraButtons = props.painting ? 6 : 7;
+  const paintBlocked = !props.onSample && !!props.document.paintBlockedReason;
+  useEffect(() => {
+    const release = (event: PointerEvent) => {
+      if (event.pointerId !== cameraPointer.current) return;
+      const dragging = event.type !== "pointercancel" && !!(event.buttons & cameraButtons);
+      setCameraDragging(dragging);
+      if (event.type === "pointercancel" || !event.buttons) cameraPointer.current = null;
+    };
+    const clear = () => {
+      cameraPointer.current = null;
+      setCameraDragging(false);
+    };
+    window.addEventListener("pointerup", release, true);
+    window.addEventListener("pointercancel", release, true);
+    window.addEventListener("pointermove", release, true);
+    window.addEventListener("blur", clear);
+    return () => {
+      window.removeEventListener("pointerup", release, true);
+      window.removeEventListener("pointercancel", release, true);
+      window.removeEventListener("pointermove", release, true);
+      window.removeEventListener("blur", clear);
+    };
+  }, [cameraButtons]);
   const scaleOutput = useRef<HTMLSpanElement>(null);
   const reportScale = useCallback((scale: number) => {
     // Camera motion is transient; update the readout without rebuilding the React scene.
@@ -97,6 +123,21 @@ export function ModelViewport({
       ref={host}
       className={`model-viewport ${mini ? "mini-preview" : ""} ${maximized ? "maximized" : ""}`}
       aria-label="Предпросмотр модели"
+      data-cursor={
+        cameraDragging
+          ? "grabbing"
+          : props.painting
+            ? paintBlocked
+              ? "not-allowed"
+              : "crosshair"
+            : "grab"
+      }
+      onPointerDownCapture={(event) => {
+        if (event.target instanceof HTMLCanvasElement && event.pointerType !== "touch") {
+          cameraPointer.current = event.pointerId;
+          setCameraDragging(!!(event.buttons & cameraButtons));
+        }
+      }}
       {...drop.handlers}
     >
       <PonyPreview

@@ -235,6 +235,16 @@ button:disabled {
 }
 .model-viewport canvas {
   touch-action: none;
+  cursor: grab;
+}
+.model-viewport[data-cursor="crosshair"] canvas {
+  cursor: crosshair;
+}
+.model-viewport[data-cursor="not-allowed"] canvas {
+  cursor: not-allowed;
+}
+.model-viewport[data-cursor="grabbing"] canvas {
+  cursor: grabbing;
 }
 .viewport-heading {
   position: absolute;
@@ -969,6 +979,9 @@ input[type="color"]::-webkit-color-swatch {
 }
 .texture-area.panning {
   cursor: grab;
+}
+.texture-area.painting-blocked {
+  cursor: not-allowed;
 }
 .texture-area.panning:active {
   cursor: grabbing;
