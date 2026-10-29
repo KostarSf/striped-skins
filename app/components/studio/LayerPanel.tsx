@@ -1,4 +1,4 @@
-import { useState, useSyncExternalStore } from "react";
+import { useRef, useState, useSyncExternalStore } from "react";
 import {
   DocumentDuplicateIcon,
   EyeIcon,
@@ -19,6 +19,7 @@ export function LayerPanel({ document: skin }: { document: SkinDocument }) {
   useSyncExternalStore(skin.subscribe, skin.getSnapshot, skin.getSnapshot);
   const [collapsed, setCollapsed] = useDocumentSetting<string[]>(skin, "collapsedGroups", []);
   const [error, setError] = useState("");
+  const firstNameClick = useRef(false);
   const active = skin.activeLayer;
   const run = (action: () => unknown) => {
     try {
@@ -120,6 +121,26 @@ export function LayerPanel({ document: skin }: { document: SkinDocument }) {
             >
               {node.locked ? <LockClosedIcon /> : <LockOpenIcon />}
             </IconButton>
+            {node.kind === "layer" ? (
+              <IconButton
+                label={`Блокировать прозрачность ${node.name}`}
+                aria-pressed={node.alphaLocked}
+                onClick={() => skin.updateLayer(node.id, { alphaLocked: !node.alphaLocked })}
+              >
+                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M9 3h6v6H9zM3 9h6v6H3zM15 9h6v6h-6zM9 15h6v6H9z" fill="#808080" />
+                  <rect
+                    x="3"
+                    y="3"
+                    width="18"
+                    height="18"
+                    rx="3"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                  />
+                </svg>
+              </IconButton>
+            ) : null}
           </div>
           {node.kind === "group" && !collapsed.includes(node.id) ? rows(node.id, depth + 1) : null}
         </div>
@@ -154,7 +175,20 @@ export function LayerPanel({ document: skin }: { document: SkinDocument }) {
             aria-label="Имя слоя"
             defaultValue={active.name}
             key={`${active.id}-${active.name}`}
-            onBlur={(e) => skin.updateLayer(active.id, { name: e.target.value })}
+            onFocus={(e) => {
+              e.currentTarget.select();
+              firstNameClick.current = true;
+            }}
+            onClick={(e) => {
+              if (firstNameClick.current) {
+                e.currentTarget.select();
+                firstNameClick.current = false;
+              }
+            }}
+            onBlur={(e) => {
+              firstNameClick.current = false;
+              skin.updateLayer(active.id, { name: e.target.value });
+            }}
             onKeyDown={(e) => {
               if (e.key === "Enter") e.currentTarget.blur();
             }}
@@ -189,17 +223,6 @@ export function LayerPanel({ document: skin }: { document: SkinDocument }) {
             ))}
           </select>
         </label>
-        {active.kind === "layer" ? (
-          <label className="layer-alpha-lock">
-            <input
-              type="checkbox"
-              aria-label="Блокировать прозрачность"
-              checked={active.alphaLocked}
-              onChange={(e) => skin.updateLayer(active.id, { alphaLocked: e.target.checked })}
-            />
-            Блокировать прозрачность
-          </label>
-        ) : null}
       </div>
       <div className="layer-actions">
         <IconButton
