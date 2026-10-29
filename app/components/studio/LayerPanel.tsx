@@ -128,7 +128,10 @@ export function LayerPanel({ document: skin }: { document: SkinDocument }) {
                 onClick={() => skin.updateLayer(node.id, { alphaLocked: !node.alphaLocked })}
               >
                 <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                  <path d="M9 3h6v6H9zM3 9h6v6H3zM15 9h6v6h-6zM9 15h6v6H9z" fill="#808080" />
+                  <path
+                    d="M9 3h6v6H9zM3 9h6v6H3zM15 9h6v6h-6zM9 15h6v6H9z"
+                    fill={node.alphaLocked ? "currentColor" : "#808080"}
+                  />
                   <rect
                     x="3"
                     y="3"
