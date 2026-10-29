@@ -5,7 +5,10 @@ export default defineConfig({
   testMatch: "**/*.spec.ts",
   fullyParallel: false,
   workers: 1,
-  timeout: 30_000,
+  timeout: process.env.CI ? 60_000 : 30_000,
+  // SwiftShader can block the page during scene initialization on hosted runners,
+  // including the first evaluation of an otherwise immediately correct predicate.
+  expect: { timeout: 15_000 },
   use: {
     baseURL: "http://127.0.0.1:3100",
     viewport: { width: 1000, height: 800 },

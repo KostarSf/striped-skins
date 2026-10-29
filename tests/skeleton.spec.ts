@@ -1,6 +1,13 @@
 import { test, expect } from "@playwright/test";
 
 test.use({ viewport: { width: 1440, height: 1000 } });
+test.beforeEach(async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem("viewer.options.animations", "");
+    localStorage.setItem("viewer.options.smoothCamera", "");
+    localStorage.setItem("viewer.options.antialiasing", "off");
+  });
+});
 for (const [path, mode] of [
   ["/", "viewer"],
   ["/editor", "editor"],
@@ -88,19 +95,24 @@ test("viewer to editor shows the destination skeleton while the route module is 
 test("lazy editor workspace keeps the real header and replaces the skeleton without losing the document", async ({
   page,
 }) => {
+  let release!: () => void;
+  let held!: () => void;
+  const blocked = new Promise<void>((resolve) => (held = resolve));
+  const gate = new Promise<void>((resolve) => (release = resolve));
+  // Intercept before loading the viewer, so module preloading cannot bypass the gate.
+  await page.route("**/assets/EditorWorkspace-*.js", async (route) => {
+    held();
+    await gate;
+    await route.continue();
+  });
   await page.goto("/");
   await expect(page.locator(".model-viewport canvas")).toBeVisible();
   await expect(page.getByTestId("studio-skeleton")).toHaveCount(0);
   await page.getByRole("button", { name: "Параметры скина", exact: true }).click();
   await page.getByLabel("Раса", { exact: true }).selectOption("KIRIN");
   await page.getByRole("button", { name: "Закрыть параметры", exact: true }).click();
-  let release!: () => void;
-  const gate = new Promise<void>((resolve) => (release = resolve));
-  await page.route("**/assets/EditorWorkspace-*.js", async (route) => {
-    await gate;
-    await route.continue();
-  });
   await page.getByRole("link", { name: "Редактировать", exact: true }).click();
+  await blocked;
   const skeleton = page.getByTestId("studio-skeleton");
   await expect(skeleton).toBeVisible();
   await expect(skeleton).toHaveAttribute("data-mode", "editor");
