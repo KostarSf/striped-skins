@@ -56,9 +56,11 @@ export function BrushColors({
 
 export function MobileToolMenu({
   tool,
+  lastTool,
   onTool,
 }: {
   tool: PaintTool;
+  lastTool: Exclude<PaintTool, "hand">;
   onTool: (tool: PaintTool) => void;
 }) {
   const host = useRef<HTMLDetailsElement>(null);
@@ -79,31 +81,48 @@ export function MobileToolMenu({
       document.removeEventListener("keydown", escape);
     };
   }, []);
+  const alternate = tool === "hand" ? lastTool : "hand";
   return (
-    <details className="mobile-tool-menu" ref={host}>
-      <summary
-        aria-label={`Инструменты: ${toolNames[tool]}`}
-        title={`Инструменты: ${toolNames[tool]}`}
+    <>
+      <IconButton
+        className="mobile-tool-toggle"
+        label={
+          tool === "hand"
+            ? `Вернуться к инструменту: ${toolNames[lastTool]}`
+            : "Переключиться на перемещение"
+        }
+        onClick={() => {
+          onTool(alternate);
+          if (host.current) host.current.open = false;
+        }}
       >
-        <DesignIcon name={tool} />
-      </summary>
-      <div className="studio-panel" role="toolbar" aria-label="Инструменты">
-        {(["hand", "brush", "eraser", "drop"] as const).map((id) => (
-          <Button
-            key={id}
-            aria-pressed={tool === id}
-            onClick={() => {
-              onTool(id);
-              if (host.current) host.current.open = false;
-              host.current?.querySelector("summary")?.focus();
-            }}
-          >
-            <DesignIcon name={id} />
-            {toolNames[id]}
-          </Button>
-        ))}
-      </div>
-    </details>
+        <DesignIcon name={alternate} />
+      </IconButton>
+      <details className="mobile-tool-menu" ref={host}>
+        <summary
+          aria-label={`Инструменты: ${toolNames[tool]}`}
+          title={`Инструменты: ${toolNames[tool]}`}
+        >
+          <DesignIcon name={tool} />
+        </summary>
+        <div className="studio-panel" role="toolbar" aria-label="Инструменты">
+          {(["hand", "brush", "eraser", "drop"] as const).map((id) => (
+            <Button
+              key={id}
+              aria-pressed={tool === id}
+              onClick={() => {
+                onTool(id);
+                if (host.current) host.current.open = false;
+                host.current?.querySelector("summary")?.focus();
+              }}
+            >
+              <DesignIcon name={id} />
+              {toolNames[id]}
+            </Button>
+          ))}
+        </div>
+      </details>
+    </>
   );
 }
 

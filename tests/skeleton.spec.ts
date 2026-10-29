@@ -141,3 +141,41 @@ test("initial skin download keeps the layout skeleton until the document is avai
   await expect(page.locator(".model-viewport canvas")).toBeVisible();
   await expect(skeleton).toHaveCount(0);
 });
+
+test("viewer and editor share compact header sizing on phones, tablets and desktop", async ({
+  page,
+}) => {
+  for (const width of [320, 390, 800, 1280]) {
+    await page.setViewportSize({ width, height: 844 });
+    await page.goto("/");
+    await expect(page.locator(".model-viewport canvas")).toBeVisible();
+    const buttons = () =>
+      page.locator(
+        ".studio-header .mode-tabs a:visible, .studio-header .file-actions button:visible",
+      );
+    const checkButtons = async () => {
+      const boxes = await Promise.all(
+        (await buttons().all()).map((button) => button.boundingBox()),
+      );
+      for (const box of boxes) {
+        expect(box!.width).toBe(boxes[0]!.width);
+        expect(box!.height).toBe(36);
+        expect(box!.y).toBe(boxes[0]!.y);
+      }
+    };
+    await checkButtons();
+    const viewer = (await page.locator(".studio-header").boundingBox())!;
+    const brand = (await page.locator(".brand-mark").boundingBox())!;
+    await expect(page.getByRole("button", { name: "Открыть", exact: true })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Скачать PNG", exact: true })).toBeVisible();
+    await page.getByRole("link", { name: "Редактировать", exact: true }).click();
+    await expect(page.getByTestId("skin-texture")).toBeAttached();
+    await checkButtons();
+    const editor = (await page.locator(".studio-header").boundingBox())!;
+    const editorBrand = (await page.locator(".brand-mark").boundingBox())!;
+    expect(editor.height).toBe(viewer.height);
+    expect(viewer.height).toBeLessThanOrEqual(60);
+    expect(editorBrand).toEqual(brand);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(width);
+  }
+});

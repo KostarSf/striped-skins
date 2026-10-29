@@ -140,7 +140,12 @@ export default function EditorWorkspace({
   const [showUV, setShowUV] = useDocumentSetting<boolean>(skin, "showUV", true);
   const [slim, setSlim] = useDocumentSetting<boolean>(skin, "slim", meta.slim),
     [layout, setLayout] = useDocumentSetting<"3d" | "split" | "2d">(skin, "layout", "split"),
-    [tool, setTool] = useDocumentSetting<PaintTool>(skin, "tool", "brush"),
+    [tool, setStoredTool] = useDocumentSetting<PaintTool>(skin, "tool", "brush"),
+    [lastPaintTool, setLastPaintTool] = useDocumentSetting<Exclude<PaintTool, "hand">>(
+      skin,
+      "lastPaintTool",
+      tool === "hand" ? "brush" : tool,
+    ),
     [painting, setPainting] = useDocumentSetting<boolean>(skin, "painting", false),
     [brushSize, setBrushSize] = useDocumentSetting<number>(skin, "brushSize", 1),
     [opacity, setOpacity] = useDocumentSetting<number>(skin, "opacity", 100),
@@ -156,6 +161,13 @@ export default function EditorWorkspace({
     [lastPixel, setLastPixel] = useState<{ x: number; y: number; part: string } | null>(null),
     [stats, setStats] = useState<PreviewStats | null>(null),
     [customColors, setCustomColors] = useDocumentSetting<string[]>(skin, "customColors", []);
+  const setTool = useCallback(
+    (value: PaintTool) => {
+      if (value !== "hand") setLastPaintTool(value);
+      setStoredTool(value);
+    },
+    [setStoredTool, setLastPaintTool],
+  );
   const hidden = useMemo(() => new Set(hiddenIds), [hiddenIds]);
   const removedColors = useMemo(() => new Set(removedColorIds), [removedColorIds]);
   const setHidden = (value: ReadonlySet<string>) => setHiddenIds([...value]);
@@ -447,7 +459,7 @@ export default function EditorWorkspace({
               />
             </div>
             {isPhone && mobileView !== "settings" ? (
-              <MobileToolMenu tool={tool} onTool={selectTool} />
+              <MobileToolMenu tool={tool} lastTool={lastPaintTool} onTool={selectTool} />
             ) : null}
           </div>
           <div className="palette-panel">

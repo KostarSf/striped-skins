@@ -237,3 +237,45 @@ test("two-finger texture gestures zoom around the fingers and pan without painti
   await expect.poll(() => pixel(page)).toEqual([255, 0, 255, 255]);
   await session.detach();
 });
+
+test("quick tool button toggles hand with the last drawing tool across views and reload", async ({
+  page,
+}) => {
+  page.on("dialog", (dialog) => void dialog.accept());
+  const quick = page.locator(".mobile-tool-toggle");
+  const main = page.locator(".mobile-tool-menu summary");
+  const small = (await quick.boundingBox())!,
+    large = (await main.boundingBox())!;
+  expect(small.x + small.width).toBeLessThan(large.x);
+  expect(small.width).toBeLessThan(large.width);
+  expect(small.width).toBeGreaterThanOrEqual(44);
+  expect(small.y + small.height / 2).toBeCloseTo(large.y + large.height / 2, 0);
+  await expect(quick.locator("img")).toHaveAttribute("src", "/design/hand.svg");
+  await quick.tap();
+  await expect(main).toHaveAccessibleName("Инструменты: Перемещение");
+  await expect(quick).toHaveAccessibleName("Вернуться к инструменту: Кисть");
+  await expect(quick.locator("img")).toHaveAttribute("src", "/design/brush.svg");
+  await quick.tap();
+  await expect(main).toHaveAccessibleName("Инструменты: Кисть");
+  await chooseTool(page, "Ластик");
+  await quick.tap();
+  await page.getByRole("button", { name: "2D вид", exact: true }).tap();
+  await expect(quick.locator("img")).toHaveAttribute("src", "/design/eraser.svg");
+  const before = await pixel(page);
+  await touchPixel(page);
+  expect(await pixel(page)).toEqual(before);
+  await expect(page.getByTestId("autosave-status")).toHaveText("Локальная копия сохранена");
+  await page.reload();
+  await expect(main).toHaveAccessibleName("Инструменты: Перемещение");
+  await expect(quick.locator("img")).toHaveAttribute("src", "/design/eraser.svg");
+  await quick.tap();
+  await expect(main).toHaveAccessibleName("Инструменты: Ластик");
+  await chooseTool(page, "Пипетка");
+  await quick.tap();
+  await expect(quick.locator("img")).toHaveAttribute("src", "/design/drop.svg");
+  await page.getByRole("button", { name: "3D вид", exact: true }).tap();
+  await quick.tap();
+  await expect(main).toHaveAccessibleName("Инструменты: Пипетка");
+  await page.getByRole("button", { name: "Параметры документа", exact: true }).tap();
+  await expect(quick).toHaveCount(0);
+});

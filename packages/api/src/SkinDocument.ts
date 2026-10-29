@@ -841,6 +841,7 @@ function validateWorkspace(workspace: Record<string, WorkspaceValue>, fail: () =
     !!v && typeof v === "object" && !Array.isArray(v);
   const rules: Record<string, (v: unknown) => boolean> = {
     tool: (v) => ["brush", "eraser", "drop", "hand"].includes(v as string),
+    lastPaintTool: (v) => ["brush", "eraser", "drop"].includes(v as string),
     layout: (v) => ["3d", "2d", "split"].includes(v as string),
     mobileView: (v) => ["3d", "2d", "settings"].includes(v as string),
     brushSize: (v) => finite(v) && Number.isInteger(v) && (v as number) >= 1 && (v as number) <= 32,

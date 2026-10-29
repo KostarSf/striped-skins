@@ -2050,14 +2050,14 @@ input[type="color"]::-webkit-color-swatch {
   }
 }
 
-/* Compact editor chrome leaves the canvas and document layers in view. */
-.editor-app .studio-header {
+/* Shared compact chrome leaves more room for the viewer and editor canvases. */
+.studio-app .studio-header {
   flex-basis: 52px;
   grid-template-columns: minmax(130px, 180px) 180px minmax(90px, 1fr) auto;
   gap: 12px;
   padding: 0 12px;
 }
-.editor-app .file-actions .studio-button {
+.studio-app .file-actions .studio-button {
   min-width: 0;
 }
 .editor-menubar {
@@ -2295,11 +2295,11 @@ input[type="color"]::-webkit-color-swatch {
   font-size: 10px;
 }
 @media (max-width: 1100px) and (min-width: 641px) {
-  .editor-app .studio-header {
+  .studio-app .studio-header {
     grid-template-columns: auto 160px minmax(90px, 1fr) auto;
     gap: 8px;
   }
-  .editor-app .studio-brand span {
+  .studio-app .studio-brand span {
     display: none;
   }
   .editor-app .editor-workspace {
@@ -2316,34 +2316,34 @@ input[type="color"]::-webkit-color-swatch {
   }
 }
 @media (max-width: 640px) {
-  .editor-app .studio-header {
+  .studio-app .studio-header {
     grid-template-columns: 30px 1fr auto;
     padding: 6px 8px;
     gap: 6px;
     flex-basis: 54px;
   }
-  .editor-app .studio-header .document-name {
+  .studio-app .studio-header .document-name {
     display: none;
   }
-  .editor-app .studio-header .studio-brand span {
+  .studio-app .studio-header .studio-brand span {
     display: none;
   }
-  .editor-app .studio-header .mode-tabs {
+  .studio-app .studio-header .mode-tabs {
     width: auto;
   }
-  .editor-app .studio-header .mode-tabs a {
+  .studio-app .studio-header .mode-tabs a {
     min-width: 0;
     padding: 5px 7px;
   }
-  .editor-app .file-actions {
+  .studio-app .file-actions {
     gap: 4px;
   }
-  .editor-app .file-actions .studio-button {
+  .studio-app .file-actions .studio-button {
     padding: 5px 7px;
     min-height: 32px;
     font-size: 10px;
   }
-  .editor-app .file-actions .studio-button[aria-label="Сохранить проект"] {
+  .studio-app .file-actions .studio-button[aria-label="Сохранить проект"] {
     max-width: 76px;
     white-space: normal;
     line-height: 12px;
@@ -2395,7 +2395,7 @@ input[type="color"]::-webkit-color-swatch {
   }
 }
 @media (min-width: 641px) and (max-width: 960px) {
-  .editor-app .studio-header {
+  .studio-app .studio-header {
     grid-template-columns: 30px 160px minmax(0, 1fr);
     min-height: 52px;
   }
@@ -2409,7 +2409,7 @@ input[type="color"]::-webkit-color-swatch {
   }
 }
 @media (max-width: 640px) {
-  .editor-app .file-actions .studio-button[aria-label="Сохранить проект"] {
+  .studio-app .file-actions .studio-button[aria-label="Сохранить проект"] {
     width: auto;
   }
 }
@@ -2589,5 +2589,82 @@ input[type="color"]::-webkit-color-swatch {
   }
   .number-slider-popup {
     padding-block: 12px;
+  }
+}
+
+@media (max-width: 640px) {
+  .mobile-tool-toggle {
+    position: absolute;
+    right: 72px;
+    bottom: 12px;
+    z-index: 6;
+    width: 44px;
+    height: 44px;
+    min-height: 44px;
+    padding: 10px;
+    border: 1px solid var(--studio-border);
+    border-radius: 50%;
+    background: var(--studio-panel);
+    box-shadow: 0 4px 14px #0006;
+  }
+}
+
+/* All navigation and file buttons share a size within the header row. */
+.studio-app .studio-header {
+  --header-button-width: 128px;
+  --header-button-height: 36px;
+  grid-template-columns: minmax(130px, 180px) max-content minmax(90px, 1fr) auto;
+}
+.studio-app .studio-header .mode-tabs > :is(a, .skeleton-tab),
+.studio-app .studio-header .file-actions > .studio-button {
+  box-sizing: border-box;
+  flex: none;
+  width: var(--header-button-width);
+  min-width: var(--header-button-width);
+  max-width: var(--header-button-width);
+  height: var(--header-button-height);
+  min-height: var(--header-button-height);
+  padding: 4px 6px;
+  font-size: 12px;
+  line-height: 12px;
+  gap: 6px;
+}
+.studio-app .studio-header .mode-tabs > :is(a, .skeleton-tab) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.studio-app .studio-header .file-actions > [aria-label="Сохранить проект"] {
+  white-space: normal;
+}
+@media (min-width: 641px) and (max-width: 1100px) {
+  .studio-app .studio-header {
+    --header-button-width: 104px;
+    grid-template-columns: auto max-content minmax(90px, 1fr) auto;
+  }
+  .studio-app .studio-header .mode-tabs > :is(a, .skeleton-tab),
+  .studio-app .studio-header .file-actions > .studio-button {
+    font-size: 11px;
+  }
+}
+@media (min-width: 641px) and (max-width: 960px) {
+  .studio-app .studio-header {
+    grid-template-columns: 30px max-content minmax(0, 1fr);
+  }
+}
+@media (max-width: 640px) {
+  .studio-app .studio-header {
+    --header-button-width: 64px;
+    grid-template-columns: 30px minmax(0, 1fr) auto;
+  }
+  .studio-app .studio-header .mode-tabs > :is(a, .skeleton-tab),
+  .studio-app .studio-header .file-actions > .studio-button {
+    font-size: 10px;
+    padding-inline: 4px;
+  }
+}
+@media (max-width: 359px) {
+  .studio-app .studio-header {
+    --header-button-width: 60px;
   }
 }
