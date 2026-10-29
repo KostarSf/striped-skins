@@ -337,6 +337,7 @@ test("failed recovery is dismissible, fits the viewport and does not reopen on e
   await page.getByRole("tab", { name: "Параметры скина", exact: true }).click();
   const warning = page.locator(".recovery-warning");
   await expect(warning).toBeVisible();
+  await expect(page.getByTestId("autosave-status")).toHaveCount(0);
   const bounds = (await warning.boundingBox())!;
   expect(bounds.y + bounds.height).toBeLessThan(page.viewportSize()!.height);
   await expect(page.locator(".studio-status")).toBeHidden();

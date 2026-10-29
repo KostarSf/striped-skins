@@ -264,7 +264,7 @@ test("quick tool button toggles hand with the last drawing tool across views and
   const before = await pixel(page);
   await touchPixel(page);
   expect(await pixel(page)).toEqual(before);
-  await expect(page.getByTestId("autosave-status")).toHaveText("Локальная копия сохранена");
+  await expect(page.getByTestId("autosave-status")).toHaveCount(0);
   await page.reload();
   await expect(main).toHaveAccessibleName("Инструменты: Перемещение");
   await expect(quick.locator("img")).toHaveAttribute("src", "/design/eraser.svg");

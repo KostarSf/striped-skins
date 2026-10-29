@@ -108,7 +108,7 @@ test("group visibility and locks affect painting, deletion can be undone after r
   await page.getByRole("button", { name: "Выбрать группу Группа", exact: true }).click();
   await page.getByRole("button", { name: "Удалить слой или группу", exact: true }).click();
   await expect(page.getByTestId("layer-row")).toHaveCount(1);
-  await expect(page.getByTestId("autosave-status")).toHaveText("Локальная копия сохранена");
+  await expect(page.getByTestId("autosave-status")).toHaveCount(0);
   await page.reload();
   await expect(page.getByTestId("layer-row")).toHaveCount(1);
   await page.getByRole("button", { name: "Отменить штрих", exact: true }).click();
@@ -153,7 +153,7 @@ test("camera, 2D view and display settings restore from a project", async ({ pag
   await page.locator(".view-options summary").click();
   await page.getByRole("checkbox", { name: "Сетка под моделью", exact: true }).uncheck();
   await page.keyboard.press("Escape");
-  await expect(page.getByTestId("autosave-status")).toHaveText("Локальная копия сохранена");
+  await expect(page.getByTestId("autosave-status")).toHaveCount(0);
   const download = page.waitForEvent("download");
   await page.getByRole("button", { name: "Сохранить проект", exact: true }).click();
   const doc = decodeSkinProject(await readFile((await (await download).path())!));
@@ -173,7 +173,7 @@ test("camera, 2D view and display settings restore from a project", async ({ pag
   ).not.toBeChecked();
   await page.keyboard.press("Escape");
   await page.getByRole("button", { name: "Приблизить модель", exact: true }).click();
-  await expect(page.getByTestId("autosave-status")).toHaveText("Локальная копия сохранена");
+  await expect(page.getByTestId("autosave-status")).toHaveCount(0);
   const again = page.waitForEvent("download");
   await page.getByRole("button", { name: "Сохранить проект", exact: true }).click();
   const after = decodeSkinProject(await readFile((await (await again).path())!));

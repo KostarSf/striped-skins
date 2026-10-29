@@ -132,13 +132,9 @@ function Autosave() {
   }, [firstInfo.dirty, secondInfo.dirty]);
   return (
     <>
-      {firstInfo.dirty || secondInfo.dirty ? (
+      {(firstInfo.dirty || secondInfo.dirty) && status === "saving" ? (
         <output className="autosave-status" data-testid="autosave-status">
-          {status === "saving"
-            ? "Локальная копия: сохранение…"
-            : status === "saved"
-              ? "Локальная копия сохранена"
-              : "Локальная копия недоступна"}
+          Сохранение...
         </output>
       ) : null}
       {warning && !dismissed ? (
