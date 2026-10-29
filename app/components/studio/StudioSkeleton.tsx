@@ -97,7 +97,7 @@ function SkeletonPalette({ rail = false }: { rail?: boolean }) {
         <div>
           {[0, 1, 2, 3, 4, 5, 6, 7].map((i) => (
             <span key={i} className="palette-entry">
-              <Bone width={22} height={22} />
+              <Bone width={rail ? 18 : 22} height={rail ? 18 : 22} />
             </span>
           ))}
         </div>
@@ -143,13 +143,9 @@ function EditorBody() {
           <div className="rail-bottom">
             <div className="rail-color-controls">
               <Bone width={38} height={38} />
-              <div className="rail-color-actions">
-                {[0, 1].map((i) => (
-                  <span key={i} className="icon-button skeleton-tool">
-                    <Bone width={18} height={18} />
-                  </span>
-                ))}
-              </div>
+              <span className="icon-button skeleton-tool">
+                <Bone width={18} height={18} />
+              </span>
             </div>
             <SkeletonPalette rail />
           </div>

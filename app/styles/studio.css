@@ -943,11 +943,20 @@ input[type="color"]::-webkit-color-swatch {
   outline: 2px solid var(--studio-accent);
   outline-offset: 2px;
 }
-.skin-palette .studio-button {
-  min-height: 28px;
-  padding: 4px 10px;
-  font-size: 10px;
-  margin-left: 8px;
+.skin-palette .palette-add {
+  display: grid;
+  place-items: center;
+  flex: none;
+  box-sizing: border-box;
+  width: 22px;
+  height: 22px;
+  min-height: 22px;
+  padding: 0;
+  margin: 0;
+}
+.palette-add .design-icon {
+  width: 12px;
+  height: 12px;
 }
 .palette-dropper {
   font-size: 10px;
@@ -1570,6 +1579,11 @@ input[type="color"]::-webkit-color-swatch {
     width: 28px;
     height: 28px;
   }
+  .skin-palette .palette-add {
+    width: 28px;
+    height: 28px;
+    min-height: 28px;
+  }
   .studio-dialog {
     padding: 20px;
   }
@@ -2117,11 +2131,12 @@ input[type="color"]::-webkit-color-swatch {
   gap: 12px;
 }
 .editor-app .editor-workspace {
-  grid-template-columns: 72px minmax(0, 1fr) 288px;
+  grid-template-columns: 48px minmax(0, 1fr) 288px;
   gap: 8px;
   padding: 8px 8px 8px 0;
 }
 .editor-app .tool-rail {
+  --palette-cell-size: 18px;
   padding: 8px 4px;
   margin-block: -8px;
   gap: 5px;
@@ -2146,15 +2161,12 @@ input[type="color"]::-webkit-color-swatch {
   align-items: center;
   gap: 8px;
   flex: none;
+  width: 100%;
   border-top: 1px solid var(--studio-border);
   padding-top: 8px;
 }
-.rail-color-actions {
-  display: flex;
-  gap: 4px;
-}
-.editor-app .rail-color-actions .icon-button {
-  width: 28px;
+.editor-app .rail-color-controls .icon-button {
+  width: 100%;
   height: 28px;
   min-height: 28px;
   padding: 5px;
@@ -2166,28 +2178,40 @@ input[type="color"]::-webkit-color-swatch {
   min-height: 0;
   padding: 2px 0;
   overflow-y: auto;
-  scrollbar-width: thin;
-  scrollbar-gutter: stable;
+  scrollbar-width: none;
   border-radius: 0;
 }
 .tool-rail .skin-palette > div {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(2, var(--palette-cell-size));
+  justify-content: center;
   gap: 2px;
   overflow: visible;
 }
 .tool-rail .palette-entry {
   justify-self: center;
-  padding: 2px;
+  padding: 0;
+}
+.tool-rail .palette-swatch,
+.editor-app .tool-rail .palette-add {
+  box-sizing: border-box;
+  width: var(--palette-cell-size);
+  height: var(--palette-cell-size);
+  min-height: var(--palette-cell-size);
+  padding: 0;
+  border-radius: 3px;
 }
 .tool-rail .palette-swatch:hover {
   outline-offset: 0;
 }
 .tool-rail .palette-remove {
-  width: 12px;
-  height: 12px;
-  font-size: 10px;
-  line-height: 8px;
+  box-sizing: border-box;
+  top: -1px;
+  right: 0;
+  width: 8px;
+  height: 8px;
+  font-size: 8px;
+  line-height: 5px;
 }
 @media (min-width: 601px) {
   .editor-center > .palette-panel {
@@ -2385,7 +2409,14 @@ input[type="color"]::-webkit-color-swatch {
     display: none;
   }
   .editor-app .editor-workspace {
-    grid-template-columns: 72px minmax(0, 1fr) 260px;
+    grid-template-columns: 44px minmax(0, 1fr) 260px;
+  }
+  .editor-app .tool-rail {
+    --palette-cell-size: 16px;
+  }
+  .tool-rail .palette-entry > .skeleton-bone {
+    width: var(--palette-cell-size) !important;
+    height: var(--palette-cell-size) !important;
   }
   .editor-app .brush-toolbar {
     gap: 8px;

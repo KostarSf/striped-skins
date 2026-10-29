@@ -186,7 +186,7 @@ export default function EditorWorkspace({
       next.delete(hex);
       return next;
     });
-    setCustomColors((v) => [...new Set([...v, hex])].slice(-16));
+    setCustomColors((v) => [hex, ...v.filter((c) => c !== hex)].slice(0, 16));
   };
   const palette = useMemo(() => paletteFor(skin), [skin]);
   const appearance = { ...meta, slim };
@@ -287,7 +287,12 @@ export default function EditorWorkspace({
       <div className="skin-palette">
         {isPhone ? <small>Палитра скина</small> : null}
         <div>
-          {[...new Set([...palette, ...customColors])]
+          <span className="palette-entry">
+            <IconButton className="palette-add" label="Добавить цвет в палитру" onClick={addColor}>
+              <DesignIcon name="plus" />
+            </IconButton>
+          </span>
+          {[...new Set([...customColors, ...palette])]
             .filter((c) => !removedColors.has(c))
             .map((c) => (
               <span className="palette-entry" key={c}>
@@ -313,7 +318,6 @@ export default function EditorWorkspace({
                 </button>
               </span>
             ))}
-          {isPhone ? <Button onClick={addColor}>+ Цвет</Button> : null}
         </div>
       </div>
     </section>
@@ -429,14 +433,9 @@ export default function EditorWorkspace({
                   onPrimary={setHex}
                   onSecondary={setSecondary}
                 />
-                <div className="rail-color-actions">
-                  <IconButton label="Поменять цвета · X" onClick={swapColors}>
-                    ⇄
-                  </IconButton>
-                  <IconButton label="Добавить цвет в палитру" onClick={addColor}>
-                    <DesignIcon name="plus" />
-                  </IconButton>
-                </div>
+                <IconButton label="Поменять цвета · X" onClick={swapColors}>
+                  ⇄
+                </IconButton>
               </div>
               {palettePanel}
             </div>
