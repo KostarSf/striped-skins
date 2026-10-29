@@ -98,7 +98,10 @@ export function layerDropTarget(
   const target = choices.sort(
     (a, b) => Math.abs(a.depth - desiredDepth) - Math.abs(b.depth - desiredDepth),
   )[0];
-  return target ?? null;
+  if (!target) return null;
+  // The source stays visible while dragging. Anchor a hovered gap to its actual row edge,
+  // rather than the next remaining row, which may be across the source's entire subtree.
+  return target.gap === gap ? { ...target, anchorId: hoveredId, edge } : target;
 }
 
 export function layerDropChangesOrder(layers: readonly LayerNode[], id: string, drop: LayerDrop) {
