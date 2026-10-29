@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useState } from "react";
 import { ArrowUturnLeftIcon, ArrowUturnRightIcon } from "@heroicons/react/24/outline";
 import { decodeSkinMetadata, type SkinDocument, type Pixel } from "@striped-skins/api";
 import {
@@ -24,6 +24,9 @@ import {
   MobileToolMenu,
   type MobileEditorView,
 } from "./MobileEditorControls";
+import { NumberSlider } from "./NumberSlider";
+import { LayerPanel, HistoryPanel } from "./LayerPanel";
+import { useDocumentSetting } from "./useDocumentSetting";
 import { usePhoneLayout } from "./usePhoneLayout";
 import { useViewerPreferencesContext } from "../striped-viewer.client";
 function paletteFor(skin: SkinDocument) {
@@ -119,33 +122,63 @@ export default function EditorWorkspace({
   onPreview: (patch: Partial<PreviewSettings>) => void;
   onFileDrop: (file: File) => void;
 }) {
-  const meta = decodeSkinMetadata(skin),
-    options = useViewerPreferencesContext((s) => s.userOptions);
+  useEffect(() => {
+    skin.initializeWorkspace("preview", { ...preview });
+  }, [skin, preview]);
+  const meta = decodeSkinMetadata(skin);
+  const defaults = useViewerPreferencesContext((s) => s.userOptions);
+  const [options] = useDocumentSetting(skin, "viewOptions", { ...defaults });
   const isPhone = usePhoneLayout();
-  const [mobileView, setMobileView] = useState<MobileEditorView>("3d");
-  const [showMini, setShowMini] = useState(true);
-  const [showUV, setShowUV] = useState(true);
-  const [slim, setSlim] = useState(meta.slim),
-    [layout, setLayout] = useState<"3d" | "split" | "2d">("split"),
-    [tool, setTool] = useState<PaintTool>("brush"),
-    [painting, setPainting] = useState(false),
-    [brushSize, setBrushSize] = useState(1),
-    [opacity, setOpacity] = useState(100),
-    [colors, setColors] = useState({ primary: "#d8bb60", secondary: "#ffffff" }),
+  const [inspectorTab, setInspectorTab] = useState<"texture" | "skin">("texture");
+  const inspectorId = useId();
+  const [mobileView, setMobileView] = useDocumentSetting<MobileEditorView>(
+    skin,
+    "mobileView",
+    "3d",
+  );
+  const [showMini, setShowMini] = useDocumentSetting<boolean>(skin, "showMini", true);
+  const [showUV, setShowUV] = useDocumentSetting<boolean>(skin, "showUV", true);
+  const [slim, setSlim] = useDocumentSetting<boolean>(skin, "slim", meta.slim),
+    [layout, setLayout] = useDocumentSetting<"3d" | "split" | "2d">(skin, "layout", "split"),
+    [tool, setStoredTool] = useDocumentSetting<PaintTool>(skin, "tool", "brush"),
+    [lastPaintTool, setLastPaintTool] = useDocumentSetting<Exclude<PaintTool, "hand">>(
+      skin,
+      "lastPaintTool",
+      tool === "hand" ? "brush" : tool,
+    ),
+    [painting, setPainting] = useDocumentSetting<boolean>(skin, "painting", false),
+    [brushSize, setBrushSize] = useDocumentSetting<number>(skin, "brushSize", 1),
+    [opacity, setOpacity] = useDocumentSetting<number>(skin, "opacity", 100),
+    [colors, setColors] = useDocumentSetting(skin, "colors", {
+      primary: "#d8bb60",
+      secondary: "#ffffff",
+    }),
     [hover, setHover] = useState<SurfaceHover | null>(null),
     [textureHover, setTextureHover] = useState<{ x: number; y: number } | null>(null),
-    [removedColors, setRemovedColors] = useState<ReadonlySet<string>>(() => new Set()),
-    [hidden, setHidden] = useState<ReadonlySet<string>>(() => new Set()),
-    [activePart, setActivePart] = useState<string | null>(null),
+    [removedColorIds, setRemovedColorIds] = useDocumentSetting<string[]>(skin, "removedColors", []),
+    [hiddenIds, setHiddenIds] = useDocumentSetting<string[]>(skin, "hiddenParts", []),
+    [activePart, setActivePart] = useDocumentSetting<string | null>(skin, "activePart", null),
     [lastPixel, setLastPixel] = useState<{ x: number; y: number; part: string } | null>(null),
     [stats, setStats] = useState<PreviewStats | null>(null),
-    [customColors, setCustomColors] = useState<string[]>([]);
+    [customColors, setCustomColors] = useDocumentSetting<string[]>(skin, "customColors", []);
+  const setTool = useCallback(
+    (value: PaintTool) => {
+      if (value !== "hand") setLastPaintTool(value);
+      setStoredTool(value);
+    },
+    [setStoredTool, setLastPaintTool],
+  );
+  const hidden = useMemo(() => new Set(hiddenIds), [hiddenIds]);
+  const removedColors = useMemo(() => new Set(removedColorIds), [removedColorIds]);
+  const setHidden = (value: ReadonlySet<string>) => setHiddenIds([...value]);
+  const setRemovedColors = (update: (value: ReadonlySet<string>) => ReadonlySet<string>) =>
+    setRemovedColorIds((ids) => [...update(new Set(ids))]);
   const hex = colors.primary;
-  const setHex = useCallback((primary: string) => setColors((c) => ({ ...c, primary })), []);
+  const setHex = (primary: string) => setColors((c) => ({ ...c, primary }));
   const setSecondary = (secondary: string) => setColors((c) => ({ ...c, secondary }));
   const swapColors = useCallback(
     () => setColors((c) => ({ primary: c.secondary, secondary: c.primary })),
-    [],
+    [setColors],
   );
   const addColor = () => {
     setRemovedColors((v) => {
@@ -153,7 +186,7 @@ export default function EditorWorkspace({
       next.delete(hex);
       return next;
     });
-    setCustomColors((v) => [...new Set([...v, hex])].slice(-16));
+    setCustomColors((v) => [hex, ...v.filter((c) => c !== hex)].slice(0, 16));
   };
   const palette = useMemo(() => paletteFor(skin), [skin]);
   const appearance = { ...meta, slim };
@@ -196,10 +229,13 @@ export default function EditorWorkspace({
           parseInt(hex.slice(5, 7), 16),
           Math.round((opacity * 255) / 100),
         ];
-  const selectTool = useCallback((value: PaintTool) => {
-    setTool(value);
-    setPainting(value !== "hand");
-  }, []);
+  const selectTool = useCallback(
+    (value: PaintTool) => {
+      setTool(value);
+      setPainting(value !== "hand");
+    },
+    [setTool, setPainting],
+  );
   useEffect(() => {
     const key = (e: KeyboardEvent) => {
       if ((e.target as HTMLElement).closest("input,select,textarea,dialog")) return;
@@ -222,7 +258,7 @@ export default function EditorWorkspace({
     };
     window.addEventListener("keydown", key);
     return () => window.removeEventListener("keydown", key);
-  }, [skin, selectTool, swapColors]);
+  }, [skin, selectTool, swapColors, setBrushSize]);
   const sample = (pixel: Pixel) => {
     setHex(
       "#" +
@@ -246,6 +282,46 @@ export default function EditorWorkspace({
     [],
   );
   const onPaint = useCallback((p: { x: number; y: number; part: string }) => setLastPixel(p), []);
+  const palettePanel = (
+    <section className="palette-panel" aria-label="Палитра скина">
+      <div className="skin-palette">
+        {isPhone ? <small>Палитра скина</small> : null}
+        <div>
+          <span className="palette-entry">
+            <IconButton className="palette-add" label="Добавить цвет в палитру" onClick={addColor}>
+              <DesignIcon name="plus" />
+            </IconButton>
+          </span>
+          {[...new Set([...customColors, ...palette])]
+            .filter((c) => !removedColors.has(c))
+            .map((c) => (
+              <span className="palette-entry" key={c}>
+                <button
+                  type="button"
+                  aria-label={`Цвет ${c}`}
+                  title={c}
+                  className="palette-swatch"
+                  style={{ background: c }}
+                  onClick={() => {
+                    setHex(c);
+                    setTool("brush");
+                  }}
+                />
+                <button
+                  type="button"
+                  className="palette-remove"
+                  aria-label={`Удалить цвет ${c}`}
+                  title="Удалить из палитры"
+                  onClick={() => setRemovedColors((v) => new Set([...v, c]))}
+                >
+                  ×
+                </button>
+              </span>
+            ))}
+        </div>
+      </div>
+    </section>
+  );
   return (
     <>
       {!isPhone ? (
@@ -259,34 +335,32 @@ export default function EditorWorkspace({
           <span className="toolbar-divider" />
           <label className="inline-field">
             Размер{" "}
-            <input
-              aria-label="Размер кисти"
-              type="number"
+            <NumberSlider
+              label="Размер кисти"
               min={1}
               max={32}
+              unit=" px"
               value={brushSize}
-              onChange={(e) => setBrushSize(Math.max(1, Math.min(32, +e.target.value || 1)))}
+              onChange={setBrushSize}
             />
             <span>px</span>
           </label>
           <label className="inline-field opacity-field">
             Непрозрачность{" "}
-            <select
-              aria-label="Непрозрачность кисти"
+            <NumberSlider
+              label="Непрозрачность кисти"
+              min={0}
+              max={100}
+              unit="%"
               value={opacity}
-              onChange={(e) => setOpacity(+e.target.value)}
-            >
-              {[25, 50, 75, 100].map((v) => (
-                <option key={v} value={v}>
-                  {v}%
-                </option>
-              ))}
-            </select>
+              onChange={setOpacity}
+            />
+            <span>%</span>
           </label>
           <div className="inline-controls">
             <IconButton
               label="Отменить штрих"
-              title="Отменить · Ctrl+Z / ⌘Z"
+              title={`Отменить: ${skin.undoLabel ?? "—"} · Ctrl+Z / ⌘Z`}
               disabled={!skin.canUndo}
               onClick={() => skin.undo()}
             >
@@ -294,7 +368,7 @@ export default function EditorWorkspace({
             </IconButton>
             <IconButton
               label="Повторить штрих"
-              title="Повторить · Ctrl+Shift+Z / ⇧⌘Z"
+              title={`Повторить: ${skin.redoLabel ?? "—"} · Ctrl+Shift+Z / ⇧⌘Z`}
               disabled={!skin.canRedo}
               onClick={() => skin.redo()}
             >
@@ -351,26 +425,27 @@ export default function EditorWorkspace({
                 <DesignIcon name={id} />
               </IconButton>
             ))}
-            <span className="rail-divider" />
-            <BrushColors
-              primary={hex}
-              secondary={colors.secondary}
-              onPrimary={setHex}
-              onSecondary={setSecondary}
-            />
-            <IconButton label="Поменять цвета · X" onClick={swapColors}>
-              ⇄
-            </IconButton>
-            <span className="rail-spacer" />
-            <IconButton label="Добавить цвет в палитру" onClick={addColor}>
-              <DesignIcon name="plus" />
-            </IconButton>
+            <div className="rail-bottom">
+              <div className="rail-color-controls">
+                <BrushColors
+                  primary={hex}
+                  secondary={colors.secondary}
+                  onPrimary={setHex}
+                  onSecondary={setSecondary}
+                />
+                <IconButton label="Поменять цвета · X" onClick={swapColors}>
+                  ⇄
+                </IconButton>
+              </div>
+              {palettePanel}
+            </div>
           </aside>
         ) : null}
         <div className="editor-center">
           <div className="editor-views">
             {isPhone || layout !== "2d" || showMini ? (
               <ModelViewport
+                persistWorkspace
                 onFileDrop={onFileDrop}
                 document={skin}
                 overrides={appearance}
@@ -424,69 +499,89 @@ export default function EditorWorkspace({
               />
             </div>
             {isPhone && mobileView !== "settings" ? (
-              <MobileToolMenu tool={tool} onTool={selectTool} />
+              <MobileToolMenu tool={tool} lastTool={lastPaintTool} onTool={selectTool} />
             ) : null}
           </div>
-          <div className="palette-panel">
-            <div className="skin-palette">
-              <small>Палитра скина</small>
-              <div>
-                {[...new Set([...palette, ...customColors])]
-                  .filter((c) => !removedColors.has(c))
-                  .map((c) => (
-                    <span className="palette-entry" key={c}>
-                      <button
-                        type="button"
-                        aria-label={`Цвет ${c}`}
-                        title={c}
-                        className="palette-swatch"
-                        style={{ background: c }}
-                        onClick={() => {
-                          setHex(c);
-                          setTool("brush");
-                        }}
-                      />
-                      <button
-                        type="button"
-                        className="palette-remove"
-                        aria-label={`Удалить цвет ${c}`}
-                        title="Удалить из палитры"
-                        onClick={() => setRemovedColors((v) => new Set([...v, c]))}
-                      >
-                        ×
-                      </button>
-                    </span>
-                  ))}
-                <Button onClick={addColor}>+ Цвет</Button>
-              </div>
-            </div>
-          </div>
+          {isPhone ? palettePanel : null}
         </div>
-        <aside className="inspector studio-panel" aria-label="Параметры модели">
-          <PanelHeading title="Модель" description="Настройки сохраняются в PNG" />
-          <SkinSettings
-            document={skin}
-            preview={preview}
-            onPreview={onPreview}
-            slim={slim}
-            onSlim={setSlim}
-          />
-          <div className="settings-group">
-            <h3>Рисование по поверхности</h3>
-            <Field label="Рисовать по">
-              <select
-                aria-label="Слой рисования"
-                value={selected ?? ""}
-                onChange={(e) => setActivePart(e.target.value || null)}
+        <aside className="inspector studio-panel editor-inspector" aria-label="Параметры документа">
+          <div className="inspector-tabs" role="tablist" aria-label="Разделы документа">
+            {(
+              [
+                ["texture", "Текстура"],
+                ["skin", "Параметры скина"],
+              ] as const
+            ).map(([id, label]) => (
+              <button
+                key={id}
+                type="button"
+                role="tab"
+                id={`${inspectorId}-${id}-tab`}
+                aria-controls={`${inspectorId}-${id}-panel`}
+                aria-selected={inspectorTab === id}
+                tabIndex={inspectorTab === id ? 0 : -1}
+                onClick={() => setInspectorTab(id)}
+                onKeyDown={(event) => {
+                  if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+                  event.preventDefault();
+                  const tabs =
+                    event.currentTarget.parentElement!.querySelectorAll<HTMLButtonElement>(
+                      '[role="tab"]',
+                    );
+                  const index =
+                    event.key === "Home" ? 0 : event.key === "End" ? 1 : id === "texture" ? 1 : 0;
+                  tabs[index].focus();
+                  tabs[index].click();
+                }}
               >
-                <option value="">Видимой поверхности</option>
-                {parts.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {labelFor(p.id)}
-                  </option>
-                ))}
-              </select>
-            </Field>
+                {label}
+              </button>
+            ))}
+          </div>
+          <div
+            className="inspector-panel"
+            role="tabpanel"
+            id={`${inspectorId}-texture-panel`}
+            aria-labelledby={`${inspectorId}-texture-tab`}
+            hidden={inspectorTab !== "texture"}
+            tabIndex={0}
+          >
+            <LayerPanel document={skin} />
+            <div className="settings-group">
+              <h3>Рисование по поверхности</h3>
+              <Field label="Рисовать по">
+                <select
+                  aria-label="Слой рисования"
+                  value={selected ?? ""}
+                  onChange={(e) => setActivePart(e.target.value || null)}
+                >
+                  <option value="">Видимой поверхности</option>
+                  {parts.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {labelFor(p.id)}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+            </div>
+            <HistoryPanel document={skin} />
+          </div>
+          <div
+            className="inspector-panel"
+            role="tabpanel"
+            id={`${inspectorId}-skin-panel`}
+            aria-labelledby={`${inspectorId}-skin-tab`}
+            hidden={inspectorTab !== "skin"}
+            tabIndex={0}
+          >
+            <PanelHeading title="Параметры скина" description="Внешность и метаданные MLP" />
+            <SkinSettings
+              document={skin}
+              preview={preview}
+              onPreview={onPreview}
+              slim={slim}
+              onSlim={setSlim}
+            />
           </div>
           <output
             hidden

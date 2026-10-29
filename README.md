@@ -34,9 +34,11 @@ production, and runs only when the SMAA mode is selected.
 
 The viewer renders all MLP 1.20.1 races, sizes and accessories from vendored Mson
 data. Use **Редактировать** to open `/editor` for shared 2D/3D painting, metadata
-editing, part visibility and PNG export. `/model-lab` remains the Earthpony regression
+editing, drawing layers and groups, part visibility, `.striped` projects and PNG export. `/model-lab` remains the Earthpony regression
 page. The Figma-based interface and shortcuts are described in
 [the interface guide](docs/figma-interface.md). See [the editor guide](docs/model-lab.md) and [implementation status](docs/editor-roadmap.md).
+See the [editor development roadmap](docs/editor-development-roadmap.md) and
+[project format](docs/project-format.md).
 Normal builds use checked-in generated models and need no MineLittlePony checkout.
 
 ## Requirements

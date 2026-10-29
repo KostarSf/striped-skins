@@ -5,6 +5,7 @@ import {
   PonySkin,
   decodeSkinMetadata,
   loadSkinDocument,
+  decodeSkinProject,
   type SkinDocument,
 } from "@striped-skins/api";
 import { usePonyContext, useViewerPreferencesContext } from "../striped-viewer.client";
@@ -117,6 +118,12 @@ export default function Studio({ mode }: { mode: "viewer" | "editor" }) {
     setError("");
   };
   const importFile = async (file: File) => {
+    if (/\.striped$/i.test(file.name)) {
+      if (file.size > 64 * 1024 * 1024) throw new Error("Файл проекта превышает 64 МиБ");
+      const document = decodeSkinProject(new Uint8Array(await file.arrayBuffer()));
+      install(document, file.name);
+      return;
+    }
     const url = URL.createObjectURL(file);
     try {
       install(await loadSkinDocument(url), file.name);
@@ -127,6 +134,14 @@ export default function Studio({ mode }: { mode: "viewer" | "editor" }) {
   const importURL = async (url: string) => {
     const safe = getSafeSkinUrl(url)!;
     install(await loadSkinDocument(safe), skinName(safe), url);
+  };
+  const saveProject = async () => {
+    setSaving(true);
+    try {
+      await info.saveProject();
+    } finally {
+      setSaving(false);
+    }
   };
   const exportPNG = async () => {
     setSaving(true);
@@ -151,6 +166,8 @@ export default function Studio({ mode }: { mode: "viewer" | "editor" }) {
         name={info.name}
         dirty={info.dirty}
         saving={saving}
+        document={document}
+        onSave={() => void saveProject().catch((e) => setError(String(e)))}
         onImport={() => setImportRequest({})}
         onExport={() => void exportPNG().catch((e) => setError(String(e)))}
       />
@@ -164,8 +181,12 @@ export default function Studio({ mode }: { mode: "viewer" | "editor" }) {
           <EditorWorkspace
             key={document.id}
             document={document}
-            preview={pony.preview}
-            onPreview={pony.setPreview}
+            preview={document.getWorkspace("preview", pony.preview)}
+            onPreview={(patch) => {
+              const next = { ...document.getWorkspace("preview", pony.preview), ...patch };
+              document.setWorkspace("preview", next);
+              pony.setPreview(next);
+            }}
             onFileDrop={(file) => setImportRequest({ file })}
           />
         </Suspense>
@@ -196,7 +217,7 @@ export default function Studio({ mode }: { mode: "viewer" | "editor" }) {
         onFile={importFile}
         onURL={importURL}
         dirty={info.dirty}
-        onExport={exportPNG}
+        onExport={saveProject}
         second={isSecond}
       />
       <span hidden data-default-loaded={defaultSkin !== PonySkin.DEFAULT} />

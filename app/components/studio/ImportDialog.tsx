@@ -67,8 +67,8 @@ export function ImportDialog({
     >
       <div className="dialog-heading">
         <div>
-          <h2 id="import-title">Открыть скин{second ? " · второй" : ""}</h2>
-          <p>Загрузите PNG с компьютера или по ссылке</p>
+          <h2 id="import-title">Открыть скин или проект{second ? " · второй" : ""}</h2>
+          <p>Загрузите .striped или PNG с компьютера, либо PNG по ссылке</p>
         </div>
         <IconButton label="Закрыть импорт" disabled={busy} onClick={onClose}>
           <XMarkIcon />
@@ -78,7 +78,8 @@ export function ImportDialog({
         <div className="replace-notice">
           <h3>В текущем скине есть изменения</h3>
           <p>
-            Несохранённые изменения будут потеряны. Перед заменой можно сохранить их отдельным PNG.
+            Несохранённые изменения будут потеряны. Перед заменой сохраните проект со всеми слоями и
+            настройками.
           </p>
           <div className="dialog-actions">
             <Button onClick={() => (initialFile ? onClose() : setPending(null))} disabled={busy}>
@@ -91,14 +92,14 @@ export function ImportDialog({
                   await onExport();
                   await run(pending);
                 } catch {
-                  setError("Не удалось экспортировать текущий скин");
+                  setError("Не удалось сохранить текущий проект");
                 } finally {
                   setBusy(false);
                 }
               }}
               disabled={busy}
             >
-              Экспортировать и открыть
+              Сохранить проект и открыть
             </Button>
             <Button tone="primary" onClick={() => void run(pending)} disabled={busy}>
               Заменить
@@ -122,7 +123,7 @@ export function ImportDialog({
             }}
           >
             <ArrowUpTrayIcon />
-            <h3>Перетащите PNG сюда</h3>
+            <h3>Перетащите PNG или .striped сюда</h3>
             <p>64 × 64, 64 × 32 и HD до 2048 px</p>
             <Button disabled={busy} onClick={() => input.current?.click()}>
               Выбрать файл
@@ -157,7 +158,7 @@ export function ImportDialog({
         ref={input}
         className="sr-only"
         type="file"
-        accept="image/png"
+        accept="image/png,.striped,application/zip"
         aria-label="Открыть PNG"
         disabled={busy}
         onChange={(e) => {

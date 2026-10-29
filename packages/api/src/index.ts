@@ -12,3 +12,5 @@ export {
 } from "./skin-metadata.js";
 export type { SkinMetadata, RaceId, SkinSize, TailShape, Snout } from "./skin-metadata.js";
 export { normalizeSkinPixels, loadSkinDocument, documentCanvas } from "./skin-image.js";
+export type { LayerNode, ProjectSnapshot, WorkspaceValue } from "./SkinDocument.js";
+export { encodeSkinProject, decodeSkinProject } from "./skin-project.js";

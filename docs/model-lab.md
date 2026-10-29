@@ -18,8 +18,10 @@ geometry have independent checkboxes; **Скрыть ветку** hides both.
 Modern square and legacy half-height PNGs, including HD up to 2048 pixels, are
 accepted. Legacy imports are upgraded to modern square PNG on export. Trigger
 coordinates remain physical pixels at the atlas origin. The brush protects them;
-metadata controls change them explicitly. Local recovery preserves pixels but
-starts a fresh history after a page reload; route changes preserve history.
+metadata controls change them explicitly. Local recovery preserves the layered document, workspace settings and undo/redo
+history after reloads. Save `.striped` to keep an editable project; PNG export
+contains the composite skin and metadata. See [the development roadmap](editor-development-roadmap.md)
+and [project format](project-format.md).
 
 ```sh
 npm ci
