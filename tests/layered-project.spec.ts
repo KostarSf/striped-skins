@@ -31,6 +31,87 @@ async function rename(page: Page, name: string) {
   await page.getByLabel("Имя слоя", { exact: true }).press("Enter");
 }
 
+test("history clicks and keyboard undo retain future states until a new action replaces them", async ({
+  page,
+}) => {
+  await ready(page);
+  const errors: string[] = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  const initial = await pixel(page);
+  const history = page.locator(".history-panel");
+  const rows = history.locator(".history-list > li");
+  const current = history.locator('[aria-current="step"]');
+  const future = history.locator('li[data-status="future"]');
+  await expect(rows).toHaveCount(1);
+  await page.getByRole("button", { name: "Новый слой", exact: true }).click();
+  await paint(page, "#ff0000");
+  await paint(page, "#0000ff");
+  await expect(rows).toHaveCount(4);
+  await rows.nth(1).getByRole("button").click();
+  await expect.poll(() => pixel(page)).toEqual([255, 0, 0, 255]);
+  await expect(future).toHaveCount(1);
+  await expect(current).toContainText("Сейчас");
+  await page.keyboard.press("Control+z");
+  await expect.poll(() => pixel(page)).toEqual(initial);
+  await expect(future).toHaveCount(2);
+  await expect(rows).toHaveCount(4);
+  await page.keyboard.press("Control+Shift+z");
+  await expect.poll(() => pixel(page)).toEqual([255, 0, 0, 255]);
+  await expect(future).toHaveCount(1);
+  const download = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Сохранить проект", exact: true }).click();
+  const saved = decodeSkinProject(await readFile((await (await download).path())!));
+  expect(saved.historyStates.filter((state) => state.status === "future")).toHaveLength(1);
+  saved.goToHistoryState(saved.historyStates.at(-1)!.id);
+  expect(saved.readPixel(12, 12)).toEqual([0, 0, 255, 255]);
+  await page.reload();
+  await expect(future).toHaveCount(1);
+  await rows.first().getByRole("button").click();
+  await expect.poll(() => pixel(page)).toEqual([0, 0, 255, 255]);
+  await expect(future).toHaveCount(0);
+  await history.getByRole("button", { name: "Исходное состояние", exact: true }).click();
+  await expect(page.getByTestId("layer-row")).toHaveCount(1);
+  await expect.poll(() => pixel(page)).toEqual(initial);
+  await expect(future).toHaveCount(3);
+  await rows.nth(2).getByRole("button").click();
+  await expect(page.getByTestId("layer-row")).toHaveCount(2);
+  await paint(page, "#00ff00");
+  await expect.poll(() => pixel(page)).toEqual([0, 255, 0, 255]);
+  await expect(rows).toHaveCount(3);
+  await expect(future).toHaveCount(0);
+  await expect(
+    history.getByRole("button", { name: "Повторить действие", exact: true }),
+  ).toBeDisabled();
+  await page.keyboard.press("Control+z");
+  await expect.poll(() => pixel(page)).toEqual(initial);
+  await expect(future).toHaveCount(1);
+  await page.screenshot({ path: "/tmp/striped-history-desktop.png" });
+  expect(errors).toEqual([]);
+});
+
+test("history states remain keyboard accessible and fit the phone document panel", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await ready(page);
+  await page.getByRole("button", { name: "Параметры документа", exact: true }).click();
+  const history = page.locator(".history-panel");
+  await page.getByRole("button", { name: "Новый слой", exact: true }).click();
+  await rename(page, "Детали");
+  const rows = history.locator(".history-list > li");
+  await expect(rows).toHaveCount(3);
+  const initial = history.getByRole("button", { name: "Исходное состояние", exact: true });
+  await initial.focus();
+  await page.keyboard.press("Enter");
+  await expect(initial).toHaveAttribute("aria-current", "step");
+  await expect(history.locator('li[data-status="future"]')).toHaveCount(2);
+  await rows.first().getByRole("button").click();
+  await expect(page.getByLabel("Имя слоя", { exact: true })).toHaveValue("Детали");
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(390);
+  await history.scrollIntoViewIfNeeded();
+  await page.screenshot({ path: "/tmp/striped-history-phone.png" });
+});
+
 test("layered project survives save, reload and reopen with settings, history and PNG export kept separate", async ({
   page,
 }) => {

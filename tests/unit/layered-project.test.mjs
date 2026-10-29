@@ -17,6 +17,90 @@ const paint = (doc, color, x = 10, y = 10) => {
 const red = [255, 0, 0, 255],
   blue = [0, 0, 255, 255];
 
+test("history states seek across pixels, groups and metadata atomically in both directions", () => {
+  const doc = fresh();
+  const snapshots = [doc.snapshot()];
+  for (const action of [
+    () => paint(doc, red),
+    () => doc.addLayer("group"),
+    () => doc.addLayer(),
+    () => paint(doc, blue),
+    () => writeSkinMetadata(doc, { race: "KIRIN" }),
+    () => doc.updateLayer(doc.activeLayerId, { opacity: 40 }),
+  ]) {
+    action();
+    snapshots.push(doc.snapshot());
+  }
+  const states = doc.historyStates;
+  assert.equal(states.length, snapshots.length);
+  assert.equal(states[0].label, "Исходное состояние");
+  let notifications = 0;
+  doc.subscribe(() => notifications++);
+  const content = ({ layers, activeLayerId, pixels, metadata, stateId }) => ({
+    layers,
+    activeLayerId,
+    pixels,
+    metadata,
+    stateId,
+  });
+  for (const index of [0, 4, 2, 6, 1, 5, 0, 6]) {
+    notifications = 0;
+    doc.goToHistoryState(states[index].id);
+    assert.equal(notifications, 1);
+    assert.deepEqual(content(doc.snapshot()), content(snapshots[index]));
+    assert.deepEqual(
+      doc.historyStates.map((state) => state.status),
+      states.map((_, i) => (i === index ? "current" : i > index ? "future" : "past")),
+    );
+  }
+  notifications = 0;
+  doc.goToHistoryState(states.at(-1).id);
+  doc.goToHistoryState(-1);
+  assert.equal(notifications, 0);
+});
+
+test("undone states survive navigation, project files and no-op edits until a new document action", () => {
+  const doc = fresh();
+  paint(doc, red);
+  paint(doc, blue);
+  const states = doc.historyStates;
+  doc.undo();
+  assert.equal(doc.historyStates.at(-1).status, "future");
+  const restored = decodeSkinProject(encodeSkinProject(doc));
+  assert.deepEqual(restored.historyStates, doc.historyStates);
+  restored.goToHistoryState(states.at(-1).id);
+  assert.deepEqual(restored.readPixel(10, 10), blue);
+  restored.goToHistoryState(states[1].id);
+  restored.updateLayer(restored.activeLayerId, { opacity: 100 });
+  restored.setWorkspace("brushSize", 4);
+  assert.deepEqual(restored.historyStates, doc.historyStates);
+  paint(restored, [0, 255, 0, 255]);
+  assert.equal(restored.canRedo, false);
+  assert.equal(restored.historyStates.length, states.length);
+  assert.equal(
+    restored.historyStates.some((state) => state.id === states.at(-1).id),
+    false,
+  );
+  restored.goToHistoryState(states[1].id);
+  assert.deepEqual(restored.readPixel(10, 10), red);
+  restored.redo();
+  assert.deepEqual(restored.readPixel(10, 10), [0, 255, 0, 255]);
+});
+
+test("the earliest retained history state remains reachable after the history limit", () => {
+  const doc = fresh();
+  for (let i = 0; i < 105; i++) paint(doc, i % 2 ? blue : red);
+  const states = doc.historyStates;
+  assert.equal(states.length, 101);
+  assert.equal(states[0].label, "Начало доступной истории");
+  doc.goToHistoryState(states[0].id);
+  assert.equal(doc.canUndo, false);
+  assert.deepEqual(doc.readPixel(10, 10), red);
+  doc.goToHistoryState(states.at(-1).id);
+  assert.equal(doc.canRedo, false);
+  assert.deepEqual(doc.readPixel(10, 10), red);
+});
+
 test("layers composite bottom to top, group alpha is isolated, and structural history restores pixels", () => {
   const doc = fresh();
   paint(doc, red);

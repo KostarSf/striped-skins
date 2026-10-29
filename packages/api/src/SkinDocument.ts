@@ -159,6 +159,26 @@ export class SkinDocument {
   get history() {
     return this.undoStack.map((c) => c.label);
   }
+  /** All retained states in chronological order, including states available through redo. */
+  get historyStates() {
+    const commands = [...this.undoStack, ...this.redoStack.slice().reverse()];
+    const current = this.undoStack.length;
+    return [
+      {
+        id: commands[0]?.beforeId ?? this.stateId,
+        label: commands[0]?.beforeId ? "Начало доступной истории" : "Исходное состояние",
+      },
+      ...commands.map((command) => ({ id: command.afterId, label: command.label })),
+    ].map((state, index) => ({
+      ...state,
+      status:
+        index === current
+          ? ("current" as const)
+          : index > current
+            ? ("future" as const)
+            : ("past" as const),
+    }));
+  }
   get isDrawing() {
     return this.stroke !== null;
   }
@@ -602,8 +622,6 @@ export class SkinDocument {
       if (command.layerId !== null) this.rasterChanged(command.layerId);
     }
     this.stateId = direction === "before" ? command.beforeId : command.afterId;
-    this.compose();
-    this.emit();
   }
   undo() {
     this.historyInteraction = undefined;
@@ -612,6 +630,8 @@ export class SkinDocument {
     if (c) {
       this.redoStack.push(c);
       this.apply(c, "before");
+      this.compose();
+      this.emit();
     }
   }
   redo() {
@@ -621,7 +641,28 @@ export class SkinDocument {
     if (c) {
       this.undoStack.push(c);
       this.apply(c, "after");
+      this.compose();
+      this.emit();
     }
+  }
+  /** Move the history cursor without discarding redo; publish only the final composite. */
+  goToHistoryState(id: number) {
+    this.endStroke();
+    const target = this.historyStates.findIndex((state) => state.id === id);
+    if (target < 0 || target === this.undoStack.length) return;
+    this.historyInteraction = undefined;
+    while (this.undoStack.length > target) {
+      const command = this.undoStack.pop()!;
+      this.redoStack.push(command);
+      this.apply(command, "before");
+    }
+    while (this.undoStack.length < target) {
+      const command = this.redoStack.pop()!;
+      this.undoStack.push(command);
+      this.apply(command, "after");
+    }
+    this.compose();
+    this.emit();
   }
   snapshot(): ProjectSnapshot {
     // Capture an unfinished stroke as one undoable operation without ending pointer capture.

@@ -1,5 +1,10 @@
 import { useRef, useState, useSyncExternalStore, type DragEvent } from "react";
 import {
+  ArrowUturnLeftIcon,
+  ArrowUturnRightIcon,
+  CheckIcon,
+  ChevronDownIcon,
+  ClockIcon,
   DocumentDuplicateIcon,
   EyeIcon,
   EyeSlashIcon,
@@ -334,23 +339,51 @@ export function LayerPanel({ document: skin }: { document: SkinDocument }) {
 
 export function HistoryPanel({ document: skin }: { document: SkinDocument }) {
   useSyncExternalStore(skin.subscribe, skin.getSnapshot, skin.getSnapshot);
+  const states = skin.historyStates;
+  const current = states.findIndex((state) => state.status === "current");
   return (
-    <details className="history-panel">
-      <summary>История · {skin.history.length}</summary>
-      <div className="layer-actions">
-        <Button disabled={!skin.canUndo} onClick={() => skin.undo()}>
-          Отменить
-        </Button>
-        <Button disabled={!skin.canRedo} onClick={() => skin.redo()}>
-          Повторить
-        </Button>
+    <details className="history-panel" open>
+      <summary>
+        <ClockIcon aria-hidden="true" />
+        <span>История</span>
+        <span className="history-count" aria-label={`Состояние ${current} из ${states.length - 1}`}>
+          {current} / {states.length - 1}
+        </span>
+        <ChevronDownIcon className="history-chevron" aria-hidden="true" />
+      </summary>
+      <div className="history-toolbar">
+        <span>Состояния проекта</span>
+        <IconButton label="Отменить действие" disabled={!skin.canUndo} onClick={() => skin.undo()}>
+          <ArrowUturnLeftIcon />
+        </IconButton>
+        <IconButton label="Повторить действие" disabled={!skin.canRedo} onClick={() => skin.redo()}>
+          <ArrowUturnRightIcon />
+        </IconButton>
       </div>
-      <ol>
-        {skin.history
+      <ol className="history-list" aria-label="Состояния истории">
+        {states
           .slice()
           .reverse()
-          .map((label, i) => (
-            <li key={`${skin.history.length - i}-${label}`}>{label}</li>
+          .map((state, index) => (
+            <li key={state.id} data-status={state.status}>
+              <button
+                type="button"
+                className="history-state"
+                aria-current={state.status === "current" ? "step" : undefined}
+                onClick={() => skin.goToHistoryState(state.id)}
+              >
+                <span className="history-marker" aria-hidden="true">
+                  {state.status === "current" ? <CheckIcon /> : states.length - 1 - index}
+                </span>
+                <span className="history-label">{state.label}</span>
+                {state.status === "current" ? (
+                  <span className="history-current" aria-hidden="true">
+                    Сейчас
+                  </span>
+                ) : null}
+                {state.status === "future" ? <span className="sr-only"> (отменено)</span> : null}
+              </button>
+            </li>
           ))}
       </ol>
     </details>
