@@ -126,7 +126,16 @@ for (const surface of ["viewer", "split-2d", "split-3d", "2d", "3d", "mini"] as 
     await expect(page.locator(".document-name strong")).toHaveText("dropped.png");
     await expect(page.getByRole("dialog")).not.toBeVisible();
     await expect(page.locator(".document-dot")).toHaveAttribute("data-dirty", "false");
-    if (surface !== "viewer") await expect.poll(() => pixel(page)).toEqual([128, 128, 128, 255]);
+    if (surface !== "viewer") {
+      // Import remounts the editor and its WebGL preview. Software rendering on
+      // CI can block even the first canvas read past the default five seconds.
+      await expect
+        .poll(() => pixel(page), {
+          timeout: 15_000,
+          message: "The imported PNG must reach the replacement document's texture canvas",
+        })
+        .toEqual([128, 128, 128, 255]);
+    }
   });
 }
 
