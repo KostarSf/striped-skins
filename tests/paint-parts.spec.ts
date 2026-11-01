@@ -1,3 +1,4 @@
+import { setColor } from "./color-picker-helpers";
 import { test, expect, type Page, type Locator } from "@playwright/test";
 import { SkinDocument, encodeSkinProject, writeSkinMetadata } from "@striped-skins/api";
 
@@ -98,7 +99,7 @@ test("2D painting and erasing stay inside the selected part's UV islands, includ
 }) => {
   await combo(page).click();
   await part(page, "head").click();
-  await page.getByLabel("Цвет кисти", { exact: true }).fill("#ff00ff");
+  await setColor(page, "Цвет кисти", "#ff00ff");
   const canvas = page.getByTestId("skin-texture");
   const before = await canvas.evaluate((node) => (node as HTMLCanvasElement).toDataURL());
   await clickTexel(page, 50, 50);
@@ -119,12 +120,38 @@ test("2D painting and erasing stay inside the selected part's UV islands, includ
   expect(await read(canvas, 4, 4)).toEqual([0, 255, 0, 255]);
   await page.getByRole("button", { name: "Пипетка · I", exact: true }).click();
   await clickTexel(page, 4, 4);
-  await expect(page.getByLabel("Цвет кисти", { exact: true })).toHaveValue("#00ff00");
+  await expect(page.getByLabel("Цвет кисти", { exact: true })).toHaveAttribute(
+    "data-color",
+    "#00ff00",
+  );
   await combo(page).click();
   await page.keyboard.press("Home");
   await page.keyboard.press("Enter");
   await clickTexel(page, 50, 50);
   await expect.poll(() => read(canvas, 50, 50)).toEqual([0, 255, 0, 255]);
+});
+
+test("rapid keyboard selection does not wait for the popover toggle event", async ({ page }) => {
+  await combo(page).click();
+  await part(page, "hat").click();
+  await expect(combo(page)).toContainText("Внешний слой головы");
+  // Deliver the next keys before the browser can dispatch its deferred toggle event.
+  const keys = async (sequence: string[]) => {
+    await combo(page).evaluate((button, sequence) => {
+      (button as HTMLButtonElement).click();
+      for (const key of sequence)
+        button.dispatchEvent(
+          new KeyboardEvent("keydown", { key, bubbles: true, cancelable: true }),
+        );
+    }, sequence);
+  };
+  await keys(["Home", "Enter"]);
+  await expect(combo(page)).toHaveAttribute("aria-expanded", "false");
+  await expect(combo(page)).toContainText("Видимой поверхности");
+  await expect(page.getByTestId("part-uv-highlight")).toHaveCount(0);
+  await keys(["Home", "ArrowDown", "Enter"]);
+  await expect(combo(page)).toHaveAttribute("aria-expanded", "false");
+  await expect(combo(page)).toContainText("Голова");
 });
 
 test("3D UV contours follow the selected paint part and restore all surfaces in automatic mode", async ({
@@ -147,11 +174,15 @@ test("3D UV contours follow the selected paint part and restore all surfaces in 
   const allParts = await bottomFrame();
   await combo(page).click();
   await part(page, "hat").click();
+  await expect(combo(page)).toHaveAttribute("aria-expanded", "false");
+  await expect(combo(page)).toContainText("Внешний слой головы");
   await expect.poll(bottomFrame).toBe(withoutUV);
   await expect.poll(() => orangePixels(page)).toBeGreaterThan(10);
   await combo(page).click();
   await page.keyboard.press("Home");
   await page.keyboard.press("Enter");
+  await expect(combo(page)).toHaveAttribute("aria-expanded", "false");
+  await expect(combo(page)).toContainText("Видимой поверхности");
   await expect.poll(bottomFrame).toBe(allParts);
 });
 
@@ -246,7 +277,7 @@ test("selected part thumbnail follows painting, undo and layer visibility", asyn
   await part(page, "head").click();
   const thumbnail = combo(page).locator("canvas");
   await expect.poll(() => read(thumbnail, 25, 40)).toEqual([200, 30, 40, 255]);
-  await page.getByLabel("Цвет кисти", { exact: true }).fill("#ff00ff");
+  await setColor(page, "Цвет кисти", "#ff00ff");
   const box = (await page.getByTestId("skin-texture").boundingBox())!;
   await page.mouse.click(box.x + (box.width * 12.5) / 64, box.y + (box.height * 12.5) / 64);
   await expect.poll(() => read(thumbnail, 25, 40)).toEqual([255, 0, 255, 255]);

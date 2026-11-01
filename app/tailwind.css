@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "./styles/studio.css";
+@import "./styles/color-picker.css";
 @source "./";
 
 :root {

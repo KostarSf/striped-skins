@@ -191,6 +191,9 @@ export default function EditorWorkspace({
     setCustomColors((v) => [hex, ...v.filter((c) => c !== hex)].slice(0, 16));
   };
   const palette = useMemo(() => paletteFor(skin), [skin]);
+  const pickerPalette = [...new Set([...customColors, ...palette])].filter(
+    (c) => !removedColors.has(c),
+  );
   const appearance = { ...meta, slim };
   const definition = resolveModel(appearance, preview);
   const parts = modelParts(definition).filter((p) => partAvailable(p.id, appearance, preview));
@@ -246,7 +249,8 @@ export default function EditorWorkspace({
   );
   useEffect(() => {
     const key = (e: KeyboardEvent) => {
-      if ((e.target as HTMLElement).closest("input,select,textarea,dialog")) return;
+      if ((e.target as HTMLElement).closest("input,select,textarea,dialog,.color-picker-trigger"))
+        return;
       const k = e.key.toLowerCase();
       if ((e.ctrlKey || e.metaKey) && (k === "z" || e.code === "KeyZ")) {
         e.preventDefault();
@@ -303,32 +307,30 @@ export default function EditorWorkspace({
               <DesignIcon name="plus" />
             </IconButton>
           </span>
-          {[...new Set([...customColors, ...palette])]
-            .filter((c) => !removedColors.has(c))
-            .map((c) => (
-              <span className="palette-entry" key={c}>
-                <button
-                  type="button"
-                  aria-label={`Цвет ${c}`}
-                  title={c}
-                  className="palette-swatch"
-                  style={{ background: c }}
-                  onClick={() => {
-                    setHex(c);
-                    setTool("brush");
-                  }}
-                />
-                <button
-                  type="button"
-                  className="palette-remove"
-                  aria-label={`Удалить цвет ${c}`}
-                  title="Удалить из палитры"
-                  onClick={() => setRemovedColors((v) => new Set([...v, c]))}
-                >
-                  ×
-                </button>
-              </span>
-            ))}
+          {pickerPalette.map((c) => (
+            <span className="palette-entry" key={c}>
+              <button
+                type="button"
+                aria-label={`Цвет ${c}`}
+                title={c}
+                className="palette-swatch"
+                style={{ background: c }}
+                onClick={() => {
+                  setHex(c);
+                  setTool("brush");
+                }}
+              />
+              <button
+                type="button"
+                className="palette-remove"
+                aria-label={`Удалить цвет ${c}`}
+                title="Удалить из палитры"
+                onClick={() => setRemovedColors((v) => new Set([...v, c]))}
+              >
+                ×
+              </button>
+            </span>
+          ))}
         </div>
       </div>
     </section>
@@ -443,6 +445,7 @@ export default function EditorWorkspace({
                   secondary={colors.secondary}
                   onPrimary={setHex}
                   onSecondary={setSecondary}
+                  palette={pickerPalette}
                 />
                 <IconButton label="Поменять цвета · X" onClick={swapColors}>
                   ⇄
@@ -592,6 +595,7 @@ export default function EditorWorkspace({
               onPreview={onPreview}
               slim={slim}
               onSlim={setSlim}
+              palette={pickerPalette}
             />
           </div>
           <output
@@ -613,6 +617,7 @@ export default function EditorWorkspace({
           secondary={colors.secondary}
           onPrimary={setHex}
           onSecondary={setSecondary}
+          palette={pickerPalette}
           onSwap={swapColors}
           brushSize={brushSize}
           onBrushSize={setBrushSize}

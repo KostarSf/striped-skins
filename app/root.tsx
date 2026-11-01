@@ -7,10 +7,10 @@ export const links: LinksFunction = () => [{ rel: "stylesheet", href: styles }];
 
 export const meta: MetaFunction = () => {
   return [
-    { title: "Striped Skins - Mine Little Pony skin viewer" },
+    { title: "Striped Skins - Mine Little Pony skin viewer and editor" },
     {
       name: "description",
-      content: "Watch and compare your awesome pony skins!",
+      content: "View, compare and edit Mine Little Pony skins.",
     },
   ];
 };
@@ -25,8 +25,11 @@ export default function App() {
         <MetaThemeTags />
 
         <meta property="og:image" content="/icon.png" />
-        <meta property="og:title" content="Striped Skins - Mine Little Pony skin viewer" />
-        <meta property="og:description" content="Watch and compare your awesome pony skins!" />
+        <meta
+          property="og:title"
+          content="Striped Skins - Mine Little Pony skin viewer and editor"
+        />
+        <meta property="og:description" content="View, compare and edit Mine Little Pony skins." />
 
         <Meta />
         <Links />

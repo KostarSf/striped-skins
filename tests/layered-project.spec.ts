@@ -1,3 +1,4 @@
+import { setColor } from "./color-picker-helpers";
 import { test, expect, type Page } from "@playwright/test";
 import { readFile } from "node:fs/promises";
 import { decodeSkinProject } from "@striped-skins/api";
@@ -22,7 +23,7 @@ const pixel = (page: Page) =>
       Array.from((canvas as HTMLCanvasElement).getContext("2d")!.getImageData(12, 12, 1, 1).data),
     );
 async function paint(page: Page, color: string) {
-  await page.getByLabel("Цвет кисти", { exact: true }).fill(color);
+  await setColor(page, "Цвет кисти", color);
   const box = (await page.getByTestId("skin-texture").boundingBox())!;
   await page.mouse.click(box.x + (box.width * 12.5) / 64, box.y + (box.height * 12.5) / 64);
 }

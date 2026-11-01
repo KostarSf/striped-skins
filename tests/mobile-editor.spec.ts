@@ -1,3 +1,4 @@
+import { setColor } from "./color-picker-helpers";
 import { expect, test, type Page } from "@playwright/test";
 
 test.use({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
@@ -93,7 +94,7 @@ test("touch tools update the floating icon, edit the same pixels across views, a
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
   await page.getByRole("button", { name: "2D вид", exact: true }).tap();
-  await page.getByLabel("Цвет кисти", { exact: true }).fill("#ff00ff");
+  await setColor(page, "Цвет кисти", "#ff00ff");
   await touchPixel(page);
   await expect.poll(() => pixel(page)).toEqual([255, 0, 255, 255]);
   await chooseTool(page, "Ластик");
@@ -118,7 +119,10 @@ test("touch tools update the floating icon, edit the same pixels across views, a
   await expect(page.locator(".mobile-tool-menu summary")).toHaveAccessibleName(
     "Инструменты: Кисть",
   );
-  await expect(page.getByLabel("Цвет кисти", { exact: true })).toHaveValue("#ff00ff");
+  await expect(page.getByLabel("Цвет кисти", { exact: true })).toHaveAttribute(
+    "data-color",
+    "#ff00ff",
+  );
   await page.getByRole("button", { name: "Параметры инструмента", exact: true }).tap();
   await page.getByLabel("Размер кисти", { exact: true }).fill("3");
   await page.getByLabel("Непрозрачность кисти", { exact: true }).fill("50");
@@ -135,14 +139,24 @@ test("touch tools update the floating icon, edit the same pixels across views, a
   await expect(page.getByLabel("Размер кисти", { exact: true })).toHaveValue("3");
   await expect(page.getByLabel("Непрозрачность кисти", { exact: true })).toHaveValue("50");
   await page.getByLabel("HEX цвета кисти", { exact: true }).fill("#123456");
-  await expect(page.getByLabel("Пикер цвета кисти", { exact: true })).toHaveValue("#123456");
-  await expect(page.getByLabel("Цвет кисти", { exact: true })).toHaveValue("#123456");
+  await expect(page.getByLabel("Пикер цвета кисти", { exact: true })).toHaveAttribute(
+    "data-color",
+    "#123456",
+  );
+  await expect(page.getByLabel("Цвет кисти", { exact: true })).toHaveAttribute(
+    "data-color",
+    "#123456",
+  );
   await page.getByLabel("HEX дополнительного цвета", { exact: true }).fill("#abcdef");
-  await expect(page.getByLabel("Пикер дополнительного цвета", { exact: true })).toHaveValue(
+  await expect(page.getByLabel("Пикер дополнительного цвета", { exact: true })).toHaveAttribute(
+    "data-color",
     "#abcdef",
   );
-  await expect(page.getByLabel("Дополнительный цвет", { exact: true })).toHaveValue("#abcdef");
-  await page.getByLabel("Пикер дополнительного цвета", { exact: true }).fill("#fedcba");
+  await expect(page.getByLabel("Дополнительный цвет", { exact: true })).toHaveAttribute(
+    "data-color",
+    "#abcdef",
+  );
+  await setColor(page, "Пикер дополнительного цвета", "#fedcba");
   await expect(page.getByLabel("HEX дополнительного цвета", { exact: true })).toHaveValue(
     "#FEDCBA",
   );
@@ -232,7 +246,7 @@ test("two-finger texture gestures zoom around the fingers and pan without painti
     original,
   );
   await chooseTool(page, "Кисть");
-  await page.getByLabel("Цвет кисти", { exact: true }).fill("#ff00ff");
+  await setColor(page, "Цвет кисти", "#ff00ff");
   await touchPixel(page);
   await expect.poll(() => pixel(page)).toEqual([255, 0, 255, 255]);
   await session.detach();

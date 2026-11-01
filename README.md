@@ -1,75 +1,29 @@
 # Striped Skins
 
-Mine Little Pony skin viewer, built with React Router Framework Mode, React and Three.js.
-The npm workspace also contains the skin API, React viewer and standalone browser bundle.
+Mine Little Pony skin viewer and editor. View and compare skins, paint in 2D and
+3D, organize layers, save `.striped` projects, and export PNG skins. Includes a
+React viewer and a standalone browser bundle.
 
-Skin materials use centroid UV interpolation so native MSAA does not sample
-neighboring atlas regions at transparent polygon edges. View settings select
-**Выкл**, **MSAA**, or **SMAA**, preserving the camera view. Phone user agents
-default to MSAA; desktop and tablet user agents default to SMAA. A saved explicit
-mode wins over device detection, and the legacy disabled preference stays off.
+## Development
 
-For an embedded viewer, select the mode explicitly during initialization:
-
-```js
-const viewer = new StripedViewer({
-  targetElement: "#skin-viewer",
-  viewerOptions: {
-    firstSkinUrl: "/media/skin.png",
-    userOptions: { antialiasing: "msaa" },
-  },
-});
-viewer.attach();
-```
-
-The API accepts `"off"`, `"msaa"`, and `"smaa"`. Legacy booleans remain accepted:
-`false` disables AA and `true` selects SMAA, matching the original boolean API.
-
-On the application dev server, add `?perf=1` to show the optional `r3f-perf`
-overlay (for example, `http://localhost:5173/?perf=1`). It is a root development
-dependency and is never imported by the viewer library or standalone bundle.
-Both production builds fail if the monitor or its font/UI dependencies enter any
-output chunk, including lazy chunks. SMAA postprocessing remains available in
-production, and runs only when the SMAA mode is selected.
-
-The viewer renders all MLP 1.20.1 races, sizes and accessories from vendored Mson
-data. Use **Редактировать** to open `/editor` for shared 2D/3D painting, metadata
-editing, drawing layers and groups, part visibility, `.striped` projects and PNG export. `/model-lab` remains the Earthpony regression
-page. The Figma-based interface and shortcuts are described in
-[the interface guide](docs/figma-interface.md). See [the editor guide](docs/model-lab.md) and [implementation status](docs/editor-roadmap.md).
-See the [editor development roadmap](docs/editor-development-roadmap.md) and
-[project format](docs/project-format.md).
-Normal builds use checked-in generated models and need no MineLittlePony checkout.
-
-## Requirements
-
-Use Node.js **24.22.1 LTS** (see `.nvmrc` and `.node-version`) and npm.
+Requires Node.js **24.22.1 LTS** and npm.
 
 ```sh
-nvm use
 npm ci
 npm run dev
 ```
 
-`dev` builds the workspace libraries first, then starts the React Router Vite server
-with hot reload. After editing library sources, run `npm run build:libs` to refresh
-their compiled output.
+The development server builds workspace libraries first. After editing library
+sources, run `npm run build:libs` to refresh their output. Generated models are
+checked in; no MineLittlePony checkout is needed.
 
 ## Checks
 
 ```sh
 npm run build:libs
 npm run check
-```
-
-`check` runs Oxlint, Oxfmt's formatting check, React Router route type generation
-and TypeScript. Use `npm run format` to format the repository. CI also builds the
-production application and standalone browser bundle, then runs Chromium regression
-checks for comparison rendering and skin URL state.
-
-To run the browser checks locally after `npm run build`:
-
-```sh
+npm run test:unit
+npm run build
 npx playwright install chromium
 npm run test:e2e
 ```
@@ -81,33 +35,11 @@ npm run build
 npm start
 ```
 
-Deploy `build/`, `public/`, the workspace packages (including their `build/`
-directories), package manifests and production dependencies. The Node server entry
-is `build/server/index.js`; client assets are in `build/client/`.
+For the standalone viewer, use `npm run dist:lib` and `npm run preview:lib`.
 
-## Vercel
+## Documentation
 
-`vercel.json` selects the React Router framework explicitly, overriding a legacy
-Remix framework selection in the Vercel project. It uses `npm ci` and
-`npm run build` so the API and viewer workspaces compile before the application.
-Keep the project's Root Directory at the repository root and clear any legacy
-Output Directory override; React Router's builder handles the SSR server and
-client assets. Use Node.js 24.x in the Vercel project settings.
-
-## Standalone browser bundle
-
-```sh
-npm run dist:lib
-npm run preview:lib
-```
-
-For bundle development, use `npm run dev:lib`. Both development and distribution
-commands build the workspace libraries automatically.
-
-The API and viewer packages expose ESM JavaScript and TypeScript declarations.
-The old unused CommonJS output has been removed. `r3f-perf`'s Drei dependency is
-overridden to Drei 10 to share the React 19-compatible renderer stack.
-
-Oxlint checks hooks and accessibility. React Compiler-specific ref/immutability
-and synchronous-effect checks are disabled for the existing imperative Three.js
-and URL synchronization code; the project does not enable React Compiler.
+- [Interface and shortcuts](docs/figma-interface.md)
+- [Editor guide](docs/model-lab.md)
+- [Project format](docs/project-format.md)
+- [Development roadmap](docs/editor-development-roadmap.md)
