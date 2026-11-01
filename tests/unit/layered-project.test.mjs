@@ -8,6 +8,7 @@ import {
   writeSkinMetadata,
   decodeSkinMetadata,
 } from "../../packages/api/build/esm/index.js";
+import { validateSnapshot } from "../../packages/api/build/esm/SkinDocument.js";
 const fresh = (size = 64) => new SkinDocument(size, size, new Uint8ClampedArray(size * size * 4));
 const paint = (doc, color, x = 10, y = 10) => {
   doc.beginStroke();
@@ -179,6 +180,103 @@ test("reordering, nested duplication and merge down are reversible and never ali
   assert.deepEqual(doc.readPixel(10, 10), red);
   doc.redo();
   assert.deepEqual(doc.readPixel(10, 10), blue);
+});
+
+test("duplicating long layer and group names preserves valid project and recovery history", () => {
+  for (const kind of ["layer", "group"]) {
+    for (const length of [92, 93, 100]) {
+      const doc = fresh();
+      const id = kind === "group" ? doc.addLayer("group") : doc.activeLayerId;
+      const name = "Я".repeat(length);
+      doc.updateLayer(id, { name });
+      if (kind === "group") {
+        const child = doc.addLayer();
+        doc.updateLayer(child, { name: "В".repeat(100) });
+      }
+      doc.duplicateLayer(id);
+      const duplicate = doc.activeLayerId;
+      assert.equal(doc.activeLayer.name, `${name.slice(0, 92)} — копия`);
+      assert.ok(doc.layers.every((node) => node.name.length <= 100));
+      // A later rename must not hide an invalid name in structural undo history.
+      doc.updateLayer(duplicate, { name: "Переименованная копия" });
+      for (const restored of [
+        SkinDocument.restore(doc.snapshot()),
+        decodeSkinProject(encodeSkinProject(doc)),
+      ]) {
+        restored.undo();
+        assert.equal(restored.activeLayer.name, `${name.slice(0, 92)} — копия`);
+        restored.undo();
+        assert.ok(restored.layers.every((node) => node.id !== duplicate));
+        restored.redo();
+        assert.equal(restored.activeLayerId, duplicate);
+        assert.equal(restored.activeLayer.name.length, 100);
+        restored.redo();
+        assert.equal(restored.activeLayer.name, "Переименованная копия");
+        validateSnapshot(restored.snapshot());
+      }
+    }
+  }
+});
+
+test("merging empty groups respects the HD raster budget without modifying state or redo", () => {
+  const size = 2048;
+  // Four hidden HD rasters fill the 64 MiB budget; omit unrelated painting history.
+  const snapshot = fresh(size).snapshot();
+  snapshot.layers = Array.from({ length: 4 }, (_, index) => ({
+    ...snapshot.layers[0],
+    id: `layer-${index + 1}`,
+    visible: false,
+    pixels: new Uint8ClampedArray(size * size * 4),
+  }));
+  const doc = SkinDocument.restore(snapshot);
+  const empty = doc.addLayer("group", null);
+  doc.updateLayer(empty, { visible: false });
+  const nested = doc.addLayer("group", null);
+  doc.updateLayer(nested, { visible: false });
+  const child = doc.addLayer("group", nested);
+  doc.updateLayer(child, { visible: false });
+  doc.addLayer("group", child);
+  doc.updateLayer(nested, { name: "Изменённая группа" });
+  doc.undo();
+  assert.equal(doc.canAddLayer, false);
+  assert.equal(doc.canRedo, true);
+  const before = {
+    layers: [...doc.layers],
+    active: doc.activeLayerId,
+    history: doc.historyStates,
+    token: doc.saveToken,
+    revision: doc.getSnapshot(),
+  };
+  let notifications = 0;
+  doc.subscribe(() => notifications++);
+  for (const id of [empty, nested, child]) {
+    assert.throws(() => doc.mergeGroup(id), /64 МиБ/);
+    assert.deepEqual(doc.layers, before.layers);
+    assert.equal(doc.activeLayerId, before.active);
+    assert.deepEqual(doc.historyStates, before.history);
+    assert.equal(doc.saveToken, before.token);
+    assert.equal(doc.getSnapshot(), before.revision);
+    assert.equal(notifications, 0);
+    assert.equal(doc.canRedo, true);
+  }
+  // Replacing an existing descendant raster is allowed even at the limit.
+  doc.moveLayer("layer-4", child);
+  doc.mergeGroup(nested);
+  assert.equal(doc.layers.filter((node) => node.kind === "layer").length, 4);
+  assert.equal(doc.activeLayer.kind, "layer");
+  doc.undo();
+  assert.equal(doc.layers.find((node) => node.id === nested).kind, "group");
+  doc.redo();
+  validateSnapshot(doc.snapshot());
+  // An empty group may become a raster once a slot is freed.
+  doc.deleteLayer("layer-3");
+  assert.equal(doc.canAddLayer, true);
+  doc.mergeGroup(empty);
+  assert.equal(doc.layers.filter((node) => node.kind === "layer").length, 4);
+  doc.undo();
+  assert.equal(doc.layers.find((node) => node.id === empty).kind, "group");
+  doc.redo();
+  validateSnapshot(doc.snapshot());
 });
 
 test("project ZIP round-trip preserves hidden RGB, settings, metadata, shared history and redo", () => {

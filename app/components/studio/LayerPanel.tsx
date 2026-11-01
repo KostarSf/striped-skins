@@ -318,7 +318,7 @@ export function LayerPanel({ document: skin }: { document: SkinDocument }) {
           <TrashIcon />
         </IconButton>
         {active.kind === "group" ? (
-          <Button onClick={() => skin.mergeGroup(active.id)}>Объединить группу</Button>
+          <Button onClick={() => run(() => skin.mergeGroup(active.id))}>Объединить группу</Button>
         ) : (
           <Button disabled={!skin.canMergeDown} onClick={() => skin.mergeDown()}>
             Объединить вниз

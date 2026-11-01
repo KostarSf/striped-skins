@@ -53,6 +53,7 @@ type LegacySnapshot = {
 };
 let documentSequence = 0;
 const MAX_BYTES = 64 * 1024 * 1024;
+const MAX_LAYER_NAME = 100;
 const MAX_HISTORY = 100;
 const HISTORY_BYTES = 32 * 1024 * 1024;
 const isTrigger = (x: number, y: number) => x < 4 && y < 2;
@@ -329,7 +330,8 @@ export class SkinDocument {
     const node = this.nodes.find((n) => n.id === id);
     if (!node) return;
     const values = { ...patch };
-    if (values.name !== undefined) values.name = values.name.trim().slice(0, 100) || node.name;
+    if (values.name !== undefined)
+      values.name = values.name.trim().slice(0, MAX_LAYER_NAME) || node.name;
     if (values.opacity !== undefined)
       values.opacity = Math.max(0, Math.min(100, Math.round(values.opacity) || 0));
     this.changeStructure(
@@ -364,11 +366,12 @@ export class SkinDocument {
       throw new Error("Недостаточно памяти для копии слоёв (лимит 64 МиБ)");
     if (!source.length) return;
     const mapping = new Map(source.map((n) => [n.id, `layer-${++this.sequence}`]));
+    const suffix = " — копия";
     this.changeStructure("Дублирование слоя / группы", () => {
       const copies = source.map((n) => ({
         ...n,
         id: mapping.get(n.id)!,
-        name: n.id === id ? `${n.name} — копия` : n.name,
+        name: n.id === id ? `${n.name.slice(0, MAX_LAYER_NAME - suffix.length)}${suffix}` : n.name,
         parentId: mapping.get(n.parentId ?? "") ?? n.parentId,
         ...(n.pixels ? { pixels: new Uint8ClampedArray(n.pixels) } : {}),
       }));
@@ -398,13 +401,16 @@ export class SkinDocument {
   mergeGroup(id: string) {
     const group = this.nodes.find((n) => n.id === id && n.kind === "group");
     if (!group) return;
+    const ids = this.descendants(id);
+    const remainingRasters = this.nodes.filter((n) => n.kind === "layer" && !ids.has(n.id)).length;
+    if ((remainingRasters + 1) * this.pixels.length > MAX_BYTES)
+      throw new Error("Недостаточно памяти для объединения группы (лимит 64 МиБ)");
     const pixels = this.render(id, {
       minX: 0,
       minY: 0,
       maxX: this.width - 1,
       maxY: this.height - 1,
     });
-    const ids = this.descendants(id);
     this.changeStructure("Объединение группы", () => {
       this.nodes = this.nodes.filter((n) => n.id === id || !ids.has(n.id));
       Object.assign(group, { kind: "layer", pixels });
@@ -778,7 +784,7 @@ export function validateSnapshot(s: ProjectSnapshot) {
         typeof n.id !== "string" ||
         !/^layer-[1-9]\d{0,8}$/.test(n.id) ||
         typeof n.name !== "string" ||
-        n.name.length > 100 ||
+        n.name.length > MAX_LAYER_NAME ||
         typeof n.visible !== "boolean" ||
         typeof n.locked !== "boolean" ||
         typeof n.alphaLocked !== "boolean" ||
