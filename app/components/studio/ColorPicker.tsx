@@ -104,8 +104,9 @@ export function ColorPicker({
           if (open) close();
           else {
             setOriginal(value);
-            setRecent(readHistory());
+            // Dismissing another picker saves its final color synchronously.
             popup.current?.showPopover();
+            setRecent(readHistory());
             position();
           }
         }}
@@ -116,10 +117,9 @@ export function ColorPicker({
         popover="auto"
         className="color-picker-popup"
         aria-label={`Выбор цвета: ${label}`}
-        onToggle={(event) => {
-          const next = event.newState === "open";
-          setOpen(next);
-          if (!next && normalized !== original.toLowerCase()) {
+        onToggle={(event) => setOpen(event.newState === "open")}
+        onBeforeToggle={(event) => {
+          if (event.newState === "closed" && normalized !== original.toLowerCase()) {
             try {
               localStorage.setItem(
                 historyKey,

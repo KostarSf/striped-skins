@@ -96,6 +96,42 @@ test("skin swatches and recent colors are shared between pickers and survive rel
   ).toBeVisible();
 });
 
+test("switching directly between pickers immediately includes the previous selection in recent colors", async ({
+  page,
+}) => {
+  await editor(page);
+  await trigger(page).click();
+  await picker(page).getByLabel("HEX выбранного цвета").fill("#123456");
+  const secondary = trigger(page, "Дополнительный цвет");
+  // Leave the first popover open and reach the other trigger with the keyboard.
+  for (
+    let step = 0;
+    step < 10 && !(await secondary.evaluate((button) => button === document.activeElement));
+    step++
+  ) {
+    await page.keyboard.press("Shift+Tab");
+  }
+  await expect(secondary).toBeFocused();
+  await expect(picker(page)).toBeVisible();
+  await page.keyboard.press("Enter");
+  const popup = picker(page, "Дополнительный цвет");
+  await expect(picker(page)).not.toBeVisible();
+  const recent = popup.getByRole("button", { name: "Недавний цвет: #123456", exact: true });
+  await expect(recent).toBeVisible();
+  await recent.click();
+  await expect(secondary).toHaveAttribute("data-color", "#123456");
+  await popup.getByLabel("HEX выбранного цвета").fill("#abcdef");
+  // Pointer switching must update the new popup too, without duplicating entries.
+  await trigger(page).click();
+  await expect(
+    picker(page).getByRole("button", { name: "Недавний цвет: #abcdef", exact: true }),
+  ).toBeVisible();
+  await expect(
+    picker(page).getByRole("button", { name: "Недавний цвет: #123456", exact: true }),
+  ).toHaveCount(1);
+  await picker(page).getByRole("button", { name: "Закрыть выбор цвета" }).click();
+});
+
 test("glow changes update skin metadata and remain undoable", async ({ page }) => {
   await editor(page);
   const pixels = await texture(page);
