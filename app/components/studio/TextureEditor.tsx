@@ -27,6 +27,7 @@ export function TextureEditor({
   onSample,
   onPaint,
   guides,
+  highlightedQuads,
   hover,
   onHover,
   showUV: uv,
@@ -40,6 +41,7 @@ export function TextureEditor({
   onSample: (pixel: Pixel) => void;
   onPaint: (p: { x: number; y: number; part: string }) => void;
   guides: ModelQuad[];
+  highlightedQuads?: ModelQuad[];
   hover?: SurfaceHover | null;
   onHover?: (pixel: { x: number; y: number } | null) => void;
   showUV: boolean;
@@ -373,6 +375,31 @@ export function TextureEditor({
                 strokeWidth={1}
                 vectorEffect="non-scaling-stroke"
               />
+            </svg>
+          ) : null}
+          {highlightedQuads?.length ? (
+            <svg
+              aria-hidden="true"
+              className="texture-guides part-uv-highlight"
+              viewBox={`0 0 ${skin.width} ${skin.height}`}
+              data-testid="part-uv-highlight"
+            >
+              {highlightedQuads.map((quad) => (
+                <polygon
+                  key={quad.id}
+                  data-surface={quad.id}
+                  points={[0, 1, 2, 3]
+                    .map(
+                      (i) =>
+                        `${quad.uv[2 * i] * skin.width},${(1 - quad.uv[2 * i + 1]) * skin.height}`,
+                    )
+                    .join(" ")}
+                  fill="#67e8f9"
+                  fillOpacity={0.3}
+                  stroke="#67e8f9"
+                  strokeWidth={2 / scale}
+                />
+              ))}
             </svg>
           ) : null}
           {uv && hover && hoverRect ? (

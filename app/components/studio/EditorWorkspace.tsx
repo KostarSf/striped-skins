@@ -17,7 +17,8 @@ import { PartsVisibility } from "./PartsVisibility";
 import { buildPartTree } from "./part-tree";
 import { SkinSettings } from "./SkinSettings";
 import { TextureEditor, type PaintTool } from "./TextureEditor";
-import { Button, DesignIcon, Field, IconButton, PanelHeading } from "./ui";
+import { Button, DesignIcon, IconButton, PanelHeading } from "./ui";
+import { PaintPartSelect } from "./PaintPartSelect";
 import {
   BrushColors,
   MobileEditorFooter,
@@ -130,6 +131,7 @@ export default function EditorWorkspace({
   const [options] = useDocumentSetting(skin, "viewOptions", { ...defaults });
   const isPhone = usePhoneLayout();
   const [inspectorTab, setInspectorTab] = useState<"texture" | "skin">("texture");
+  const [highlightedPart, setHighlightedPart] = useState<string | null>(null);
   const inspectorId = useId();
   const [mobileView, setMobileView] = useDocumentSetting<MobileEditorView>(
     skin,
@@ -213,6 +215,12 @@ export default function EditorWorkspace({
     })),
   );
   const selected = parts.some((p) => p.id === activePart) ? activePart : null;
+  const availablePartIds = parts.map((part) => part.id).join("\n");
+  const available = new Set(parts.map((part) => part.id));
+  const partOptions = flattenNodes(definition)
+    .filter((node) => available.has(node.id))
+    .map((node) => ({ id: node.id, label: labelFor(node.id), quads: node.quads }));
+  const highlighted = partOptions.find((part) => part.id === highlightedPart);
   const quads = flattenNodes(definition)
     .filter(
       (n) =>
@@ -279,9 +287,12 @@ export default function EditorWorkspace({
           ? old
           : next,
       ),
-    [],
+    [setStats],
   );
-  const onPaint = useCallback((p: { x: number; y: number; part: string }) => setLastPixel(p), []);
+  const onPaint = useCallback(
+    (p: { x: number; y: number; part: string }) => setLastPixel(p),
+    [setLastPixel],
+  );
   const palettePanel = (
     <section className="palette-panel" aria-label="Палитра скина">
       <div className="skin-palette">
@@ -455,6 +466,7 @@ export default function EditorWorkspace({
                 color={color}
                 brushSize={brushSize}
                 activePart={selected}
+                highlightedPart={highlighted?.id}
                 onSample={tool === "drop" ? sample : undefined}
                 onPaint={onPaint}
                 onHover={setHover}
@@ -492,6 +504,7 @@ export default function EditorWorkspace({
                 onSample={sample}
                 onPaint={onPaint}
                 guides={quads}
+                highlightedQuads={highlighted?.quads}
                 showUV={showUV}
                 onShowUV={setShowUV}
                 hover={hover}
@@ -549,20 +562,15 @@ export default function EditorWorkspace({
             <LayerPanel document={skin} />
             <div className="settings-group">
               <h3>Рисование по поверхности</h3>
-              <Field label="Рисовать по">
-                <select
-                  aria-label="Слой рисования"
-                  value={selected ?? ""}
-                  onChange={(e) => setActivePart(e.target.value || null)}
-                >
-                  <option value="">Видимой поверхности</option>
-                  {parts.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {labelFor(p.id)}
-                    </option>
-                  ))}
-                </select>
-              </Field>
+              <PaintPartSelect
+                key={`${skin.id}/${definition.id}/${availablePartIds}`}
+                document={skin}
+                parts={partOptions}
+                value={selected}
+                onChange={setActivePart}
+                onHighlight={setHighlightedPart}
+                enabled={inspectorTab === "texture" && (!isPhone || mobileView === "settings")}
+              />
             </div>
             <HistoryPanel document={skin} />
           </div>

@@ -40,6 +40,7 @@ export type PonyPreviewProps = Partial<Omit<PreviewCameraProps, "painting" | "co
   painting: boolean;
   color: Pixel;
   activePart: string | null;
+  highlightedPart?: string | null;
   preview?: PreviewSettings;
   motionLayers?: readonly MotionLayer[];
   brushSize?: number;

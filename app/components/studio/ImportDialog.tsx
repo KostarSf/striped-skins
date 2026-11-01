@@ -176,9 +176,6 @@ export function ImportDialog({
       <Button tone="ghost" disabled={busy} onClick={() => accept("/steve_pony.png")}>
         Использовать пример скина
       </Button>
-      <p className="import-footnote">
-        Служебные пиксели, раса и аксессуары считываются автоматически.
-      </p>
     </dialog>
   );
 }
