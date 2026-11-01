@@ -70,7 +70,7 @@ const frame = (page: Page) =>
       ).join(","),
     );
 
-const cyanPixels = (page: Page) =>
+const orangePixels = (page: Page) =>
   page.locator('section[aria-label="Предпросмотр модели"] canvas').evaluate((node) => {
     const copy = document.createElement("canvas");
     copy.width = copy.height = 128;
@@ -79,9 +79,81 @@ const cyanPixels = (page: Page) =>
     const data = context.getImageData(0, 0, 128, 128).data;
     let count = 0;
     for (let i = 0; i < data.length; i += 4)
-      if (data[i + 1] > data[i] + 10 && data[i + 2] > data[i] + 10 && data[i + 3] > 0) count++;
+      if (data[i] > 180 && data[i + 1] > 60 && data[i + 2] < 60 && data[i + 3] > 0) count++;
     return count;
   });
+
+async function clickTexel(page: Page, x: number, y: number) {
+  const canvas = page.getByTestId("skin-texture");
+  await canvas.screenshot();
+  const box = (await canvas.boundingBox())!;
+  await page.mouse.click(
+    box.x + (box.width * (x + 0.5)) / 64,
+    box.y + (box.height * (y + 0.5)) / 64,
+  );
+}
+
+test("2D painting and erasing stay inside the selected part's UV islands, including wide brushes and gaps", async ({
+  page,
+}) => {
+  await combo(page).click();
+  await part(page, "head").click();
+  await page.getByLabel("Цвет кисти", { exact: true }).fill("#ff00ff");
+  const canvas = page.getByTestId("skin-texture");
+  const before = await canvas.evaluate((node) => (node as HTMLCanvasElement).toDataURL());
+  await clickTexel(page, 50, 50);
+  await clickTexel(page, 4, 4);
+  expect(await canvas.evaluate((node) => (node as HTMLCanvasElement).toDataURL())).toBe(before);
+  await expect(page.getByRole("button", { name: "Отменить штрих", exact: true })).toBeDisabled();
+  await page.getByLabel("Размер кисти", { exact: true }).fill("9");
+  await page.keyboard.press("Enter");
+  await clickTexel(page, 8, 8);
+  await expect.poll(() => read(canvas, 12, 12)).toEqual([255, 0, 255, 255]);
+  expect(await read(canvas, 4, 4)).toEqual([0, 255, 0, 255]);
+  expect(await read(canvas, 50, 50)).toEqual([200, 30, 40, 255]);
+  await page.getByRole("button", { name: "Отменить штрих", exact: true }).click();
+  expect(await canvas.evaluate((node) => (node as HTMLCanvasElement).toDataURL())).toBe(before);
+  await page.getByRole("button", { name: "Ластик · E", exact: true }).click();
+  await clickTexel(page, 8, 8);
+  await expect.poll(() => read(canvas, 8, 8)).toEqual([0, 0, 0, 0]);
+  expect(await read(canvas, 4, 4)).toEqual([0, 255, 0, 255]);
+  await page.getByRole("button", { name: "Пипетка · I", exact: true }).click();
+  await clickTexel(page, 4, 4);
+  await expect(page.getByLabel("Цвет кисти", { exact: true })).toHaveValue("#00ff00");
+  await combo(page).click();
+  await page.keyboard.press("Home");
+  await page.keyboard.press("Enter");
+  await clickTexel(page, 50, 50);
+  await expect.poll(() => read(canvas, 50, 50)).toEqual([0, 255, 0, 255]);
+});
+
+test("3D UV contours follow the selected paint part and restore all surfaces in automatic mode", async ({
+  page,
+}) => {
+  const uv = page.locator(".texture-viewport").getByRole("button", { name: "UV", exact: true });
+  const bottomFrame = () =>
+    page.locator('section[aria-label="Предпросмотр модели"] canvas').evaluate(async (node) => {
+      const copy = document.createElement("canvas");
+      copy.width = copy.height = 128;
+      copy.getContext("2d")!.drawImage(node as HTMLCanvasElement, 0, 0, 128, 128);
+      const data = copy.getContext("2d")!.getImageData(0, 64, 128, 64).data;
+      return Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", data))).join(",");
+    });
+  await uv.click();
+  await expect.poll(() => orangePixels(page)).toBe(0);
+  const withoutUV = await bottomFrame();
+  await uv.click();
+  await expect.poll(bottomFrame).not.toBe(withoutUV);
+  const allParts = await bottomFrame();
+  await combo(page).click();
+  await part(page, "hat").click();
+  await expect.poll(bottomFrame).toBe(withoutUV);
+  await expect.poll(() => orangePixels(page)).toBeGreaterThan(10);
+  await combo(page).click();
+  await page.keyboard.press("Home");
+  await page.keyboard.press("Enter");
+  await expect.poll(bottomFrame).toBe(allParts);
+});
 
 test("part options show cropped live UV textures and highlight 2D/3D without editing or selecting", async ({
   page,
@@ -99,7 +171,12 @@ test("part options show cropped live UV textures and highlight 2D/3D without edi
   await head.hover();
   await expect(page.getByTestId("part-uv-highlight").locator("polygon")).toHaveCount(6);
   await expect.poll(() => frame(page)).not.toBe(before);
-  await expect.poll(() => cyanPixels(page)).toBeGreaterThan(100);
+  await expect.poll(() => orangePixels(page)).toBeGreaterThan(100);
+  await expect(head).toHaveCSS("color", "rgb(249, 115, 22)");
+  await expect(page.getByTestId("part-uv-highlight").locator("polygon").first()).toHaveCSS(
+    "fill",
+    "rgb(249, 115, 22)",
+  );
   await expect(combo(page)).toHaveText("UVВидимой поверхности");
   const headFrame = await frame(page);
   await page.mouse.move(5, 5);

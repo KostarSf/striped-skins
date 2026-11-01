@@ -47,6 +47,7 @@ export type GeneratedPonyProps = {
   showUV?: boolean;
   shading?: ModelShading;
   highlightedPart?: string | null;
+  activePart?: string | null;
 };
 export function geometryFor(quads: ModelQuad[]) {
   const geometry = new BufferGeometry(),
@@ -84,6 +85,7 @@ export function GeneratedPony({
   showUV = false,
   shading = "flat",
   highlightedPart,
+  activePart = null,
 }: GeneratedPonyProps) {
   const revision = useSyncExternalStore(
     skinDocument.subscribe,
@@ -310,7 +312,16 @@ export function GeneratedPony({
   return (
     <>
       <primitive object={instance.root} dispose={null} />
-      {showUV ? <UVOutlines meshes={instance.meshes} hidden={hidden} /> : null}
+      {showUV ? (
+        <UVOutlines
+          meshes={
+            activePart
+              ? instance.meshes.filter((mesh) => mesh.userData.partId === activePart)
+              : instance.meshes
+          }
+          hidden={hidden}
+        />
+      ) : null}
       {highlightedPart
         ? instance.meshes
             .filter((mesh) => mesh.userData.partId === highlightedPart)

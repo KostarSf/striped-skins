@@ -5,6 +5,7 @@ import { type ModelQuad } from "@striped-skins/models";
 import { Button, DesignIcon, IconButton } from "./ui";
 import { useDocumentSetting } from "./useDocumentSetting";
 import { useSkinDrop } from "./useSkinDrop";
+import { uvPaintMask } from "./paint-mask";
 export type PaintTool = "brush" | "eraser" | "drop" | "hand";
 type TouchPoint = { x: number; y: number };
 function hoverBrushRect(hover: SurfaceHover, width: number, height: number, size: number) {
@@ -28,6 +29,7 @@ export function TextureEditor({
   onPaint,
   guides,
   highlightedQuads,
+  paintQuads,
   hover,
   onHover,
   showUV: uv,
@@ -42,6 +44,7 @@ export function TextureEditor({
   onPaint: (p: { x: number; y: number; part: string }) => void;
   guides: ModelQuad[];
   highlightedQuads?: ModelQuad[];
+  paintQuads?: readonly ModelQuad[];
   hover?: SurfaceHover | null;
   onHover?: (pixel: { x: number; y: number } | null) => void;
   showUV: boolean;
@@ -61,13 +64,20 @@ export function TextureEditor({
     [grid, setGrid] = useDocumentSetting<boolean>(skin, "pixelGrid", true),
     [space, setSpace] = useState(false),
     [cursor, storeCursor] = useState<{ x: number; y: number } | null>(null);
+  const paintMask = useMemo(
+    () => (paintQuads ? uvPaintMask(paintQuads, skin.width, skin.height) : undefined),
+    [paintQuads, skin.width, skin.height],
+  );
   const paintBlocked = tool !== "drop" && !!skin.paintBlockedReason;
+  const cursorBlocked =
+    paintBlocked ||
+    (tool !== "drop" && !!cursor && !!paintMask && !paintMask[cursor.y * skin.width + cursor.x]);
   const setCursor = useCallback((pixel: { x: number; y: number } | null) => {
     storeCursor((old) => (old?.x === pixel?.x && old?.y === pixel?.y ? old : pixel));
   }, []);
   useEffect(() => {
-    onHover?.(tool === "brush" && !space && !paintBlocked ? cursor : null);
-  }, [cursor, tool, space, paintBlocked, onHover]);
+    onHover?.(tool === "brush" && !space && !cursorBlocked ? cursor : null);
+  }, [cursor, tool, space, cursorBlocked, onHover]);
   useEffect(() => {
     const clear = () => {
       skin.cancelStroke();
@@ -180,7 +190,11 @@ export function TextureEditor({
       return;
     }
     setCursor(p);
-    skin.paint(p.x, p.y, color, "texture", brushSize);
+    if (paintMask && !paintMask[p.y * skin.width + p.x]) {
+      skin.breakStroke();
+      return;
+    }
+    skin.paint(p.x, p.y, color, "texture", brushSize, undefined, paintMask);
     onPaint({ ...p, part: "2D" });
   };
   const end = () => {
@@ -238,7 +252,7 @@ export function TextureEditor({
       </div>
       <div
         ref={area}
-        className={`texture-area ${tool === "hand" || space ? "panning" : paintBlocked ? "painting-blocked" : ""}`}
+        className={`texture-area ${tool === "hand" || space ? "panning" : cursorBlocked ? "painting-blocked" : ""}`}
         onContextMenu={(e) => e.preventDefault()}
         onPointerDown={(e) => {
           if (e.pointerType === "touch") {
@@ -394,9 +408,9 @@ export function TextureEditor({
                         `${quad.uv[2 * i] * skin.width},${(1 - quad.uv[2 * i + 1]) * skin.height}`,
                     )
                     .join(" ")}
-                  fill="#67e8f9"
+                  fill="var(--studio-accent)"
                   fillOpacity={0.3}
-                  stroke="#67e8f9"
+                  stroke="var(--studio-accent)"
                   strokeWidth={2 / scale}
                 />
               ))}
@@ -444,7 +458,7 @@ export function TextureEditor({
               <rect {...hoverRect} fill="none" stroke="white" strokeWidth={1 / scale} />
             </svg>
           ) : null}
-          {cursor && tool !== "hand" && !space && !paintBlocked ? (
+          {cursor && tool !== "hand" && !space && !cursorBlocked ? (
             <div
               className="brush-cursor"
               style={{

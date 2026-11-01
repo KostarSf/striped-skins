@@ -39,6 +39,8 @@ async function edit(page: Page, second = false) {
 async function paint(page: Page, x = 12, y = 12) {
   await page.getByLabel("Цвет кисти", { exact: true }).fill("#ff00ff");
   await page.getByTestId("skin-texture").scrollIntoViewIfNeeded();
+  // Wait for font/layout and the first ResizeObserver fit before reading click coordinates.
+  await page.getByTestId("skin-texture").screenshot();
   const box = (await page.getByTestId("skin-texture").boundingBox())!;
   await page.mouse.click(
     box.x + ((x + 0.5) * box.width) / 64,
@@ -382,6 +384,7 @@ test("recovered edits stay dirty until the project is saved and require confirma
   await expect(page.getByTestId("skin-texture")).toBeVisible();
   await page.getByRole("tab", { name: "Параметры скина", exact: true }).click();
   await paint(page);
+  await expect.poll(() => pixel(page, 12, 12)).toEqual([255, 0, 255, 255]);
   await expect.poll(savedDirty).toBe(true);
   await page.reload();
   await expect(page.getByTestId("skin-texture")).toBeVisible();

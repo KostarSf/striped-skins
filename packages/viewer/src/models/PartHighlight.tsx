@@ -30,7 +30,7 @@ export function PartHighlight({ mesh }: { mesh: Mesh }) {
         renderOrder={1001}
       >
         <meshBasicMaterial
-          color="#67e8f9"
+          color="#f97316"
           opacity={0.4}
           transparent
           depthWrite={false}
@@ -41,7 +41,7 @@ export function PartHighlight({ mesh }: { mesh: Mesh }) {
       </mesh>
       <lineSegments geometry={geometry.outline} raycast={() => {}} renderOrder={1002}>
         <lineBasicMaterial
-          color="#67e8f9"
+          color="#f97316"
           transparent
           opacity={0.9}
           depthWrite={false}

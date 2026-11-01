@@ -504,6 +504,9 @@ export default function EditorWorkspace({
                 onSample={sample}
                 onPaint={onPaint}
                 guides={quads}
+                paintQuads={
+                  selected ? partOptions.find((part) => part.id === selected)?.quads : undefined
+                }
                 highlightedQuads={highlighted?.quads}
                 showUV={showUV}
                 onShowUV={setShowUV}

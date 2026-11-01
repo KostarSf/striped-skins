@@ -529,6 +529,7 @@ export class SkinDocument {
     surface = "texture",
     brushSize = 1,
     bounds?: PaintBounds,
+    mask?: Uint8Array,
   ) {
     if (!this.stroke || this.stroke.layerId === null || !Number.isFinite(x) || !Number.isFinite(y))
       return;
@@ -560,6 +561,7 @@ export class SkinDocument {
             px >= this.width ||
             py >= this.height ||
             isTrigger(px, py) ||
+            (mask && !mask[py * this.width + px]) ||
             (bounds &&
               (px < bounds.minX || px > bounds.maxX || py < bounds.minY || py > bounds.maxY))
           )
