@@ -34,6 +34,8 @@ export type UserOptionsPreferences = {
 };
 
 export type ViewerPreferencesProps = Partial<Omit<ViewerPreferences, "camera" | "userOptions">> & {
+  /** Name assigned to the base layer when importing a new skin. */
+  baseLayerName?: string;
   camera?: Partial<CameraPreferences>;
   userOptions?: UserOptionsInput;
 };

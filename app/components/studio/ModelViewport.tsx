@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
 import {
   PonyPreview,
@@ -15,7 +16,7 @@ const DevPerformanceMonitor = import.meta.env.DEV
   ? lazy(() => import("../DevPerformanceMonitor"))
   : null;
 export function ModelViewport({
-  title = "3D-модель",
+  title,
   mini = false,
   onClose,
   children,
@@ -32,6 +33,8 @@ export function ModelViewport({
   headerActions?: React.ReactNode;
   onFileDrop?: (file: File) => void;
 }) {
+  const { t } = useTranslation();
+  const displayTitle = title === undefined ? t("viewport.model") : title;
   const drop = useSkinDrop(onFileDrop);
   const metadata = decodeSkinMetadata(props.document);
   const fitKey = JSON.stringify([
@@ -122,7 +125,7 @@ export function ModelViewport({
     <section
       ref={host}
       className={`model-viewport ${mini ? "mini-preview" : ""} ${maximized ? "maximized" : ""}`}
-      aria-label="Предпросмотр модели"
+      aria-label={t("viewport.preview")}
       data-cursor={
         cameraDragging
           ? "grabbing"
@@ -155,20 +158,18 @@ export function ModelViewport({
           </Suspense>
         ) : null}
       </PonyPreview>
-      {drop.dragging ? (
-        <div className="skin-drop-overlay">Отпустите PNG, чтобы открыть скин</div>
-      ) : null}
+      {drop.dragging ? <div className="skin-drop-overlay">{t("import.dropPng")}</div> : null}
       <div className="viewport-heading">
-        {title ? <h2>{title}</h2> : null}
+        {displayTitle ? <h2>{displayTitle}</h2> : null}
         <div className="viewport-heading-actions">
           {mini && onClose ? (
-            <IconButton label="Скрыть 3D-превью" onClick={onClose}>
+            <IconButton label={t("viewport.hidePreview")} onClick={onClose}>
               <XMarkIcon />
             </IconButton>
           ) : null}
           {!mini ? (
             <select
-              aria-label="Ракурс модели"
+              aria-label={t("viewport.cameraAngle")}
               value={view}
               onChange={(e) => {
                 setView(e.target.value);
@@ -178,12 +179,12 @@ export function ModelViewport({
                 } else command(e.target.value as CameraAction["kind"]);
               }}
             >
-              <option value="perspective">Перспектива</option>
-              <option value="orthographic">Ортография</option>
-              <option value="front">Спереди</option>
-              <option value="back">Сзади</option>
-              <option value="left">Слева</option>
-              <option value="right">Справа</option>
+              <option value="perspective">{t("viewport.perspective")}</option>
+              <option value="orthographic">{t("viewport.orthographic")}</option>
+              <option value="front">{t("viewport.front")}</option>
+              <option value="back">{t("viewport.back")}</option>
+              <option value="left">{t("viewport.left")}</option>
+              <option value="right">{t("viewport.right")}</option>
             </select>
           ) : null}
           {!mini ? <ViewOptions document={persistWorkspace ? props.document : undefined} /> : null}
@@ -194,32 +195,34 @@ export function ModelViewport({
         <div className="viewport-footer">
           <div className="camera-actions">
             <span className="viewport-hint">
-              <span>
-                {props.painting ? "ЛКМ · рисовать · СКМ · вращать" : "ЛКМ / СКМ · вращать"}
-              </span>
-              <span>ПКМ · панорама · колесо · масштаб</span>
+              <span>{props.painting ? t("viewport.paintHint") : t("viewport.orbitHint")}</span>
+              <span>{t("viewport.panHint")}</span>
             </span>
             <div className="zoom-controls">
-              <IconButton label="Отдалить модель" onClick={() => command("out")}>
+              <IconButton label={t("viewport.zoomOut")} onClick={() => command("out")}>
                 −
               </IconButton>
               <span
                 ref={scaleOutput}
                 data-testid="model-scale"
-                aria-label="Масштаб 3D"
-                title="100% — модель вписана в окно"
+                aria-label={t("viewport.zoom")}
+                title={t("viewport.fitPercentage")}
               >
                 100%
               </span>
-              <IconButton label="Приблизить модель" onClick={() => command("in")}>
+              <IconButton label={t("viewport.zoomIn")} onClick={() => command("in")}>
                 +
               </IconButton>
             </div>
-            <IconButton label="Сброс вида" onClick={() => command("reset")}>
+            <IconButton
+              data-action="reset-view"
+              label={t("viewport.reset")}
+              onClick={() => command("reset")}
+            >
               <DesignIcon name="reset" />
             </IconButton>
             <IconButton
-              label="Полноэкранный вид"
+              label={t("viewport.fullscreen")}
               onClick={() => {
                 if (maximized) {
                   setMaximized(false);
@@ -238,7 +241,7 @@ export function ModelViewport({
       ) : null}
       {children}
       <Button className="sr-only" onClick={() => command("reset")}>
-        Вписать модель в окно
+        {t("viewport.fit")}
       </Button>
     </section>
   );

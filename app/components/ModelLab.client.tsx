@@ -1,3 +1,11 @@
+import {
+  createPartLabel,
+  getWearableNames,
+  getRaceNames,
+  getSizeNames,
+} from "../i18n/model-labels";
+import { errorMessage } from "../i18n/errors";
+import { useTranslation } from "react-i18next";
 import { NumberSlider } from "./studio/NumberSlider";
 import {
   useCallback,
@@ -14,9 +22,6 @@ import {
   decodeSkinMetadata,
   loadSkinDocument,
   writeSkinMetadata,
-  raceColors,
-  tailShapeColors,
-  wearableNames,
   type SkinMetadata,
   type Pixel,
 } from "@striped-skins/api";
@@ -35,17 +40,7 @@ import {
 } from "@striped-skins/models";
 import { PonyPreview, type PreviewStats } from "@striped-skins/viewer/experimental";
 
-const labels: Record<BodySize, string> = {
-  NORMAL: "Стандартный",
-  FOAL: "Жеребёнок",
-  YEARLING: "Подросток",
-  TALL: "Высокий",
-  LANKY: "Вытянутый",
-  BULKY: "Широкий",
-};
 const inputClass = "rounded border border-zinc-600 bg-zinc-800 p-2 text-sm disabled:opacity-40";
-
-const loadSkin = loadSkinDocument;
 
 function TextureView({
   skin,
@@ -66,6 +61,7 @@ function TextureView({
   color: Pixel;
   onPaint: (pixel: { x: number; y: number; part: string }) => void;
 }) {
+  const { t } = useTranslation();
   const ref = useRef<HTMLCanvasElement>(null);
   const dragging = useRef(false);
   useEffect(() => {
@@ -105,7 +101,7 @@ function TextureView({
           width={skin.width}
           height={skin.height}
           data-testid="skin-texture"
-          aria-label="Текстура скина, рисование пиксельной кистью"
+          aria-label={t("texture.canvasLabel")}
           className="block touch-none cursor-crosshair bg-zinc-700"
           style={{
             imageRendering: "pixelated",
@@ -171,6 +167,19 @@ function TextureView({
 }
 
 export function SkinEditor({ skin, lab = false }: { skin: SkinDocument; lab?: boolean }) {
+  const { t } = useTranslation();
+  const wearableNames = getWearableNames(t);
+  const labelFor = createPartLabel(t);
+  const labels = getSizeNames(t);
+  const races = getRaceNames(t);
+  const snouts = { mare: t("skin.round"), stallion: t("skin.square"), flat: t("skin.flat") };
+  const tails = {
+    STRAIGHT: t("skin.straight"),
+    BUMPY: t("skin.bumpy"),
+    SWIRLY: t("skin.swirly"),
+    SPIKY: t("skin.spiky"),
+  };
+  const forms = { skin: t("skin.fromSkin"), wet: t("skin.aquatic"), dry: t("skin.land") };
   const revision = useSyncExternalStore(skin.subscribe, skin.getSnapshot, skin.getSnapshot);
   const metadata = decodeSkinMetadata(skin);
   const [size, setSize] = useState<BodySize>(metadata.size);
@@ -201,12 +210,12 @@ export function SkinEditor({ skin, lab = false }: { skin: SkinDocument; lab?: bo
     partAvailable(part.id, appearance, preview),
   );
   const visibilityParts = [
-    ...parts,
+    ...parts.map((part) => ({ ...part, label: labelFor(part.id) })),
     ...resolveWearables(appearance, preview).flatMap((gear) =>
       modelParts(gearModels[gear.model]).map((part) => ({
         ...part,
         id: `gear/${gear.id}/${part.id}`,
-        label: `${wearableNames[gear.id as keyof typeof wearableNames]} / ${part.label}`,
+        label: `${wearableNames[gear.id as keyof typeof wearableNames]} / ${labelFor(part.id)}`,
       })),
     ),
   ];
@@ -277,7 +286,7 @@ export function SkinEditor({ skin, lab = false }: { skin: SkinDocument; lab?: bo
   };
   return (
     <div className="grid min-h-0 flex-1 grid-cols-1 lg:grid-cols-[minmax(0,1fr)_340px]">
-      <section className="relative h-[50svh] min-h-80 lg:h-full" aria-label="Предпросмотр модели">
+      <section className="relative h-[50svh] min-h-80 lg:h-full" aria-label={t("viewport.preview")}>
         <PonyPreview
           document={skin}
           overrides={appearance}
@@ -292,27 +301,21 @@ export function SkinEditor({ skin, lab = false }: { skin: SkinDocument; lab?: bo
           onPaint={onPaint}
         />
         <p className="pointer-events-none absolute bottom-3 left-3 text-xs text-zinc-400">
-          {painting
-            ? "Кисть: рисуйте на модели. Для пустого слоя выберите часть справа."
-            : "Вращение: перетаскивание. Масштаб: колесо."}
+          {painting ? t("lab.paintHint") : t("lab.orbitHint")}
         </p>
       </section>
       <aside className="space-y-4 overflow-y-auto border-l border-zinc-700 bg-zinc-900 p-4">
         <p className="text-xs text-zinc-400">
-          {lab
-            ? "Лабораторный предпросмотр Earthpony. Размер и Slim меняют только предпросмотр."
-            : "Раса, размер и аксессуары сохраняются в PNG. Slim и раскрытие крыльев меняют предпросмотр. Изменения доступны в просмотрщике."}
+          {lab ? t("lab.previewHint") : t("lab.metadataHint")}
         </p>
         {skin.sourceFormat === "legacy" ? (
-          <p className="text-xs text-amber-300">
-            Legacy-скин преобразован в квадратный формат. PNG будет сохранён в новом формате.
-          </p>
+          <p className="text-xs text-amber-300">{t("skin.legacyNotice")}</p>
         ) : null}
         <div className="flex flex-wrap items-center gap-3">
           <label className="text-sm">
-            Размер{" "}
+            {t("skin.size")}{" "}
             <select
-              aria-label="Размер модели"
+              aria-label={t("skin.modelSize")}
               className={inputClass}
               value={lab ? size : metadata.size}
               onChange={(event) =>
@@ -340,39 +343,43 @@ export function SkinEditor({ skin, lab = false }: { skin: SkinDocument; lab?: bo
         {!lab ? (
           <div className="space-y-2 text-sm">
             <label className="block">
-              Раса{" "}
+              {t("skin.race")}{" "}
               <select
-                aria-label="Раса"
+                aria-label={t("skin.race")}
                 className={inputClass}
                 value={metadata.race}
                 onChange={(e) =>
                   writeSkinMetadata(skin, { race: e.target.value as SkinMetadata["race"] })
                 }
               >
-                {Object.keys(raceColors).map((race) => (
-                  <option key={race}>{race}</option>
+                {Object.entries(races).map(([race, name]) => (
+                  <option key={race} value={race}>
+                    {name}
+                  </option>
                 ))}
               </select>
             </label>
             <label className="block">
-              Морда{" "}
+              {t("skin.snout")}{" "}
               <select
-                aria-label="Морда"
+                aria-label={t("skin.snout")}
                 className={inputClass}
                 value={metadata.snout}
                 onChange={(e) =>
                   writeSkinMetadata(skin, { snout: e.target.value as SkinMetadata["snout"] })
                 }
               >
-                {["mare", "stallion", "flat"].map((value) => (
-                  <option key={value}>{value}</option>
+                {Object.entries(snouts).map(([value, name]) => (
+                  <option key={value} value={value}>
+                    {name}
+                  </option>
                 ))}
               </select>
             </label>
             <label className="block">
-              Форма хвоста{" "}
+              {t("skin.tailShape")}{" "}
               <select
-                aria-label="Форма хвоста"
+                aria-label={t("skin.tailShape")}
                 className={inputClass}
                 value={metadata.tailShape}
                 onChange={(e) =>
@@ -381,15 +388,17 @@ export function SkinEditor({ skin, lab = false }: { skin: SkinDocument; lab?: bo
                   })
                 }
               >
-                {Object.keys(tailShapeColors).map((value) => (
-                  <option key={value}>{value}</option>
+                {Object.entries(tails).map(([value, name]) => (
+                  <option key={value} value={value}>
+                    {name}
+                  </option>
                 ))}
               </select>
             </label>
             <label className="block">
-              Длина хвоста{" "}
+              {t("skin.tailLength")}{" "}
               <input
-                aria-label="Длина хвоста"
+                aria-label={t("skin.tailLength")}
                 type="range"
                 min="0"
                 max="4"
@@ -398,15 +407,18 @@ export function SkinEditor({ skin, lab = false }: { skin: SkinDocument; lab?: bo
               />
             </label>
             <div className="block">
-              Цвет свечения{" "}
+              {t("skin.glowColor")}{" "}
               <ColorPicker
-                label="Цвет свечения"
+                label={t("skin.glowColor")}
                 value={`#${metadata.glow}`}
                 onChange={(color) => writeSkinMetadata(skin, { glow: color.slice(1) })}
               />
             </div>
             <fieldset>
-              <legend>Аксессуары ({metadata.wearables.length}/3)</legend>
+              <legend>
+                {t("lab.accessoriesPrefix")}
+                {metadata.wearables.length}/3)
+              </legend>
               {Object.entries(wearableNames).map(([id, name]) => (
                 <label key={id} className="mr-3 inline-flex gap-1">
                   <input
@@ -438,21 +450,23 @@ export function SkinEditor({ skin, lab = false }: { skin: SkinDocument; lab?: bo
               setPreview((p) => ({ ...p, wings: e.target.checked ? "extended" : "folded" }))
             }
           />{" "}
-          Раскрыть крылья
+          {t("skin.extendWings")}
         </label>
         {["SEAPONY", "HIPPOGRIFF"].includes(metadata.race) ? (
           <label className="block text-sm">
-            Форма{" "}
+            {t("skin.form")}{" "}
             <select
-              aria-label="Форма"
+              aria-label={t("skin.form")}
               value={preview.form}
               onChange={(e) =>
                 setPreview((p) => ({ ...p, form: e.target.value as PreviewSettings["form"] }))
               }
               className={inputClass}
             >
-              {["skin", "wet", "dry"].map((value) => (
-                <option key={value}>{value}</option>
+              {Object.entries(forms).map(([value, name]) => (
+                <option key={value} value={value}>
+                  {name}
+                </option>
               ))}
             </select>
           </label>
@@ -463,10 +477,11 @@ export function SkinEditor({ skin, lab = false }: { skin: SkinDocument; lab?: bo
             aria-pressed={painting}
             onClick={() => setPainting((value) => !value)}
           >
-            {painting ? "Режим: кисть" : "Режим: вращение"}
+            {painting ? t("tools.brushMode") : t("tools.orbitMode")}
           </button>
           <div className="flex items-center gap-2 text-sm">
-            Цвет <ColorPicker label="Цвет кисти" value={hex} onChange={setHex} />
+            {t("colors.color")}{" "}
+            <ColorPicker label={t("colors.brush")} value={hex} onChange={setHex} />
           </div>
           <label className="text-sm">
             <input
@@ -474,39 +489,39 @@ export function SkinEditor({ skin, lab = false }: { skin: SkinDocument; lab?: bo
               checked={erase}
               onChange={(event) => setErase(event.target.checked)}
             />{" "}
-            Ластик
+            {t("tools.eraser")}
           </label>
           <button className={inputClass} disabled={!skin.canUndo} onClick={() => skin.undo()}>
-            Отменить штрих
+            {t("history.undoStroke")}
           </button>
           <button className={inputClass} disabled={!skin.canRedo} onClick={() => skin.redo()}>
-            Повторить штрих
+            {t("history.redoStroke")}
           </button>
           <button className={inputClass} onClick={download}>
-            Скачать PNG
+            {t("file.downloadPng")}
           </button>
         </div>
         <label className="block text-sm">
-          Рисовать по{" "}
+          {t("tools.paintOn")}{" "}
           <select
-            aria-label="Слой рисования"
+            aria-label={t("tools.paintLayer")}
             className={`${inputClass} mt-1 w-full`}
             value={activePart ?? ""}
             onChange={(event) => setActivePart(event.target.value || null)}
           >
-            <option value="">Видимой поверхности</option>
+            <option value="">{t("tools.visibleSurface")}</option>
             {parts.map((part) => (
               <option key={part.id} value={part.id}>
-                {part.label}
+                {labelFor(part.id)}
               </option>
             ))}
           </select>
         </label>
         <div className="flex flex-wrap items-center gap-2 text-sm">
           <label>
-            Кисть{" "}
+            {t("tools.brush")}{" "}
             <NumberSlider
-              label="Размер кисти"
+              label={t("tools.brushSize")}
               min={1}
               max={32}
               unit=" px"
@@ -523,7 +538,7 @@ export function SkinEditor({ skin, lab = false }: { skin: SkinDocument; lab?: bo
               setPainting(true);
             }}
           >
-            Пипетка
+            {t("tools.eyedropper")}
           </button>
           <button className={inputClass} onClick={() => setZoom((z) => Math.min(32, z * 1.5))}>
             2D +
@@ -533,7 +548,7 @@ export function SkinEditor({ skin, lab = false }: { skin: SkinDocument; lab?: bo
           </button>
           <label>
             <input type="checkbox" checked={grid} onChange={(e) => setGrid(e.target.checked)} />{" "}
-            Сетка
+            {t("texture.grid")}
           </label>
           <button
             className={inputClass}
@@ -550,10 +565,10 @@ export function SkinEditor({ skin, lab = false }: { skin: SkinDocument; lab?: bo
               )
             }
           >
-            Скрыть ветку
+            {t("parts.hideBranch")}
           </button>
           <button className={inputClass} onClick={() => setHidden(new Set())}>
-            Показать всё
+            {t("parts.showAll")}
           </button>
           <button
             className={inputClass}
@@ -564,7 +579,7 @@ export function SkinEditor({ skin, lab = false }: { skin: SkinDocument; lab?: bo
               )
             }
           >
-            Изолировать часть
+            {t("parts.isolate")}
           </button>
         </div>
         <TextureView
@@ -584,18 +599,20 @@ export function SkinEditor({ skin, lab = false }: { skin: SkinDocument; lab?: bo
           data-revision={revision}
           data-pixel={lastPixel ? `${lastPixel.x},${lastPixel.y}` : ""}
         >
-          {skin.width}×{skin.height} · изменений: {revision}
-          {lastPixel ? ` · пиксель ${lastPixel.x}, ${lastPixel.y} (${lastPixel.part})` : ""}.
-          Служебные пиксели защищены.
+          {skin.width}×{skin.height} {t("lab.changesPrefix")} {revision}
+          {lastPixel
+            ? t("lab.pixel", { x: lastPixel.x, y: lastPixel.y, part: lastPixel.part })
+            : ""}
+          {t("lab.protectedPixels")}
         </output>
         <details open>
-          <summary className="cursor-pointer text-sm">Видимость частей</summary>
+          <summary className="cursor-pointer text-sm">{t("parts.visibility")}</summary>
           <div className="mt-2 space-y-1">
             {visibilityParts.map((part) => (
               <label key={part.id} className="flex gap-2 text-xs">
                 <input
                   type="checkbox"
-                  aria-label={`Показать ${part.id}`}
+                  aria-label={t("parts.show", { name: part.id })}
                   checked={!hidden.has(part.id)}
                   onChange={(event) =>
                     setHidden((previous) => {
@@ -619,8 +636,13 @@ export function SkinEditor({ skin, lab = false }: { skin: SkinDocument; lab?: bo
           className="block text-xs text-zinc-500"
         >
           {stats
-            ? `${stats.calls} draw calls · ${stats.triangles} треугольников · ${stats.geometries} геометрий · ${stats.textures} текстур`
-            : "Подготовка сцены…"}
+            ? t("lab.stats", {
+                calls: stats.calls,
+                triangles: stats.triangles,
+                geometries: stats.geometries,
+                textures: stats.textures,
+              })
+            : t("lab.preparing")}
         </output>
       </aside>
     </div>
@@ -628,6 +650,7 @@ export function SkinEditor({ skin, lab = false }: { skin: SkinDocument; lab?: bo
 }
 
 export default function ModelLab() {
+  const { t } = useTranslation();
   const [skin, setSkin] = useState<SkinDocument | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
@@ -635,7 +658,7 @@ export default function ModelLab() {
   const request = useRef(0);
   useEffect(() => {
     const id = ++request.current;
-    loadSkin("/steve_pony.png")
+    loadSkinDocument("/steve_pony.png", t("layers.base"))
       .then((value) => {
         if (id === request.current) {
           setSkin(value);
@@ -643,7 +666,7 @@ export default function ModelLab() {
         }
       })
       .catch((reason) => {
-        if (id === request.current) setError(String(reason));
+        if (id === request.current) setError(errorMessage(t, reason));
       })
       .finally(() => {
         if (id === request.current) setLoading(false);
@@ -651,18 +674,18 @@ export default function ModelLab() {
     return () => {
       request.current = -1;
     };
-  }, []);
+  }, [t]);
   return (
     <main className="flex h-[100svh] flex-col overflow-y-auto bg-zinc-950 text-zinc-100 lg:overflow-hidden">
       <header className="flex flex-wrap items-center gap-4 border-b border-zinc-700 px-5 py-3">
         <Link to="/" className="text-sm text-orange-400">
-          ← Viewer
+          {t("nav.backToViewer")}
         </Link>
-        <h1 className="text-base font-semibold">Лаборатория моделей</h1>
+        <h1 className="text-base font-semibold">{t("lab.title")}</h1>
         <label className="text-sm">
-          Открыть PNG{" "}
+          {t("file.openPng")}{" "}
           <input
-            aria-label="Открыть PNG"
+            aria-label={t("file.openPng")}
             type="file"
             accept="image/png"
             disabled={loading}
@@ -675,13 +698,13 @@ export default function ModelLab() {
               setError("");
               setLoading(true);
               try {
-                const value = await loadSkin(url);
+                const value = await loadSkinDocument(url, t("layers.base"));
                 if (id === request.current) {
                   setSkin(value);
                   setGeneration((value) => value + 1);
                 }
               } catch (reason) {
-                if (id === request.current) setError(String(reason));
+                if (id === request.current) setError(errorMessage(t, reason));
               } finally {
                 URL.revokeObjectURL(url);
                 if (id === request.current) setLoading(false);
@@ -690,7 +713,7 @@ export default function ModelLab() {
             }}
           />
         </label>
-        {loading ? <output>Загрузка…</output> : null}
+        {loading ? <output>{t("common.loading")}</output> : null}
       </header>
       {error ? (
         <p role="alert" className="px-5 py-2 text-sm text-red-300">

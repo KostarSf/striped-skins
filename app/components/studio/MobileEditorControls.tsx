@@ -1,3 +1,5 @@
+import { useTranslation } from "react-i18next";
+import type { TFunction } from "i18next";
 import { useEffect, useRef, useState } from "react";
 import {
   AdjustmentsHorizontalIcon,
@@ -15,12 +17,14 @@ import type { PaintTool } from "./TextureEditor";
 import { Button, DesignIcon, Field, HexInput, IconButton } from "./ui";
 
 export type MobileEditorView = "3d" | "2d" | "settings";
-export const toolNames = {
-  hand: "Перемещение",
-  brush: "Кисть",
-  eraser: "Ластик",
-  drop: "Пипетка",
-};
+function getToolNames(t: TFunction) {
+  return {
+    hand: t("tools.pan"),
+    brush: t("tools.brush"),
+    eraser: t("tools.eraser"),
+    drop: t("tools.eyedropper"),
+  };
+}
 
 export function BrushColors({
   primary,
@@ -35,18 +39,24 @@ export function BrushColors({
   onSecondary: (color: string) => void;
   palette?: readonly string[];
 }) {
+  const { t } = useTranslation();
   return (
     <div className="rail-colors">
       <div className="rail-color secondary-color">
         <ColorPicker
-          label="Дополнительный цвет"
+          label={t("colors.secondary")}
           value={secondary}
           onChange={onSecondary}
           palette={palette}
         />
       </div>
       <div className="rail-color primary-color">
-        <ColorPicker label="Цвет кисти" value={primary} onChange={onPrimary} palette={palette} />
+        <ColorPicker
+          label={t("colors.brush")}
+          value={primary}
+          onChange={onPrimary}
+          palette={palette}
+        />
       </div>
     </div>
   );
@@ -61,6 +71,8 @@ export function MobileToolMenu({
   lastTool: Exclude<PaintTool, "hand">;
   onTool: (tool: PaintTool) => void;
 }) {
+  const { t } = useTranslation();
+  const toolNames = getToolNames(t);
   const host = useRef<HTMLDetailsElement>(null);
   useEffect(() => {
     const outside = (event: PointerEvent) => {
@@ -86,8 +98,8 @@ export function MobileToolMenu({
         className="mobile-tool-toggle"
         label={
           tool === "hand"
-            ? `Вернуться к инструменту: ${toolNames[lastTool]}`
-            : "Переключиться на перемещение"
+            ? t("tools.returnTo", { tool: toolNames[lastTool] })
+            : t("tools.switchToPan")
         }
         onClick={() => {
           onTool(alternate);
@@ -98,12 +110,12 @@ export function MobileToolMenu({
       </IconButton>
       <details className="mobile-tool-menu" ref={host}>
         <summary
-          aria-label={`Инструменты: ${toolNames[tool]}`}
-          title={`Инструменты: ${toolNames[tool]}`}
+          aria-label={t("tools.current", { tool: toolNames[tool] })}
+          title={t("tools.current", { tool: toolNames[tool] })}
         >
           <DesignIcon name={tool} />
         </summary>
-        <div className="studio-panel" role="toolbar" aria-label="Инструменты">
+        <div className="studio-panel" role="toolbar" aria-label={t("tools.label")}>
           {(["hand", "brush", "eraser", "drop"] as const).map((id) => (
             <Button
               key={id}
@@ -155,6 +167,8 @@ export function MobileEditorFooter({
   opacity: number;
   onOpacity: (value: number) => void;
 }) {
+  const { t } = useTranslation();
+  const toolNames = getToolNames(t);
   const [open, setOpen] = useState(false);
   const popup = useRef<HTMLDialogElement>(null);
   useEffect(() => {
@@ -181,13 +195,18 @@ export function MobileEditorFooter({
   }, [open]);
   return (
     <>
-      <footer className="mobile-editor-footer" aria-label="Управление редактором">
-        <nav aria-label="Вид редактора">
+      <footer className="mobile-editor-footer" aria-label={t("mobile.controls")}>
+        <nav aria-label={t("mobile.view")}>
           {(
             [
-              ["3d", "3D вид", "3D", CubeIcon],
-              ["2d", "2D вид", "2D", PhotoIcon],
-              ["settings", "Параметры документа", "Документ", AdjustmentsHorizontalIcon],
+              ["3d", t("mobile.view3d"), "3D", CubeIcon],
+              ["2d", t("mobile.view2d"), "2D", PhotoIcon],
+              [
+                "settings",
+                t("editor.documentSettings"),
+                t("mobile.document"),
+                AdjustmentsHorizontalIcon,
+              ],
             ] as const
           ).map(([id, label, text, Icon]) => (
             <Button
@@ -209,7 +228,7 @@ export function MobileEditorFooter({
           palette={palette}
         />
         <IconButton
-          label="Параметры инструмента"
+          label={t("mobile.toolSettings")}
           aria-haspopup="dialog"
           onClick={() => setOpen(true)}
         >
@@ -224,14 +243,14 @@ export function MobileEditorFooter({
       >
         <div className="dialog-heading">
           <h2 id="tool-settings-title">{toolNames[tool]}</h2>
-          <IconButton label="Закрыть параметры инструмента" onClick={() => setOpen(false)}>
+          <IconButton label={t("mobile.closeToolSettings")} onClick={() => setOpen(false)}>
             <XMarkIcon />
           </IconButton>
         </div>
         {tool === "brush" || tool === "eraser" ? (
-          <Field label="Размер кисти · px">
+          <Field label={t("mobile.brushSize")}>
             <NumberSlider
-              label="Размер кисти"
+              label={t("tools.brushSize")}
               min={1}
               max={32}
               unit=" px"
@@ -240,17 +259,13 @@ export function MobileEditorFooter({
             />
           </Field>
         ) : (
-          <p className="muted">
-            {tool === "hand"
-              ? "Перетаскивайте модель для вращения или текстуру для перемещения."
-              : "Коснитесь скина, чтобы выбрать цвет и вернуться к кисти."}
-          </p>
+          <p className="muted">{tool === "hand" ? t("mobile.panHint") : t("mobile.sampleHint")}</p>
         )}
         {tool === "brush" ? (
           <>
-            <Field label="Непрозрачность · %">
+            <Field label={t("mobile.opacity")}>
               <NumberSlider
-                label="Непрозрачность кисти"
+                label={t("tools.brushOpacity")}
                 min={0}
                 max={100}
                 unit="%"
@@ -259,10 +274,11 @@ export function MobileEditorFooter({
               />
             </Field>
             <div className="studio-field">
-              <span>Цвет кисти</span>
+              <span>{t("colors.brush")}</span>
               <div className="brush-color-field">
                 <ColorPicker
-                  label="Пикер цвета кисти"
+                  label={t("colors.brushPicker")}
+                  heading={t("colors.brush")}
                   value={primary}
                   onChange={onPrimary}
                   palette={palette}
@@ -271,10 +287,11 @@ export function MobileEditorFooter({
               </div>
             </div>
             <div className="studio-field">
-              <span>Дополнительный цвет</span>
+              <span>{t("colors.secondary")}</span>
               <div className="brush-color-field">
                 <ColorPicker
-                  label="Пикер дополнительного цвета"
+                  label={t("colors.secondaryPicker")}
+                  heading={t("colors.secondary")}
                   value={secondary}
                   onChange={onSecondary}
                   palette={palette}
@@ -282,22 +299,30 @@ export function MobileEditorFooter({
                 <HexInput
                   value={secondary}
                   onChange={onSecondary}
-                  label="HEX дополнительного цвета"
+                  label={t("colors.secondaryHex")}
                 />
               </div>
             </div>
           </>
         ) : null}
         <div className="mobile-tool-history">
-          <Button disabled={!skin.canUndo} onClick={() => skin.undo()} aria-label="Отменить штрих">
+          <Button
+            disabled={!skin.canUndo}
+            onClick={() => skin.undo()}
+            aria-label={t("history.undoStroke")}
+          >
             <ArrowUturnLeftIcon />
-            Отменить
+            {t("history.undo")}
           </Button>
-          <Button disabled={!skin.canRedo} onClick={() => skin.redo()} aria-label="Повторить штрих">
+          <Button
+            disabled={!skin.canRedo}
+            onClick={() => skin.redo()}
+            aria-label={t("history.redoStroke")}
+          >
             <ArrowUturnRightIcon />
-            Повторить
+            {t("history.redo")}
           </Button>
-          <IconButton label="Поменять цвета · X" onClick={onSwap}>
+          <IconButton label={t("colors.swapShortcut")} onClick={onSwap}>
             ⇄
           </IconButton>
         </div>

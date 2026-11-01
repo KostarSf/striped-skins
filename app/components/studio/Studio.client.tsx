@@ -1,8 +1,11 @@
+import { errorMessage } from "../../i18n/errors";
+import { useTranslation } from "react-i18next";
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router";
 import { AdjustmentsHorizontalIcon, ScaleIcon } from "@heroicons/react/24/outline";
 import {
   PonySkin,
+  SkinError,
   decodeSkinMetadata,
   loadSkinDocument,
   decodeSkinProject,
@@ -20,6 +23,7 @@ import { StudioSkeleton } from "./StudioSkeleton";
 const EditorWorkspace = lazy(() => import("./EditorWorkspace"));
 const empty = new Set<string>();
 export default function Studio({ mode }: { mode: "viewer" | "editor" }) {
+  const { t } = useTranslation();
   const [params, setParams] = useSearchParams();
   const first = usePonyContext((s) => s.firstPony),
     second = usePonyContext((s) => s.secondPony);
@@ -79,7 +83,7 @@ export default function Studio({ mode }: { mode: "viewer" | "editor" }) {
       const id = ++generation.current[slot],
         previous = item.skin;
       setPending((v) => v + 1);
-      PonySkin.fromUrl(safe)
+      PonySkin.fromUrl(safe, t("layers.base"))
         .then((skin) => {
           if (!mounted.current || generation.current[slot] !== id) return;
           const current = latest.current[slot].skin;
@@ -94,13 +98,13 @@ export default function Studio({ mode }: { mode: "viewer" | "editor" }) {
         })
         .catch((reason) => {
           if (mounted.current && generation.current[slot] === id)
-            setError(`Не удалось открыть скин: ${String(reason)}`);
+            setError(t("errors.openSkin", { reason: errorMessage(t, reason) }));
         })
         .finally(() => {
           if (mounted.current) setPending((v) => Math.max(0, v - 1));
         });
     }
-  }, [firstURL, secondURL, first.skin, second.skin, register]);
+  }, [firstURL, secondURL, first.skin, second.skin, register, t]);
   const install = (doc: SkinDocument, name: string, url?: string) => {
     const slot = isSecond ? "second" : "first";
     generation.current[slot]++;
@@ -119,21 +123,22 @@ export default function Studio({ mode }: { mode: "viewer" | "editor" }) {
   };
   const importFile = async (file: File) => {
     if (/\.striped$/i.test(file.name)) {
-      if (file.size > 64 * 1024 * 1024) throw new Error("Файл проекта превышает 64 МиБ");
+      if (file.size > 64 * 1024 * 1024)
+        throw new SkinError("projectArchiveLimit", t("errors.projectArchiveLimit"));
       const document = decodeSkinProject(new Uint8Array(await file.arrayBuffer()));
       install(document, file.name);
       return;
     }
     const url = URL.createObjectURL(file);
     try {
-      install(await loadSkinDocument(url), file.name);
+      install(await loadSkinDocument(url, t("layers.base")), file.name);
     } finally {
       URL.revokeObjectURL(url);
     }
   };
   const importURL = async (url: string) => {
     const safe = getSafeSkinUrl(url)!;
-    install(await loadSkinDocument(safe), skinName(safe), url);
+    install(await loadSkinDocument(safe, t("layers.base")), skinName(safe), url);
   };
   const saveProject = async () => {
     setSaving(true);
@@ -167,13 +172,13 @@ export default function Studio({ mode }: { mode: "viewer" | "editor" }) {
         dirty={info.dirty}
         saving={saving}
         document={document}
-        onSave={() => void saveProject().catch((e) => setError(String(e)))}
+        onSave={() => void saveProject().catch((e) => setError(errorMessage(t, e)))}
         onImport={() => setImportRequest({})}
-        onExport={() => void exportPNG().catch((e) => setError(String(e)))}
+        onExport={() => void exportPNG().catch((e) => setError(errorMessage(t, e)))}
       />
       {error || preferences.defaultSkinError ? (
         <div className="studio-error" role="alert">
-          {error || preferences.defaultSkinError}
+          {error || t("errors.loadSkin")}
         </div>
       ) : null}
       {mode === "editor" ? (
@@ -201,13 +206,13 @@ export default function Studio({ mode }: { mode: "viewer" | "editor" }) {
           }}
           onImport={() => setImportRequest({})}
           onFileDrop={(file) => setImportRequest({ file })}
-          onExport={() => void exportPNG().catch((e) => setError(String(e)))}
+          onExport={() => void exportPNG().catch((e) => setError(errorMessage(t, e)))}
         />
       )}
       {loading ? (
         <output className="studio-loading-badge">
           <span className="loading-spinner" />
-          Загрузка скина…
+          {t("loading.skin")}
         </output>
       ) : null}
       <ImportDialog
@@ -239,6 +244,7 @@ function ViewerWorkspace({
   onExport: () => void;
   onFileDrop: (file: File) => void;
 }) {
+  const { t } = useTranslation();
   const [settings, setSettings] = useState(false),
     [slimBySlot, setSlimBySlot] = useState<{ first?: boolean; second?: boolean }>({});
   const first = usePonyContext((s) => s.firstPony),
@@ -291,22 +297,22 @@ function ViewerWorkspace({
           headerActions={
             <div className="viewer-top-actions">
               <Button
-                title="Сравнить скины"
-                aria-label="Сравнить скины"
+                title={t("viewer.compareSkins")}
+                aria-label={t("viewer.compareSkins")}
                 aria-pressed={comparison}
                 onClick={() => prefs.setMode(comparison ? "first-model" : "side-by-side")}
               >
                 <ScaleIcon />
-                <span>Сравнить</span>
+                <span>{t("viewer.compare")}</span>
               </Button>
               <Button
-                title="Параметры скина"
-                aria-label="Параметры скина"
+                title={t("skin.settings")}
+                aria-label={t("skin.settings")}
                 aria-expanded={settings}
                 onClick={() => setSettings((v) => !v)}
               >
                 <AdjustmentsHorizontalIcon />
-                <span>Параметры скина</span>
+                <span>{t("skin.settings")}</span>
               </Button>
             </div>
           }
@@ -319,7 +325,7 @@ function ViewerWorkspace({
                   setSlot("first");
                 }}
               >
-                Скин 1
+                {t("viewer.skin1")}
               </Button>
               <Button
                 aria-pressed={isSecond}
@@ -327,23 +333,25 @@ function ViewerWorkspace({
                   setSlot("second");
                 }}
               >
-                Скин 2
+                {t("viewer.skin2")}
               </Button>
-              <Button onClick={onImport}>Открыть {isSecond ? "второй" : "первый"}</Button>
+              <Button onClick={onImport}>
+                {t(isSecond ? "viewer.openSecond" : "viewer.openFirst")}
+              </Button>
               <Link
                 className="studio-button"
-                aria-label="Редактировать второй"
+                aria-label={t("viewer.editSecond")}
                 to={`/editor?${editSecond}`}
               >
-                Редактировать второй
+                {t("viewer.editSecond")}
               </Link>
             </div>
           ) : null}
           {settings ? (
-            <aside className="quick-settings studio-panel" aria-label="Параметры скина">
+            <aside className="quick-settings studio-panel" aria-label={t("skin.settings")}>
               <PanelHeading
-                title="Параметры скина"
-                description="Изменения сразу видны на модели"
+                title={t("skin.settings")}
+                description={t("skin.liveHint")}
                 onClose={() => setSettings(false)}
               />
               <SkinSettings
@@ -357,9 +365,9 @@ function ViewerWorkspace({
               />
               <div className="quick-save">
                 <Button tone="primary" onClick={onExport}>
-                  Сохранить скин · PNG
+                  {t("file.saveSkinPng")}
                 </Button>
-                <small>Скачает скин с выбранными параметрами</small>
+                <small>{t("file.downloadHint")}</small>
               </div>
             </aside>
           ) : null}
@@ -369,8 +377,11 @@ function ViewerWorkspace({
         <span>
           {skin.width} × {skin.height} px · PNG
         </span>
-        <span>Просмотр скина{comparison ? " · сравнение" : ""}</span>
-        <span>F — вписать в окно</span>
+        <span>
+          {t("viewer.status")}
+          {comparison ? t("viewer.comparisonSuffix") : ""}
+        </span>
+        <span>{t("viewport.fitShortcut")}</span>
       </footer>
     </>
   );

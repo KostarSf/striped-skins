@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 /* oxlint-disable jsx-a11y/prefer-tag-over-role -- Select-only ARIA combobox supports canvas previews and pointer hover, which native options cannot provide. */
 import {
   useCallback,
@@ -29,6 +30,7 @@ export function PaintPartSelect({
   onHighlight: (part: string | null) => void;
   enabled: boolean;
 }) {
+  const { t } = useTranslation();
   const id = useId();
   const button = useRef<HTMLButtonElement>(null);
   const popup = useRef<HTMLDivElement>(null);
@@ -38,8 +40,8 @@ export function PaintPartSelect({
   const [revision, setRevision] = useState(0);
   const search = useRef({ text: "", time: 0 });
   const options = useMemo(
-    () => [{ id: "", label: "Видимой поверхности", quads: [] }, ...parts],
-    [parts],
+    () => [{ id: "", label: t("tools.visibleSurface"), quads: [] }, ...parts],
+    [parts, t],
   );
   const selected = options.find((option) => option.id === (value ?? "")) ?? options[0];
   const atlas = useMemo(() => {
@@ -187,13 +189,13 @@ export function PaintPartSelect({
   return (
     <div className="paint-part-select" role="group" aria-labelledby={`${id}-label`}>
       <span id={`${id}-label`} className="paint-part-label">
-        Рисовать по
+        {t("tools.paintOn")}
       </span>
       <button
         ref={button}
         type="button"
         role="combobox"
-        aria-label="Слой рисования"
+        aria-label={t("tools.paintLayer")}
         aria-describedby={`${id}-label`}
         aria-haspopup="listbox"
         aria-controls={`${id}-list`}
@@ -221,7 +223,7 @@ export function PaintPartSelect({
         id={`${id}-list`}
         role="listbox"
         tabIndex={-1}
-        aria-label="Поверхность для рисования"
+        aria-label={t("tools.paintSurface")}
         popover="auto"
         className="paint-part-popup"
         onKeyDown={handleKeyDown}

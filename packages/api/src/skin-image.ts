@@ -1,3 +1,4 @@
+import { SkinError } from "./SkinError.js";
 import { SkinDocument } from "./SkinDocument.js";
 
 /** Normalizes vanilla legacy limb islands, then MLP's extra wing island. */
@@ -5,11 +6,16 @@ export function normalizeSkinPixels(
   width: number,
   height: number,
   pixels: ArrayLike<number>,
+  baseLayerName?: string,
 ): SkinDocument {
   if (width < 64 || width > 2048 || width % 64 !== 0 || (height !== width && height !== width / 2))
-    throw new Error("Нужен PNG 64×64, 64×32 или их HD-вариант (до 2048 пикселей)");
-  if (pixels.length !== width * height * 4) throw new Error("Invalid image data");
-  if (width === height) return new SkinDocument(width, height, pixels);
+    throw new SkinError(
+      "invalidDimensions",
+      "Нужен PNG 64×64, 64×32 или их HD-вариант (до 2048 пикселей)",
+    );
+  if (pixels.length !== width * height * 4)
+    throw new SkinError("invalidImage", "Invalid image data");
+  if (width === height) return new SkinDocument(width, height, pixels, "modern", baseLayerName);
   const out = new Uint8ClampedArray(width * width * 4);
   out.set(pixels);
   const m = width / 64;
@@ -55,9 +61,9 @@ export function normalizeSkinPixels(
     [62, 18, 62, 34, 2, 14],
   ])
     copy(sx, sy, dx, dy, w, h);
-  return new SkinDocument(width, width, out, "legacy");
+  return new SkinDocument(width, width, out, "legacy", baseLayerName);
 }
-export async function loadSkinDocument(url: string): Promise<SkinDocument> {
+export async function loadSkinDocument(url: string, baseLayerName?: string): Promise<SkinDocument> {
   const image = new Image();
   image.crossOrigin = "anonymous";
   image.src = url;
@@ -71,6 +77,7 @@ export async function loadSkinDocument(url: string): Promise<SkinDocument> {
     image.width,
     image.height,
     context.getImageData(0, 0, image.width, image.height).data,
+    baseLayerName,
   );
 }
 export function documentCanvas(document: SkinDocument): HTMLCanvasElement {

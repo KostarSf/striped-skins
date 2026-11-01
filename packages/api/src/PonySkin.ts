@@ -99,12 +99,12 @@ export class PonySkin {
       ? TailShape.fromPixel(hex(tailShapeColors[this.metadata.tailShape]))
       : this.initialShape;
   }
-  static async fromUrl(url: string) {
-    const skin = this.fromImage(await loadImage(url));
+  static async fromUrl(url: string, baseLayerName?: string) {
+    const skin = this.fromImage(await loadImage(url), baseLayerName);
     skin.sourceUrl = url;
     return skin;
   }
-  static fromImage(image: HTMLImageElement) {
+  static fromImage(image: HTMLImageElement, baseLayerName?: string) {
     const transformer = new ImageTransformer(image),
       canvas = transformer.canvas!;
     return this.fromDocument(
@@ -112,6 +112,7 @@ export class PonySkin {
         canvas.width,
         canvas.height,
         canvas.getContext("2d")!.getImageData(0, 0, canvas.width, canvas.height).data,
+        baseLayerName,
       ),
     );
   }

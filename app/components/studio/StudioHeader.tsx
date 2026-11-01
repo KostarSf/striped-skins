@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { Link, useSearchParams } from "react-router";
 import { ArrowDownTrayIcon, FolderOpenIcon } from "@heroicons/react/24/outline";
 import type { SkinDocument } from "@striped-skins/api";
@@ -24,6 +25,7 @@ export function StudioHeader({
   document?: SkinDocument;
   onSave?: () => void;
 }) {
+  const { t } = useTranslation();
   const [params] = useSearchParams();
   const editor = new URLSearchParams(params);
   editor.set("slot", second ? "second" : "first");
@@ -35,7 +37,7 @@ export function StudioHeader({
         <Link
           className="studio-brand"
           to={viewer.size ? `/?${viewer}` : "/"}
-          aria-label="Striped Skins — просмотрщик"
+          aria-label={t("nav.brand")}
         >
           <img
             className="brand-mark"
@@ -48,20 +50,20 @@ export function StudioHeader({
           />
           <span>Striped Skins</span>
         </Link>
-        <nav className="mode-tabs" aria-label="Режим приложения">
+        <nav className="mode-tabs" aria-label={t("nav.mode")}>
           <Link
-            aria-label="← Просмотрщик"
+            aria-label={t("nav.backToViewer")}
             aria-current={mode === "viewer" ? "page" : undefined}
             to={viewer.size ? `/?${viewer}` : "/"}
           >
-            Просмотр
+            {t("nav.viewer")}
           </Link>
           <Link
-            aria-label={second ? "Редактировать второй" : "Редактировать"}
+            aria-label={second ? t("viewer.editSecond") : t("nav.edit")}
             aria-current={mode === "editor" ? "page" : undefined}
             to={`/editor?${editor}`}
           >
-            Редактор
+            {t("nav.editor")}
           </Link>
         </nav>
         <div className="document-name">
@@ -69,30 +71,37 @@ export function StudioHeader({
           <div>
             <strong title={name}>{name}</strong>
             <small aria-live="polite">
-              {dirty ? "Есть изменения" : "Нет несохранённых изменений"}
-              {second ? " · второй скин" : ""}
+              {dirty ? t("document.dirty") : t("document.clean")}
+              {second ? t("viewer.secondSkinSuffix") : ""}
             </small>
           </div>
         </div>
         <div className="file-actions">
-          <Button aria-label="Открыть" title="Открыть скин" onClick={onImport}>
+          <Button aria-label={t("file.open")} title={t("file.openSkin")} onClick={onImport}>
             <FolderOpenIcon />
-            <span>Открыть</span>
+            <span>{t("file.open")}</span>
           </Button>
           {mode === "editor" && onSave ? (
-            <Button tone="primary" aria-label="Сохранить проект" disabled={saving} onClick={onSave}>
-              Сохранить проект
+            <Button
+              tone="primary"
+              data-action="save-project"
+              aria-label={t("file.saveProject")}
+              disabled={saving}
+              onClick={onSave}
+            >
+              {t("file.saveProject")}
             </Button>
           ) : null}
           <Button
             tone={mode === "editor" ? "neutral" : "primary"}
-            aria-label="Скачать PNG"
-            title={saving ? "Сохранение…" : "Экспорт PNG"}
+            data-action="export-png"
+            aria-label={t("file.downloadPng")}
+            title={saving ? t("file.saving") : t("file.exportPng")}
             disabled={saving}
             onClick={onExport}
           >
             <ArrowDownTrayIcon />
-            <span>{saving ? "Сохранение…" : "Экспорт PNG"}</span>
+            <span>{saving ? t("file.saving") : t("file.exportPng")}</span>
           </Button>
         </div>
       </header>

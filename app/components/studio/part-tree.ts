@@ -1,3 +1,4 @@
+import type { TFunction } from "i18next";
 import type { ModelNode } from "@striped-skins/models";
 
 export type PartTreeNode = {
@@ -18,6 +19,7 @@ export function buildPartTree(
   available: (id: string) => boolean,
   label: (id: string) => string,
   accessories: { id: number; label: string; nodes: readonly ModelNode[] }[],
+  t: TFunction,
 ): PartTreeNode[] {
   const branch = (node: ModelNode, prefix = ""): PartTreeNode | null => {
     if (!prefix && !available(node.id)) return null;
@@ -28,10 +30,10 @@ export function buildPartTree(
     if (node.quads.length)
       children.unshift({
         id: `${prefix}${node.id}/faces`,
-        label: "Грани",
+        label: t("parts.faces"),
         children: node.quads.map((q, i) => ({
           id: `${prefix}${q.id}`,
-          label: `Грань ${i + 1}`,
+          label: t("parts.face", { number: i + 1 }),
           partId: `${prefix}${node.id}`,
           children: [],
         })),
@@ -49,7 +51,11 @@ export function buildPartTree(
     }
     return groups.get(id)!;
   };
-  const roots = [group("head", "Голова"), group("body", "Тело"), group("legs", "Ноги")];
+  const roots = [
+    group("head", t("parts.head")),
+    group("body", t("parts.body")),
+    group("legs", t("parts.legs")),
+  ];
   for (const node of nodes) {
     const result = branch(node);
     if (!result) continue;
@@ -57,22 +63,27 @@ export function buildPartTree(
     if (node.id === "head" || node.id === "hat") parent = groups.get("head")!;
     else if (["body", "neck", "jacket"].includes(node.id)) {
       parent = groups.get("body")!;
-      if (node.id === "jacket") parent = group("body/clothes", "Одежда", parent);
+      if (node.id === "jacket") parent = group("body/clothes", t("parts.clothes"), parent);
     } else if (/_(arm|leg|sleeve|pants)$/.test(node.id)) {
       parent = groups.get("legs")!;
       parent = /_(sleeve|pants)$/.test(node.id)
-        ? group("legs/clothes", "Одежда", parent)
-        : group("legs/base", "Ноги", parent);
+        ? group("legs/clothes", t("parts.clothes"), parent)
+        : group("legs/base", t("parts.legs"), parent);
     } else {
-      const name = node.id === "wings" ? "Крылья" : node.id === "tail" ? "Хвост" : "Другие части";
-      const id = name === "Другие части" ? "other" : node.id;
+      const name =
+        node.id === "wings"
+          ? t("parts.wings")
+          : node.id === "tail"
+            ? t("parts.tail")
+            : t("parts.other");
+      const id = node.id === "wings" || node.id === "tail" ? node.id : "other";
       parent = group(id, name);
       if (!roots.includes(parent)) roots.push(parent);
     }
     parent.children.push(result);
   }
   if (accessories.length) {
-    const parent = group("accessories", "Аксессуары");
+    const parent = group("accessories", t("skin.accessories"));
     for (const accessory of accessories)
       parent.children.push({
         id: `gear/${accessory.id}`,

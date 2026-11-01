@@ -1,7 +1,8 @@
+import { getWearableNames, getRaceNames, getSizeNames } from "../../i18n/model-labels";
+import { useTranslation } from "react-i18next";
 import {
   decodeSkinMetadata,
   writeSkinMetadata,
-  wearableNames,
   type SkinDocument,
   type SkinMetadata,
   type RaceId,
@@ -10,29 +11,6 @@ import { bodySizes, type PreviewSettings } from "@striped-skins/models";
 import { useSyncExternalStore } from "react";
 import { ColorPicker } from "./ColorPicker";
 import { Field, Toggle } from "./ui";
-export const raceNames: Record<RaceId, string> = {
-  HUMAN: "Человек",
-  EARTH: "Земная пони",
-  PEGASUS: "Пегас",
-  UNICORN: "Единорог",
-  ALICORN: "Аликорн",
-  CHANGELING: "Чейнджлинг",
-  ZEBRA: "Зебра",
-  CHANGEDLING: "Перевоплощённый чейнджлинг",
-  GRYPHON: "Грифон",
-  HIPPOGRIFF: "Гиппогриф",
-  KIRIN: "Кирин",
-  BATPONY: "Бэтпони",
-  SEAPONY: "Морская пони",
-};
-const sizes = {
-  NORMAL: "Стандартный",
-  FOAL: "Жеребёнок",
-  YEARLING: "Подросток",
-  TALL: "Высокий",
-  LANKY: "Вытянутый",
-  BULKY: "Широкий",
-};
 export function SkinSettings({
   document,
   preview,
@@ -48,21 +26,26 @@ export function SkinSettings({
   onSlim?: (value: boolean) => void;
   palette?: readonly string[];
 }) {
+  const { t } = useTranslation();
+  const wearableNames = getWearableNames(t);
+  const raceNames = getRaceNames(t);
+  const sizes = getSizeNames(t);
+
   useSyncExternalStore(document.subscribe, document.getSnapshot, document.getSnapshot);
   const meta = decodeSkinMetadata(document);
   const write = (patch: Partial<Omit<SkinMetadata, "slim">>) => writeSkinMetadata(document, patch);
   return (
     <div className="skin-settings">
       <p className="skin-dimensions">
-        <span>Размер текстуры</span>
+        <span>{t("skin.textureSize")}</span>
         <span>
           {document.width} × {document.height} px · PNG
         </span>
       </p>
       <div className="settings-group">
-        <Field label="Раса">
+        <Field label={t("skin.race")}>
           <select
-            aria-label="Раса"
+            aria-label={t("skin.race")}
             value={meta.race}
             onChange={(e) => write({ race: e.target.value as RaceId })}
           >
@@ -73,9 +56,9 @@ export function SkinSettings({
             ))}
           </select>
         </Field>
-        <Field label="Размер">
+        <Field label={t("skin.size")}>
           <select
-            aria-label="Размер модели"
+            aria-label={t("skin.modelSize")}
             value={meta.size}
             onChange={(e) => write({ size: e.target.value as SkinMetadata["size"] })}
           >
@@ -87,24 +70,24 @@ export function SkinSettings({
           </select>
         </Field>
         <div className="studio-field">
-          <span>Цвет магии</span>
+          <span>{t("skin.magicColor")}</span>
           <div className="color-field">
             <ColorPicker
               palette={palette}
-              label="Цвет свечения"
+              label={t("skin.glowColor")}
               value={`#${meta.glow}`}
               onChange={(color) => write({ glow: color.slice(1) })}
             />
             <span>#{meta.glow.toUpperCase()}</span>
           </div>
-          <small>Цвет свечения и окраска рогов-аксессуаров</small>
+          <small>{t("skin.glowHint")}</small>
         </div>
       </div>
       <fieldset className="settings-group">
         <legend>
-          Аксессуары <span className="count-badge">{meta.wearables.length}/3</span>
+          {t("skin.accessories")} <span className="count-badge">{meta.wearables.length}/3</span>
         </legend>
-        <p className="muted">Можно сочетать до трёх аксессуаров</p>
+        <p className="muted">{t("skin.accessoriesHint")}</p>
         <div className="accessory-options">
           {Object.entries(wearableNames).map(([id, name]) => (
             <label
@@ -132,36 +115,36 @@ export function SkinSettings({
         </div>
       </fieldset>
       <details open className="settings-group">
-        <summary>Морда и хвост</summary>
+        <summary>{t("skin.snoutAndTail")}</summary>
         <div className="settings-grid">
-          <Field label="Морда">
+          <Field label={t("skin.snout")}>
             <select
-              aria-label="Морда"
+              aria-label={t("skin.snout")}
               value={meta.snout}
               onChange={(e) => write({ snout: e.target.value as SkinMetadata["snout"] })}
             >
-              <option value="mare">Округлая</option>
-              <option value="stallion">Квадратная</option>
-              <option value="flat">Плоская</option>
+              <option value="mare">{t("skin.round")}</option>
+              <option value="stallion">{t("skin.square")}</option>
+              <option value="flat">{t("skin.flat")}</option>
             </select>
           </Field>
-          <Field label="Форма хвоста">
+          <Field label={t("skin.tailShape")}>
             <select
-              aria-label="Форма хвоста"
+              aria-label={t("skin.tailShape")}
               value={meta.tailShape}
               onChange={(e) => write({ tailShape: e.target.value as SkinMetadata["tailShape"] })}
             >
-              <option value="STRAIGHT">Прямой</option>
-              <option value="BUMPY">Объёмный</option>
-              <option value="SWIRLY">Волнистый</option>
-              <option value="SPIKY">Остроконечный</option>
+              <option value="STRAIGHT">{t("skin.straight")}</option>
+              <option value="BUMPY">{t("skin.bumpy")}</option>
+              <option value="SWIRLY">{t("skin.swirly")}</option>
+              <option value="SPIKY">{t("skin.spiky")}</option>
             </select>
           </Field>
         </div>
-        <Field label={`Длина хвоста · ${meta.tailLength}/4`}>
+        <Field label={t("skin.tailLengthValue", { length: meta.tailLength })}>
           <input
             type="range"
-            aria-label="Длина хвоста"
+            aria-label={t("skin.tailLength")}
             min={0}
             max={4}
             value={meta.tailLength}
@@ -170,32 +153,30 @@ export function SkinSettings({
         </Field>
       </details>
       <details open className="settings-group">
-        <summary>Предпросмотр</summary>
-        <p className="muted">Эти настройки не записываются в PNG</p>
+        <summary>{t("skin.preview")}</summary>
+        <p className="muted">{t("skin.previewHint")}</p>
         {onSlim ? <Toggle label="Slim" checked={slim ?? meta.slim} onChange={onSlim} /> : null}
         <Toggle
-          label="Раскрыть крылья"
+          label={t("skin.extendWings")}
           checked={preview.wings === "extended"}
           onChange={(v) => onPreview({ wings: v ? "extended" : "folded" })}
         />
         {["SEAPONY", "HIPPOGRIFF"].includes(meta.race) ? (
-          <Field label="Форма">
+          <Field label={t("skin.form")}>
             <select
-              aria-label="Форма"
+              aria-label={t("skin.form")}
               value={preview.form}
               onChange={(e) => onPreview({ form: e.target.value as PreviewSettings["form"] })}
             >
-              <option value="skin">По скину</option>
-              <option value="wet">Водная</option>
-              <option value="dry">Сухопутная</option>
+              <option value="skin">{t("skin.fromSkin")}</option>
+              <option value="wet">{t("skin.aquatic")}</option>
+              <option value="dry">{t("skin.land")}</option>
             </select>
           </Field>
         ) : null}
       </details>
       {document.sourceFormat === "legacy" ? (
-        <p className="studio-notice">
-          Legacy-скин преобразован в квадратный формат. PNG будет сохранён в новом формате.
-        </p>
+        <p className="studio-notice">{t("skin.legacyNotice")}</p>
       ) : null}
     </div>
   );

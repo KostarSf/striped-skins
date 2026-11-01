@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { useCallback, useEffect, useId, useMemo, useState } from "react";
 import { ArrowUturnLeftIcon, ArrowUturnRightIcon } from "@heroicons/react/24/outline";
 import { decodeSkinMetadata, type SkinDocument, type Pixel } from "@striped-skins/api";
@@ -10,7 +11,8 @@ import {
   resolveWearables,
   type PreviewSettings,
 } from "@striped-skins/models";
-import { wearableNames } from "@striped-skins/api";
+import { createPartLabel, getWearableNames } from "../../i18n/model-labels";
+import { documentLabel } from "../../i18n/document-labels";
 import { type PreviewStats, type SurfaceHover } from "@striped-skins/viewer/experimental";
 import { ModelViewport } from "./ModelViewport";
 import { PartsVisibility } from "./PartsVisibility";
@@ -46,72 +48,6 @@ function paletteFor(skin: SkinDocument) {
     .slice(0, 10)
     .map(([hex]) => hex);
 }
-const names: Record<string, string> = {
-  head: "Голова",
-  hat: "Внешний слой головы",
-  body: "Тело",
-  jacket: "Внешний слой тела",
-  neck: "Шея",
-  right_arm: "Правая передняя нога",
-  left_arm: "Левая передняя нога",
-  right_leg: "Правая задняя нога",
-  left_leg: "Левая задняя нога",
-  right_sleeve: "Правый рукав",
-  left_sleeve: "Левый рукав",
-  right_pants: "Правая штанина",
-  left_pants: "Левая штанина",
-  tail: "Хвост",
-  wings: "Крылья",
-};
-const tokens: Record<string, string> = {
-  head: "Голова",
-  ears: "Уши",
-  snout: "Морда",
-  mare: "Округлая",
-  stallion: "Квадратная",
-  flat: "Плоская",
-  body: "Тело",
-  butt: "Задняя часть",
-  mirrored: "Правая сторона",
-  butt_buttom: "Нижняя грань",
-  tail_stub: "Основание хвоста",
-  tail: "Хвост",
-  segment: "Геометрия",
-  neck: "Шея",
-  mane: "Грива",
-  horn: "Рог",
-  wings: "Крылья",
-  left_wing: "Левое",
-  right_wing: "Правое",
-  legacy_right_wing: "Правое · legacy",
-  folded: "Сложенное",
-  extended: "Раскрытое",
-  left: "Левое",
-  right: "Правое",
-  jacket: "Внешний слой тела",
-  left_side: "Левая сторона",
-  right_side: "Правая сторона",
-  base: "Основание",
-  tip: "Кончик",
-  fins: "Плавники",
-  left_fin: "Левый плавник",
-  right_fin: "Правый плавник",
-  center_fin: "Центральный плавник",
-};
-const labelFor = (id: string) =>
-  names[id] ??
-  id
-    .split("/")
-    .map(
-      (t) =>
-        tokens[t] ??
-        (t.match(/^segment_(\d+)$/)
-          ? `Сегмент ${Number(t.slice(8)) + 1}`
-          : t.match(/^feather_(\d+)$/)
-            ? `Перо ${t.slice(8)}`
-            : t),
-    )
-    .join(" / ");
 export default function EditorWorkspace({
   document: skin,
   preview,
@@ -123,6 +59,9 @@ export default function EditorWorkspace({
   onPreview: (patch: Partial<PreviewSettings>) => void;
   onFileDrop: (file: File) => void;
 }) {
+  const { t } = useTranslation();
+  const labelFor = createPartLabel(t);
+  const wearableNames = getWearableNames(t);
   useEffect(() => {
     skin.initializeWorkspace("preview", { ...preview });
   }, [skin, preview]);
@@ -198,12 +137,12 @@ export default function EditorWorkspace({
   const definition = resolveModel(appearance, preview);
   const parts = modelParts(definition).filter((p) => partAvailable(p.id, appearance, preview));
   const visibleParts = [
-    ...parts,
+    ...parts.map((part) => ({ ...part, label: labelFor(part.id) })),
     ...resolveWearables(appearance, preview).flatMap((gear) =>
       modelParts(gearModels[gear.model]).map((p) => ({
         ...p,
         id: `gear/${gear.id}/${p.id}`,
-        label: `${wearableNames[gear.id as keyof typeof wearableNames]} / ${p.label}`,
+        label: `${wearableNames[gear.id as keyof typeof wearableNames]} / ${labelFor(p.id)}`,
       })),
     ),
   ];
@@ -216,6 +155,7 @@ export default function EditorWorkspace({
       label: wearableNames[gear.id as keyof typeof wearableNames],
       nodes: gearModels[gear.model].nodes,
     })),
+    t,
   );
   const selected = parts.some((p) => p.id === activePart) ? activePart : null;
   const availablePartIds = parts.map((part) => part.id).join("\n");
@@ -298,12 +238,12 @@ export default function EditorWorkspace({
     [setLastPixel],
   );
   const palettePanel = (
-    <section className="palette-panel" aria-label="Палитра скина">
+    <section className="palette-panel" aria-label={t("colors.palette")}>
       <div className="skin-palette">
-        {isPhone ? <small>Палитра скина</small> : null}
+        {isPhone ? <small>{t("colors.palette")}</small> : null}
         <div>
           <span className="palette-entry">
-            <IconButton className="palette-add" label="Добавить цвет в палитру" onClick={addColor}>
+            <IconButton className="palette-add" label={t("colors.add")} onClick={addColor}>
               <DesignIcon name="plus" />
             </IconButton>
           </span>
@@ -311,7 +251,7 @@ export default function EditorWorkspace({
             <span className="palette-entry" key={c}>
               <button
                 type="button"
-                aria-label={`Цвет ${c}`}
+                aria-label={t("colors.named", { color: c })}
                 title={c}
                 className="palette-swatch"
                 style={{ background: c }}
@@ -323,8 +263,8 @@ export default function EditorWorkspace({
               <button
                 type="button"
                 className="palette-remove"
-                aria-label={`Удалить цвет ${c}`}
-                title="Удалить из палитры"
+                aria-label={t("colors.remove", { color: c })}
+                title={t("colors.removeFromPalette")}
                 onClick={() => setRemovedColors((v) => new Set([...v, c]))}
               >
                 ×
@@ -338,18 +278,25 @@ export default function EditorWorkspace({
   return (
     <>
       {!isPhone ? (
-        <div className="brush-toolbar" role="toolbar" aria-label="Настройки инструментов">
+        <div className="brush-toolbar" role="toolbar" aria-label={t("tools.settings")}>
           <div className="current-tool">
             <DesignIcon name={tool === "drop" ? "drop" : tool} />
             <strong>
-              {{ brush: "Кисть", eraser: "Ластик", drop: "Пипетка", hand: "Перемещение" }[tool]}
+              {
+                {
+                  brush: t("tools.brush"),
+                  eraser: t("tools.eraser"),
+                  drop: t("tools.eyedropper"),
+                  hand: t("tools.pan"),
+                }[tool]
+              }
             </strong>
           </div>
           <span className="toolbar-divider" />
           <label className="inline-field">
-            Размер{" "}
+            {t("skin.size")}{" "}
             <NumberSlider
-              label="Размер кисти"
+              label={t("tools.brushSize")}
               min={1}
               max={32}
               unit=" px"
@@ -359,9 +306,9 @@ export default function EditorWorkspace({
             <span>px</span>
           </label>
           <label className="inline-field opacity-field">
-            Непрозрачность{" "}
+            {t("tools.opacity")}{" "}
             <NumberSlider
-              label="Непрозрачность кисти"
+              label={t("tools.brushOpacity")}
               min={0}
               max={100}
               unit="%"
@@ -372,16 +319,16 @@ export default function EditorWorkspace({
           </label>
           <div className="inline-controls">
             <IconButton
-              label="Отменить штрих"
-              title={`Отменить: ${skin.undoLabel ?? "—"} · Ctrl+Z / ⌘Z`}
+              label={t("history.undoStroke")}
+              title={t("history.undoShortcut", { action: documentLabel(t, skin.undoLabel) || "—" })}
               disabled={!skin.canUndo}
               onClick={() => skin.undo()}
             >
               <ArrowUturnLeftIcon />
             </IconButton>
             <IconButton
-              label="Повторить штрих"
-              title={`Повторить: ${skin.redoLabel ?? "—"} · Ctrl+Shift+Z / ⇧⌘Z`}
+              label={t("history.redoStroke")}
+              title={t("history.redoShortcut", { action: documentLabel(t, skin.redoLabel) || "—" })}
               disabled={!skin.canRedo}
               onClick={() => skin.redo()}
             >
@@ -396,16 +343,16 @@ export default function EditorWorkspace({
               if (tool === "hand") setTool("brush");
             }}
           >
-            {painting ? "Режим: кисть" : "Режим: вращение"}
+            {painting ? t("tools.brushMode") : t("tools.orbitMode")}
           </Button>
           {layout === "2d" && !showMini ? (
-            <Button onClick={() => setShowMini(true)}>3D-превью</Button>
+            <Button onClick={() => setShowMini(true)}>{t("viewport.preview3d")}</Button>
           ) : null}
-          <div className="mode-tabs layout-tabs" aria-label="Расположение видов">
+          <div className="mode-tabs layout-tabs" aria-label={t("editor.layout")}>
             {(
               [
                 ["3d", "3D"],
-                ["split", "Рядом"],
+                ["split", t("editor.sideBySide")],
                 ["2d", "2D"],
               ] as const
             ).map(([id, label]) => (
@@ -420,13 +367,13 @@ export default function EditorWorkspace({
         className={`editor-workspace layout-${isPhone ? "split" : layout} mobile-view-${mobileView}`}
       >
         {!isPhone ? (
-          <aside className="tool-rail" aria-label="Инструменты">
+          <aside className="tool-rail" aria-label={t("tools.label")}>
             {(
               [
-                ["hand", "Перемещение · H"],
-                ["brush", "Кисть · B"],
-                ["eraser", "Ластик · E"],
-                ["drop", "Пипетка · I"],
+                ["hand", t("tools.panShortcut")],
+                ["brush", t("tools.brushShortcut")],
+                ["eraser", t("tools.eraserShortcut")],
+                ["drop", t("tools.eyedropperShortcut")],
               ] as const
             ).map(([id, label]) => (
               <IconButton
@@ -447,7 +394,7 @@ export default function EditorWorkspace({
                   onSecondary={setSecondary}
                   palette={pickerPalette}
                 />
-                <IconButton label="Поменять цвета · X" onClick={swapColors}>
+                <IconButton label={t("colors.swapShortcut")} onClick={swapColors}>
                   ⇄
                 </IconButton>
               </div>
@@ -493,7 +440,7 @@ export default function EditorWorkspace({
                 smoothCamera={options.smoothCamera}
                 mini={!isPhone && layout === "2d"}
                 onClose={() => setShowMini(false)}
-                title={!isPhone && layout === "2d" ? "3D-превью" : "3D-модель"}
+                title={!isPhone && layout === "2d" ? t("viewport.preview3d") : t("viewport.model")}
               />
             ) : null}
 
@@ -523,12 +470,15 @@ export default function EditorWorkspace({
           </div>
           {isPhone ? palettePanel : null}
         </div>
-        <aside className="inspector studio-panel editor-inspector" aria-label="Параметры документа">
-          <div className="inspector-tabs" role="tablist" aria-label="Разделы документа">
+        <aside
+          className="inspector studio-panel editor-inspector"
+          aria-label={t("editor.documentSettings")}
+        >
+          <div className="inspector-tabs" role="tablist" aria-label={t("editor.documentTabs")}>
             {(
               [
-                ["texture", "Текстура"],
-                ["skin", "Параметры скина"],
+                ["texture", t("editor.textureTab")],
+                ["skin", t("skin.settings")],
               ] as const
             ).map(([id, label]) => (
               <button
@@ -567,7 +517,7 @@ export default function EditorWorkspace({
           >
             <LayerPanel document={skin} />
             <div className="settings-group">
-              <h3>Рисование по поверхности</h3>
+              <h3>{t("tools.surfacePainting")}</h3>
               <PaintPartSelect
                 key={`${skin.id}/${definition.id}/${availablePartIds}`}
                 document={skin}
@@ -588,7 +538,7 @@ export default function EditorWorkspace({
             hidden={inspectorTab !== "skin"}
             tabIndex={0}
           >
-            <PanelHeading title="Параметры скина" description="Внешность и метаданные MLP" />
+            <PanelHeading title={t("skin.settings")} description={t("skin.metadata")} />
             <SkinSettings
               document={skin}
               preview={preview}
@@ -635,10 +585,10 @@ export default function EditorWorkspace({
           {lastPixel ? ` · ${lastPixel.x}, ${lastPixel.y}` : ""}
         </output>
         <span>
-          Кисть <kbd>B</kbd>　Ластик <kbd>E</kbd>　Пипетка <kbd>I</kbd>　Цвета <kbd>X</kbd>　Отмена{" "}
-          <kbd>Ctrl Z</kbd>
+          {t("tools.brush")} <kbd>B</kbd> {t("tools.eraser")} <kbd>E</kbd> {t("tools.eyedropper")}{" "}
+          <kbd>I</kbd> {t("colors.label")} <kbd>X</kbd> {t("history.undo")} <kbd>Ctrl Z</kbd>
         </span>
-        <span>Служебные пиксели защищены</span>
+        <span>{t("texture.protectedPixels")}</span>
       </footer>
     </>
   );

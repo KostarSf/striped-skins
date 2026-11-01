@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { HexColorPicker } from "react-colorful";
 import { HexInput } from "./ui";
@@ -25,15 +26,18 @@ export function ColorPicker({
   value,
   onChange,
   label,
+  heading,
   palette = [],
   className = "",
 }: {
   value: string;
   onChange: (color: string) => void;
   label: string;
+  heading?: string;
   palette?: readonly string[];
   className?: string;
 }) {
+  const { t } = useTranslation();
   const id = useId();
   const trigger = useRef<HTMLButtonElement>(null);
   const popup = useRef<HTMLDialogElement>(null);
@@ -116,7 +120,7 @@ export function ColorPicker({
         id={id}
         popover="auto"
         className="color-picker-popup"
-        aria-label={`Выбор цвета: ${label}`}
+        aria-label={t("colors.dialog", { label: label })}
         onToggle={(event) => setOpen(event.newState === "open")}
         onBeforeToggle={(event) => {
           if (event.newState === "closed" && normalized !== original.toLowerCase()) {
@@ -144,21 +148,17 @@ export function ColorPicker({
         {open ? (
           <>
             <div className="color-picker-heading">
-              <strong>
-                {label
-                  .replace("Пикер цвета кисти", "Цвет кисти")
-                  .replace("Пикер дополнительного цвета", "Дополнительный цвет")}
-              </strong>
+              <strong>{heading ?? label}</strong>
               <button
                 type="button"
                 className="color-picker-close"
-                aria-label="Закрыть выбор цвета"
+                aria-label={t("colors.close")}
                 onClick={close}
               >
                 ×
               </button>
             </div>
-            <HexColorPicker color={value} onChange={choose} aria-label="Спектр цвета" />
+            <HexColorPicker color={value} onChange={choose} aria-label={t("colors.spectrum")} />
             <div className="color-picker-values">
               <label htmlFor={`${id}-hex`}>
                 HEX
@@ -166,50 +166,52 @@ export function ColorPicker({
                   id={`${id}-hex`}
                   value={value}
                   onChange={choose}
-                  label="HEX выбранного цвета"
+                  label={t("colors.selectedHex")}
                 />
               </label>
-              {(["Красный", "Зелёный", "Синий"] as const).map((name, index) => (
-                <label key={name}>
-                  {["R", "G", "B"][index]}
-                  <input
-                    aria-label={name}
-                    type="number"
-                    min={0}
-                    max={255}
-                    value={parseInt(value.slice(1 + index * 2, 3 + index * 2), 16)}
-                    onChange={(event) => {
-                      if (event.target.value === "") return;
-                      const channel = Math.max(0, Math.min(255, Math.round(+event.target.value)));
-                      if (!Number.isFinite(channel)) return;
-                      choose(
-                        value.slice(0, 1 + index * 2) +
-                          channel.toString(16).padStart(2, "0") +
-                          value.slice(3 + index * 2),
-                      );
-                    }}
-                  />
-                </label>
-              ))}
+              {([t("colors.red"), t("colors.green"), t("colors.blue")] as const).map(
+                (name, index) => (
+                  <label key={name}>
+                    {["R", "G", "B"][index]}
+                    <input
+                      aria-label={name}
+                      type="number"
+                      min={0}
+                      max={255}
+                      value={parseInt(value.slice(1 + index * 2, 3 + index * 2), 16)}
+                      onChange={(event) => {
+                        if (event.target.value === "") return;
+                        const channel = Math.max(0, Math.min(255, Math.round(+event.target.value)));
+                        if (!Number.isFinite(channel)) return;
+                        choose(
+                          value.slice(0, 1 + index * 2) +
+                            channel.toString(16).padStart(2, "0") +
+                            value.slice(3 + index * 2),
+                        );
+                      }}
+                    />
+                  </label>
+                ),
+              )}
             </div>
             <div className="color-picker-comparison">
-              <button type="button" onClick={() => choose(original)} title="Вернуть исходный цвет">
+              <button type="button" onClick={() => choose(original)} title={t("colors.restore")}>
                 <span style={{ backgroundColor: original }} />
-                Исходный
+                {t("colors.original")}
               </button>
               <span>
                 <span style={{ backgroundColor: value }} />
-                Текущий
+                {t("colors.current")}
               </span>
             </div>
             {swatches.length ? (
               <fieldset className="color-picker-swatches">
-                <legend>Палитра скина</legend>
+                <legend>{t("colors.palette")}</legend>
                 {swatches.map((color) => (
                   <button
                     key={color}
                     type="button"
-                    aria-label={`Из палитры: ${color}`}
+                    aria-label={t("colors.fromPalette", { color: color })}
                     title={color.toUpperCase()}
                     aria-pressed={color === normalized}
                     style={{ backgroundColor: color }}
@@ -220,12 +222,12 @@ export function ColorPicker({
             ) : null}
             {recent.length ? (
               <fieldset className="color-picker-swatches">
-                <legend>Недавние</legend>
+                <legend>{t("colors.recent")}</legend>
                 {recent.map((color) => (
                   <button
                     key={color}
                     type="button"
-                    aria-label={`Недавний цвет: ${color}`}
+                    aria-label={t("colors.recentColor", { color: color })}
                     title={color.toUpperCase()}
                     aria-pressed={color === normalized}
                     style={{ backgroundColor: color }}

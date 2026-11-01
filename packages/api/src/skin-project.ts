@@ -1,3 +1,4 @@
+import { SkinError } from "./SkinError.js";
 import { strFromU8, strToU8, unzipSync, zipSync } from "fflate";
 import { SkinDocument, validateSnapshot, type ProjectSnapshot } from "./SkinDocument.js";
 
@@ -25,14 +26,21 @@ export function encodeSkinProject(document: SkinDocument): Uint8Array {
     files["project.json"].byteLength > 32 * 1024 * 1024 ||
     Object.values(files).reduce((sum, bytes) => sum + bytes.byteLength, 0) > MAX_EXPANDED
   )
-    throw new Error("Проект превышает допустимый размер файла; уменьшите число слоёв");
+    throw new SkinError(
+      "projectExpandedLimit",
+      "Проект превышает допустимый размер файла; уменьшите число слоёв",
+    );
   const archive = zipSync(files, { level: 6 });
   if (archive.byteLength > MAX_ARCHIVE)
-    throw new Error("Файл проекта превышает 64 МиБ; уменьшите число слоёв");
+    throw new SkinError(
+      "projectArchiveLimit",
+      "Файл проекта превышает 64 МиБ; уменьшите число слоёв",
+    );
   return archive;
 }
 export function decodeSkinProject(bytes: Uint8Array): SkinDocument {
-  if (bytes.byteLength > MAX_ARCHIVE) throw new Error("Файл проекта превышает 64 МиБ");
+  if (bytes.byteLength > MAX_ARCHIVE)
+    throw new SkinError("projectArchiveLimit", "Файл проекта превышает 64 МиБ");
   let expanded = 0,
     entries = 0;
   const files = unzipSync(bytes, {
@@ -44,17 +52,17 @@ export function decodeSkinProject(bytes: Uint8Array): SkinDocument {
         entries > 1024 ||
         (file.name === "project.json" && file.originalSize > 32 * 1024 * 1024)
       )
-        throw new Error("Проект превышает допустимый размер");
+        throw new SkinError("projectExpandedLimit", "Проект превышает допустимый размер");
       return file.name === "project.json" || /^buffers\/\d+\.rgba$/.test(file.name);
     },
   });
-  if (!files["project.json"]) throw new Error("В файле нет проекта Striped");
+  if (!files["project.json"]) throw new SkinError("projectMissing", "В файле нет проекта Striped");
   const buffers = new Map<string, Uint8ClampedArray>();
   const snapshot: unknown = JSON.parse(strFromU8(files["project.json"]), (_key, value: unknown) => {
     if (value && typeof value === "object" && "rgba" in value) {
       const path = (value as { rgba: unknown }).rgba;
       if (typeof path !== "string" || !/^buffers\/\d+\.rgba$/.test(path) || !files[path])
-        throw new Error("В проекте отсутствуют данные слоя");
+        throw new SkinError("projectLayerMissing", "В проекте отсутствуют данные слоя");
       if (!buffers.has(path)) buffers.set(path, new Uint8ClampedArray(files[path]));
       return buffers.get(path);
     }
@@ -66,6 +74,6 @@ export function decodeSkinProject(bytes: Uint8Array): SkinDocument {
     !("version" in snapshot) ||
     snapshot.version !== 2
   )
-    throw new Error("Неподдерживаемая версия проекта Striped");
+    throw new SkinError("projectVersion", "Неподдерживаемая версия проекта Striped");
   return SkinDocument.restore(snapshot as ProjectSnapshot);
 }

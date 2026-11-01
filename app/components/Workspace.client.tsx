@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { useEffect, useState, type ReactNode } from "react";
 import { PonySkin, SkinDocument } from "@striped-skins/api";
 import {
@@ -41,6 +42,7 @@ async function restore() {
   };
 }
 function Autosave() {
+  const { t } = useTranslation();
   const [warning, setWarning] = useState(false);
   const [status, setStatus] = useState<"saving" | "saved" | "error">("saving");
   const [dismissed, setDismissed] = useState(false);
@@ -134,19 +136,13 @@ function Autosave() {
     <>
       {(firstInfo.dirty || secondInfo.dirty) && status === "saving" ? (
         <output className="autosave-status" data-testid="autosave-status">
-          Сохранение...
+          {t("recovery.saving")}
         </output>
       ) : null}
       {warning && !dismissed ? (
         <section role="alert" className="recovery-warning">
-          <p>
-            Браузер не смог сохранить локальную копию. Сохраните проект .striped перед закрытием
-            страницы.
-          </p>
-          <IconButton
-            label="Закрыть предупреждение о сохранении"
-            onClick={() => setDismissed(true)}
-          >
+          <p>{t("recovery.failed")}</p>
+          <IconButton label={t("recovery.dismiss")} onClick={() => setDismissed(true)}>
             <XMarkIcon />
           </IconButton>
         </section>
@@ -155,6 +151,7 @@ function Autosave() {
   );
 }
 export default function Workspace({ children }: { children: ReactNode }) {
+  const { t } = useTranslation();
   const location = useLocation();
   const [initial, setInitial] = useState<Awaited<ReturnType<typeof restore>> | null>(null);
   useEffect(() => {
@@ -173,6 +170,7 @@ export default function Workspace({ children }: { children: ReactNode }) {
       ponyParams={initial}
       viewerPreferencesParams={{
         defaultSkinUrl: "/steve_pony.png",
+        baseLayerName: t("layers.base"),
         userOptions: {
           animations: !!(localStorage.getItem("viewer.options.animations") ?? true),
           antialiasing: initialAntialiasing(

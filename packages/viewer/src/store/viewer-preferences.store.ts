@@ -60,7 +60,7 @@ export const createViewerPreferencesStore = (
     setDefaultSkin: (url) => {
       const request = ++requests.default;
       set(() => ({ loadingDefaultSkin: true, defaultSkinError: null }));
-      PonySkin.fromUrl(url)
+      PonySkin.fromUrl(url, initProps?.baseLayerName)
         .then((skin) => {
           if (request !== requests.default) return;
           ponyStore.getState().defaultPony.setSkin(skin);
@@ -78,7 +78,7 @@ export const createViewerPreferencesStore = (
       const previous = ponyStore.getState().firstPony.skin;
       set(() => ({ loadingFirstSkin: true, firstSkinError: null }));
 
-      PonySkin.fromUrl(skinUrl)
+      PonySkin.fromUrl(skinUrl, initProps?.baseLayerName)
         .then((skin) => {
           if (request !== requests.first) return;
           const current = ponyStore.getState().firstPony.skin;
@@ -104,7 +104,7 @@ export const createViewerPreferencesStore = (
       const previous = ponyStore.getState().secondPony.skin;
       set(() => ({ loadingSecondSkin: true, secondSkinError: null }));
 
-      PonySkin.fromUrl(skinUrl)
+      PonySkin.fromUrl(skinUrl, initProps?.baseLayerName)
         .then((skin) => {
           if (request !== requests.second) return;
           const current = ponyStore.getState().secondPony.skin;
