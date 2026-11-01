@@ -2,12 +2,18 @@ import { useEffect, useRef } from "react";
 import { Cog6ToothIcon } from "@heroicons/react/24/outline";
 import { useViewerPreferencesContext } from "../striped-viewer.client";
 import { Toggle } from "./ui";
+import type { SkinDocument } from "@striped-skins/api";
 import type { AntialiasingMode } from "@striped-skins/viewer";
 
 /** The same persisted display preferences in the viewer and editor. */
-export function ViewOptions() {
-  const options = useViewerPreferencesContext((s) => s.userOptions);
-  const setOptions = useViewerPreferencesContext((s) => s.setUserOptions);
+export function ViewOptions({ document }: { document?: SkinDocument } = {}) {
+  const defaults = useViewerPreferencesContext((s) => s.userOptions);
+  const setDefaults = useViewerPreferencesContext((s) => s.setUserOptions);
+  const options = document?.getWorkspace("viewOptions", { ...defaults }) ?? defaults;
+  const setOptions = (patch: Partial<typeof defaults>) => {
+    if (document) document.setWorkspace("viewOptions", { ...options, ...patch });
+    setDefaults(patch);
+  };
   const host = useRef<HTMLDetailsElement>(null);
   useEffect(() => {
     const outside = (e: PointerEvent) => {
@@ -19,11 +25,11 @@ export function ViewOptions() {
         host.current.querySelector("summary")?.focus();
       }
     };
-    document.addEventListener("pointerdown", outside);
-    document.addEventListener("keydown", escape);
+    globalThis.document.addEventListener("pointerdown", outside);
+    globalThis.document.addEventListener("keydown", escape);
     return () => {
-      document.removeEventListener("pointerdown", outside);
-      document.removeEventListener("keydown", escape);
+      globalThis.document.removeEventListener("pointerdown", outside);
+      globalThis.document.removeEventListener("keydown", escape);
     };
   }, []);
   return (

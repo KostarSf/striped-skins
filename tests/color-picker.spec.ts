@@ -1,8 +1,11 @@
 import { expect, test, type Page } from "@playwright/test";
+import { readFile } from "node:fs/promises";
+import { decodeSkinMetadata, decodeSkinProject } from "@striped-skins/api";
 import { setColor } from "./color-picker-helpers";
 
 test.use({ viewport: { width: 1280, height: 900 } });
 test.beforeEach(async ({ page }) => {
+  page.on("dialog", (dialog) => void dialog.accept());
   await page.addInitScript(() => {
     localStorage.setItem("viewer.options.animations", "");
     localStorage.setItem("viewer.options.smoothCamera", "");
@@ -134,6 +137,7 @@ test("switching directly between pickers immediately includes the previous selec
 
 test("glow changes update skin metadata and remain undoable", async ({ page }) => {
   await editor(page);
+  await page.getByRole("tab", { name: "Параметры скина", exact: true }).click();
   const pixels = await texture(page);
   const original = await trigger(page, "Цвет свечения").getAttribute("data-color");
   await setColor(page, "Цвет свечения", "#ab12ef");
@@ -142,6 +146,79 @@ test("glow changes update skin metadata and remain undoable", async ({ page }) =
   await page.getByRole("button", { name: "Отменить штрих", exact: true }).click();
   await expect(trigger(page, "Цвет свечения")).toHaveAttribute("data-color", original!);
   expect(await texture(page)).toBe(pixels);
+});
+
+test("picker colors and palette stay consistent through project saving, recovery and mobile panels", async ({
+  page,
+}) => {
+  await editor(page);
+  const errors: string[] = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  await setColor(page, "Цвет кисти", "#123456");
+  await page.getByRole("button", { name: "Добавить цвет в палитру", exact: true }).click();
+  await setColor(page, "Цвет кисти", "#654321");
+  await page.getByRole("button", { name: "Добавить цвет в палитру", exact: true }).click();
+  await setColor(page, "Дополнительный цвет", "#abcdef");
+  const railColors = page.locator(".skin-palette .palette-swatch");
+  expect(
+    await railColors.evaluateAll((buttons) =>
+      buttons.slice(0, 2).map((button) => button.getAttribute("aria-label")),
+    ),
+  ).toEqual(["Цвет #654321", "Цвет #123456"]);
+  await page.getByRole("tab", { name: "Параметры скина", exact: true }).click();
+  await trigger(page, "Цвет свечения").click();
+  const glow = picker(page, "Цвет свечения");
+  const palette = glow.getByRole("group", { name: "Палитра скина", exact: true });
+  expect(
+    await palette
+      .getByRole("button")
+      .evaluateAll((buttons) =>
+        buttons.slice(0, 2).map((button) => button.getAttribute("aria-label")),
+      ),
+  ).toEqual(["Из палитры: #654321", "Из палитры: #123456"]);
+  await glow.getByRole("button", { name: "Недавний цвет: #abcdef", exact: true }).click();
+  await glow.getByLabel("HEX выбранного цвета").fill("#0f1e2d");
+  await glow.getByRole("button", { name: "Закрыть выбор цвета" }).click();
+  const downloading = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Сохранить проект", exact: true }).click();
+  const bytes = await readFile((await (await downloading).path())!);
+  const project = decodeSkinProject(bytes);
+  expect(project.getWorkspace("colors", {})).toEqual({ primary: "#654321", secondary: "#abcdef" });
+  expect(project.getWorkspace("customColors", [])).toEqual(["#654321", "#123456"]);
+  expect(decodeSkinMetadata(project).glow).toBe("0f1e2d");
+  await page.reload();
+  await expect(trigger(page)).toHaveAttribute("data-color", "#654321");
+  await expect(trigger(page, "Дополнительный цвет")).toHaveAttribute("data-color", "#abcdef");
+  await page.getByRole("tab", { name: "Параметры скина", exact: true }).click();
+  await expect(trigger(page, "Цвет свечения")).toHaveAttribute("data-color", "#0f1e2d");
+  await page.getByRole("button", { name: "Открыть", exact: true }).click();
+  await page
+    .getByLabel("Открыть PNG", { exact: true })
+    .setInputFiles({ name: "colors.striped", mimeType: "application/zip", buffer: bytes });
+  await expect(trigger(page)).toHaveAttribute("data-color", "#654321");
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.getByRole("button", { name: "Параметры инструмента", exact: true }).click();
+  await expect(page.getByLabel("HEX цвета кисти", { exact: true })).toHaveValue("#654321");
+  await expect(page.getByLabel("HEX дополнительного цвета", { exact: true })).toHaveValue(
+    "#ABCDEF",
+  );
+  await setColor(page, "Пикер цвета кисти", "#123456");
+  await expect(page.getByLabel("HEX цвета кисти", { exact: true })).toHaveValue("#123456");
+  await page.keyboard.press("Escape");
+  await expect(trigger(page)).toHaveAttribute("data-color", "#123456");
+  await page.getByRole("button", { name: "Параметры документа", exact: true }).click();
+  await page.getByRole("tab", { name: "Параметры скина", exact: true }).click();
+  await expect(trigger(page, "Цвет свечения")).toHaveAttribute("data-color", "#0f1e2d");
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.getByRole("link", { name: "← Просмотрщик", exact: true }).click();
+  await page.getByRole("button", { name: "Параметры скина", exact: true }).click();
+  await expect(trigger(page, "Цвет свечения")).toHaveAttribute("data-color", "#0f1e2d");
+  await setColor(page, "Цвет свечения", "#fedcba");
+  await page.getByRole("link", { name: "Редактировать", exact: true }).click();
+  await page.getByRole("tab", { name: "Параметры скина", exact: true }).click();
+  await expect(trigger(page, "Цвет свечения")).toHaveAttribute("data-color", "#fedcba");
+  await expect(page.locator('input[type="color"]')).toHaveCount(0);
+  expect(errors).toEqual([]);
 });
 
 test("picker fits narrow screens and Escape closes only the nested color popup", async ({

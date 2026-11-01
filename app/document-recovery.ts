@@ -1,14 +1,13 @@
 import { type SkinDocument } from "@striped-skins/api";
 
 export const LEGACY_RECOVERY_KEY = "striped.editor.documents.v1";
-export type RecoverySnapshot = Omit<ReturnType<SkinDocument["snapshot"]>, "pixels"> & {
-  pixels: ArrayLike<number>;
-};
+export type RecoverySnapshot = ReturnType<SkinDocument["snapshot"]>;
 export type SavedDocuments = Record<
   "first" | "second",
   null | {
     url: string | null;
     dirty?: boolean;
+    name?: string;
     document: RecoverySnapshot;
   }
 >;
@@ -43,13 +42,7 @@ function database() {
   }));
 }
 export function recoverySnapshot(document: SkinDocument): RecoverySnapshot {
-  return {
-    version: 1,
-    width: document.width,
-    height: document.height,
-    sourceFormat: document.sourceFormat,
-    pixels: new Uint8ClampedArray(document.pixels),
-  };
+  return document.snapshot();
 }
 export async function readSavedDocuments(): Promise<SavedDocuments | undefined> {
   try {
