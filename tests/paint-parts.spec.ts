@@ -131,6 +131,29 @@ test("2D painting and erasing stay inside the selected part's UV islands, includ
   await expect.poll(() => read(canvas, 50, 50)).toEqual([0, 255, 0, 255]);
 });
 
+test("rapid keyboard selection does not wait for the popover toggle event", async ({ page }) => {
+  await combo(page).click();
+  await part(page, "hat").click();
+  await expect(combo(page)).toContainText("Внешний слой головы");
+  // Deliver the next keys before the browser can dispatch its deferred toggle event.
+  const keys = async (sequence: string[]) => {
+    await combo(page).evaluate((button, sequence) => {
+      (button as HTMLButtonElement).click();
+      for (const key of sequence)
+        button.dispatchEvent(
+          new KeyboardEvent("keydown", { key, bubbles: true, cancelable: true }),
+        );
+    }, sequence);
+  };
+  await keys(["Home", "Enter"]);
+  await expect(combo(page)).toHaveAttribute("aria-expanded", "false");
+  await expect(combo(page)).toContainText("Видимой поверхности");
+  await expect(page.getByTestId("part-uv-highlight")).toHaveCount(0);
+  await keys(["Home", "ArrowDown", "Enter"]);
+  await expect(combo(page)).toHaveAttribute("aria-expanded", "false");
+  await expect(combo(page)).toContainText("Голова");
+});
+
 test("3D UV contours follow the selected paint part and restore all surfaces in automatic mode", async ({
   page,
 }) => {
@@ -151,11 +174,15 @@ test("3D UV contours follow the selected paint part and restore all surfaces in 
   const allParts = await bottomFrame();
   await combo(page).click();
   await part(page, "hat").click();
+  await expect(combo(page)).toHaveAttribute("aria-expanded", "false");
+  await expect(combo(page)).toContainText("Внешний слой головы");
   await expect.poll(bottomFrame).toBe(withoutUV);
   await expect.poll(() => orangePixels(page)).toBeGreaterThan(10);
   await combo(page).click();
   await page.keyboard.press("Home");
   await page.keyboard.press("Enter");
+  await expect(combo(page)).toHaveAttribute("aria-expanded", "false");
+  await expect(combo(page)).toContainText("Видимой поверхности");
   await expect.poll(bottomFrame).toBe(allParts);
 });
 

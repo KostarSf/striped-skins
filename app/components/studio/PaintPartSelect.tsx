@@ -34,6 +34,7 @@ export function PaintPartSelect({
   const popup = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(0);
+  const activeIndex = useRef(0);
   const [revision, setRevision] = useState(0);
   const search = useRef({ text: "", time: 0 });
   const options = useMemo(
@@ -104,6 +105,7 @@ export function PaintPartSelect({
         [active]?.scrollIntoView({ block: "nearest" });
   }, [open, active]);
   const activate = (index: number) => {
+    activeIndex.current = index;
     setActive(index);
     onHighlight(options[index].id || null);
   };
@@ -136,11 +138,13 @@ export function PaintPartSelect({
   useEffect(() => () => onHighlight(null), [onHighlight]);
   const handleKeyDown = (event: KeyboardEvent) => {
     const key = event.key;
+    // Native popover state changes before the deferred toggle notification.
+    const visible = popup.current?.matches(":popover-open") ?? false;
     if (key === "Tab") {
       hide();
       return;
     }
-    if (key === "Escape" && open) {
+    if (key === "Escape" && visible) {
       event.preventDefault();
       event.stopPropagation();
       hide();
@@ -149,8 +153,8 @@ export function PaintPartSelect({
     if (["ArrowDown", "ArrowUp", "Home", "End"].includes(key)) {
       event.preventDefault();
       event.stopPropagation();
-      if (!open) show();
-      const start = open ? active : options.indexOf(selected);
+      if (!visible) show();
+      const start = visible ? activeIndex.current : options.indexOf(selected);
       activate(
         key === "Home"
           ? 0
@@ -161,7 +165,7 @@ export function PaintPartSelect({
     } else if (key === "Enter" || key === " ") {
       event.preventDefault();
       event.stopPropagation();
-      if (open) choose(active);
+      if (visible) choose(activeIndex.current);
       else show();
     } else if (key.length === 1 && !event.ctrlKey && !event.metaKey && !event.altKey) {
       event.preventDefault();
@@ -173,7 +177,7 @@ export function PaintPartSelect({
           key.toLocaleLowerCase("ru"),
         time,
       };
-      if (!open) show();
+      if (!visible) show();
       const found = options.findIndex((option) =>
         option.label.toLocaleLowerCase("ru").startsWith(search.current.text),
       );
@@ -200,7 +204,7 @@ export function PaintPartSelect({
         onBlur={(event) => {
           if (!popup.current?.contains(event.relatedTarget)) hide();
         }}
-        onClick={() => (open ? hide() : show())}
+        onClick={() => (popup.current?.matches(":popover-open") ? hide() : show())}
       >
         {selected.id ? (
           <PartTexturePreview atlas={atlas} quads={selected.quads} revision={revision} />
@@ -228,7 +232,7 @@ export function PaintPartSelect({
           )
             hide();
         }}
-        onToggle={(event) => {
+        onBeforeToggle={(event) => {
           const visible = event.newState === "open";
           setOpen(visible);
           if (!visible) onHighlight(null);
@@ -253,10 +257,7 @@ export function PaintPartSelect({
                 data-part={option.id}
                 data-active={active === index}
                 className="paint-part-option"
-                onPointerMove={() => {
-                  setActive(index);
-                  onHighlight(option.id || null);
-                }}
+                onPointerMove={() => activate(index)}
                 onPointerDown={(event) => event.preventDefault()}
                 onClick={() => choose(index)}
               >
