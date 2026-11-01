@@ -8,6 +8,7 @@ import {
 } from "@striped-skins/api";
 import { bodySizes, type PreviewSettings } from "@striped-skins/models";
 import { useSyncExternalStore } from "react";
+import { ColorPicker } from "./ColorPicker";
 import { Field, Toggle } from "./ui";
 export const raceNames: Record<RaceId, string> = {
   HUMAN: "Человек",
@@ -38,12 +39,14 @@ export function SkinSettings({
   onPreview,
   slim,
   onSlim,
+  palette,
 }: {
   document: SkinDocument;
   preview: PreviewSettings;
   onPreview: (patch: Partial<PreviewSettings>) => void;
   slim?: boolean;
   onSlim?: (value: boolean) => void;
+  palette?: readonly string[];
 }) {
   useSyncExternalStore(document.subscribe, document.getSnapshot, document.getSnapshot);
   const meta = decodeSkinMetadata(document);
@@ -83,17 +86,19 @@ export function SkinSettings({
             ))}
           </select>
         </Field>
-        <Field label="Цвет магии" hint="Цвет свечения и окраска рогов-аксессуаров">
+        <div className="studio-field">
+          <span>Цвет магии</span>
           <div className="color-field">
-            <input
-              type="color"
-              aria-label="Цвет свечения"
+            <ColorPicker
+              palette={palette}
+              label="Цвет свечения"
               value={`#${meta.glow}`}
-              onChange={(e) => write({ glow: e.target.value.slice(1) })}
+              onChange={(color) => write({ glow: color.slice(1) })}
             />
             <span>#{meta.glow.toUpperCase()}</span>
           </div>
-        </Field>
+          <small>Цвет свечения и окраска рогов-аксессуаров</small>
+        </div>
       </div>
       <fieldset className="settings-group">
         <legend>

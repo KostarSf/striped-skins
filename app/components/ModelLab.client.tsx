@@ -6,6 +6,7 @@ import {
   useSyncExternalStore,
   type PointerEvent,
 } from "react";
+import { ColorPicker } from "./studio/ColorPicker";
 import { Link } from "react-router";
 import {
   SkinDocument,
@@ -395,15 +396,14 @@ export function SkinEditor({ skin, lab = false }: { skin: SkinDocument; lab?: bo
                 onChange={(e) => writeSkinMetadata(skin, { tailLength: Number(e.target.value) })}
               />
             </label>
-            <label className="block">
+            <div className="block">
               Цвет свечения{" "}
-              <input
-                aria-label="Цвет свечения"
-                type="color"
+              <ColorPicker
+                label="Цвет свечения"
                 value={`#${metadata.glow}`}
-                onChange={(e) => writeSkinMetadata(skin, { glow: e.target.value.slice(1) })}
+                onChange={(color) => writeSkinMetadata(skin, { glow: color.slice(1) })}
               />
-            </label>
+            </div>
             <fieldset>
               <legend>Аксессуары ({metadata.wearables.length}/3)</legend>
               {Object.entries(wearableNames).map(([id, name]) => (
@@ -464,15 +464,9 @@ export function SkinEditor({ skin, lab = false }: { skin: SkinDocument; lab?: bo
           >
             {painting ? "Режим: кисть" : "Режим: вращение"}
           </button>
-          <label className="flex items-center gap-2 text-sm">
-            Цвет{" "}
-            <input
-              aria-label="Цвет кисти"
-              type="color"
-              value={hex}
-              onChange={(event) => setHex(event.target.value)}
-            />
-          </label>
+          <div className="flex items-center gap-2 text-sm">
+            Цвет <ColorPicker label="Цвет кисти" value={hex} onChange={setHex} />
+          </div>
           <label className="text-sm">
             <input
               type="checkbox"

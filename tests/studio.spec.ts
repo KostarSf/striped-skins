@@ -1,3 +1,4 @@
+import { setColor } from "./color-picker-helpers";
 import { test, expect, type Page } from "@playwright/test";
 
 test.use({ viewport: { width: 1600, height: 1000 } });
@@ -272,7 +273,7 @@ test("layout modes, texture pan/zoom and tool shortcuts preserve the exact docum
   await enter(page);
   await expect(tex(page)).toBeVisible();
   const initial = await pixel(page);
-  await page.getByLabel("Цвет кисти", { exact: true }).fill("#ff00ff");
+  await setColor(page, "Цвет кисти", "#ff00ff");
   await paint(page);
   await expect.poll(() => pixel(page)).toEqual([255, 0, 255, 255]);
   await page.getByRole("button", { name: "3D", exact: true }).click();
@@ -306,7 +307,10 @@ test("layout modes, texture pan/zoom and tool shortcuts preserve the exact docum
   await expect.poll(() => pixel(page)).toEqual([255, 0, 255, 255]);
   await page.keyboard.press("i");
   await paint(page);
-  await expect(page.getByLabel("Цвет кисти", { exact: true })).toHaveValue("#ff00ff");
+  await expect(page.getByLabel("Цвет кисти", { exact: true })).toHaveAttribute(
+    "data-color",
+    "#ff00ff",
+  );
   await page.keyboard.press("e");
   await paint(page);
   await expect.poll(() => pixel(page)).toEqual([0, 0, 0, 0]);
@@ -382,7 +386,7 @@ test("dirty import can be cancelled or exported before replacement; Escape and f
   page,
 }) => {
   await enter(page);
-  await page.getByLabel("Цвет кисти", { exact: true }).fill("#ff00ff");
+  await setColor(page, "Цвет кисти", "#ff00ff");
   await paint(page);
   await page.getByRole("button", { name: "Открыть", exact: true }).click();
   await expect(page.getByRole("dialog")).toBeVisible();
@@ -410,7 +414,7 @@ test("mobile editor exposes texture, metadata and import without horizontal over
   await expect(page.getByRole("link", { name: "Striped Skins — просмотрщик" })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)).toBe(false);
   await page.getByRole("button", { name: "2D вид", exact: true }).click();
-  await page.getByLabel("Цвет кисти", { exact: true }).fill("#ff00ff");
+  await setColor(page, "Цвет кисти", "#ff00ff");
   await tex(page).scrollIntoViewIfNeeded();
   await paint(page);
   await expect.poll(() => pixel(page)).toEqual([255, 0, 255, 255]);
@@ -471,7 +475,7 @@ test("3D brush in the redesigned workspace edits the shared texture and remains 
   page,
 }) => {
   await enter(page);
-  await page.getByLabel("Цвет кисти", { exact: true }).fill("#ff00ff");
+  await setColor(page, "Цвет кисти", "#ff00ff");
   const before = await tex(page).evaluate((c) =>
     Array.from((c as HTMLCanvasElement).getContext("2d")!.getImageData(0, 0, 64, 64).data),
   );
@@ -552,8 +556,8 @@ test("X swaps primary and secondary colors; removing palette entries leaves docu
   page,
 }) => {
   await enter(page);
-  await page.getByLabel("Цвет кисти", { exact: true }).fill("#123456");
-  await page.getByLabel("Дополнительный цвет", { exact: true }).fill("#abcdef");
+  await setColor(page, "Цвет кисти", "#123456");
+  await setColor(page, "Дополнительный цвет", "#abcdef");
   await page.getByRole("button", { name: "Добавить цвет в палитру", exact: true }).click();
   const pixels = await tex(page).evaluate((c) => (c as HTMLCanvasElement).toDataURL());
   await page.getByRole("button", { name: "Цвет #123456", exact: true }).hover();
@@ -569,15 +573,27 @@ test("X swaps primary and secondary colors; removing palette entries leaves docu
   await page.getByRole("button", { name: "Добавить цвет в палитру", exact: true }).click();
   await expect(page.getByRole("button", { name: "Цвет #123456", exact: true })).toBeVisible();
   await page.keyboard.press("x");
-  await expect(page.getByLabel("Цвет кисти", { exact: true })).toHaveValue("#abcdef");
-  await expect(page.getByLabel("Дополнительный цвет", { exact: true })).toHaveValue("#123456");
+  await expect(page.getByLabel("Цвет кисти", { exact: true })).toHaveAttribute(
+    "data-color",
+    "#abcdef",
+  );
+  await expect(page.getByLabel("Дополнительный цвет", { exact: true })).toHaveAttribute(
+    "data-color",
+    "#123456",
+  );
   await paint(page);
   await expect.poll(() => pixel(page)).toEqual([171, 205, 239, 255]);
   await page.getByRole("button", { name: "Поменять цвета · X", exact: true }).click();
-  await expect(page.getByLabel("Цвет кисти", { exact: true })).toHaveValue("#123456");
+  await expect(page.getByLabel("Цвет кисти", { exact: true })).toHaveAttribute(
+    "data-color",
+    "#123456",
+  );
   await page.getByLabel("Цвет кисти", { exact: true }).focus();
   await page.keyboard.press("x");
-  await expect(page.getByLabel("Цвет кисти", { exact: true })).toHaveValue("#123456");
+  await expect(page.getByLabel("Цвет кисти", { exact: true })).toHaveAttribute(
+    "data-color",
+    "#123456",
+  );
 });
 
 async function opaquePoint(page: Page) {
@@ -604,7 +620,7 @@ test("3D hovering previews brush color and synchronizes UV face/pixel without ch
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
   await enter(page);
-  await page.getByLabel("Цвет кисти", { exact: true }).fill("#ff00ff");
+  await setColor(page, "Цвет кисти", "#ff00ff");
   const point = { x: 0, y: 0 };
   await expect
     .poll(async () => {
@@ -655,7 +671,7 @@ test("3D hovering previews brush color and synchronizes UV face/pixel without ch
 
 test("3D hover shows the brush footprint in 2D clipped to the current face", async ({ page }) => {
   await enter(page);
-  await page.getByLabel("Цвет кисти", { exact: true }).fill("#ff00ff");
+  await setColor(page, "Цвет кисти", "#ff00ff");
   await page.getByRole("button", { name: "Режим: вращение", exact: true }).click();
   const point = { x: 0, y: 0 };
   await expect
@@ -767,7 +783,7 @@ test("all AA modes preserve the view across context and projection changes", asy
 
 test("3D brush preview matches every shared UV target shown by the 2D brush", async ({ page }) => {
   await enter(page);
-  await page.getByLabel("Цвет кисти", { exact: true }).fill("#ff00ff");
+  await setColor(page, "Цвет кисти", "#ff00ff");
   await page.getByRole("button", { name: "Режим: вращение", exact: true }).click();
   await page.mouse.move(5, 5);
   const initial = await image(page);
@@ -924,7 +940,7 @@ test("2D brush hover highlights the same 3D texel without painting, and clears o
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
   await enter(page);
-  await page.getByLabel("Цвет кисти", { exact: true }).fill("#ff00ff");
+  await setColor(page, "Цвет кисти", "#ff00ff");
   // Find a visible texel using the existing forward picker, then hover that texel in the atlas.
   await page.getByLabel("Цвет кисти", { exact: true }).blur();
   const point = { x: 0, y: 0 };
@@ -1122,7 +1138,7 @@ test("mouse camera mapping works in rotation and brush modes without painting du
       return !!p;
     })
     .toBe(true);
-  await page.getByLabel("Цвет кисти", { exact: true }).fill("#ff00ff");
+  await setColor(page, "Цвет кисти", "#ff00ff");
   await page.mouse.click(point.x, point.y);
   await expect(page.getByRole("button", { name: "Отменить штрих", exact: true })).toBeEnabled();
 });

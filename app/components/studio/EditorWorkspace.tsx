@@ -156,6 +156,9 @@ export default function EditorWorkspace({
     setCustomColors((v) => [...new Set([...v, hex])].slice(-16));
   };
   const palette = useMemo(() => paletteFor(skin), [skin]);
+  const pickerPalette = [...new Set([...palette, ...customColors])].filter(
+    (c) => !removedColors.has(c),
+  );
   const appearance = { ...meta, slim };
   const definition = resolveModel(appearance, preview);
   const parts = modelParts(definition).filter((p) => partAvailable(p.id, appearance, preview));
@@ -202,7 +205,8 @@ export default function EditorWorkspace({
   }, []);
   useEffect(() => {
     const key = (e: KeyboardEvent) => {
-      if ((e.target as HTMLElement).closest("input,select,textarea,dialog")) return;
+      if ((e.target as HTMLElement).closest("input,select,textarea,dialog,.color-picker-trigger"))
+        return;
       const k = e.key.toLowerCase();
       if ((e.ctrlKey || e.metaKey) && (k === "z" || e.code === "KeyZ")) {
         e.preventDefault();
@@ -357,6 +361,7 @@ export default function EditorWorkspace({
               secondary={colors.secondary}
               onPrimary={setHex}
               onSecondary={setSecondary}
+              palette={pickerPalette}
             />
             <IconButton label="Поменять цвета · X" onClick={swapColors}>
               ⇄
@@ -470,6 +475,7 @@ export default function EditorWorkspace({
             onPreview={onPreview}
             slim={slim}
             onSlim={setSlim}
+            palette={pickerPalette}
           />
           <div className="settings-group">
             <h3>Рисование по поверхности</h3>
@@ -507,6 +513,7 @@ export default function EditorWorkspace({
           secondary={colors.secondary}
           onPrimary={setHex}
           onSecondary={setSecondary}
+          palette={pickerPalette}
           onSwap={swapColors}
           brushSize={brushSize}
           onBrushSize={setBrushSize}

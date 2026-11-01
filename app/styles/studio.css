@@ -494,24 +494,6 @@ button:disabled {
   width: 100%;
   min-height: 24px;
 }
-.studio-app input[type="color"] {
-  width: 36px;
-  height: 36px;
-  padding: 0;
-  border: 0;
-  border-radius: 7px;
-  overflow: hidden;
-  cursor: pointer;
-  background: transparent;
-  flex: none;
-}
-input[type="color"]::-webkit-color-swatch-wrapper {
-  padding: 0;
-}
-input[type="color"]::-webkit-color-swatch {
-  border: 0;
-  border-radius: 6px;
-}
 .color-field {
   display: flex;
   align-items: center;
@@ -519,7 +501,7 @@ input[type="color"]::-webkit-color-swatch {
   min-width: 0;
 }
 .color-field > span,
-.color-field > input:not([type="color"]) {
+.color-field > input {
   flex: 1;
   background: var(--studio-raised);
   border-radius: 7px;
@@ -798,7 +780,7 @@ input[type="color"]::-webkit-color-swatch {
   margin-top: 4px;
   position: relative;
 }
-.rail-color input {
+.rail-color .color-picker-trigger {
   width: 28px !important;
   height: 28px !important;
 }
@@ -1396,11 +1378,11 @@ input[type="color"]::-webkit-color-swatch {
     align-items: center;
     gap: 10px;
   }
-  .mobile-tool-settings .brush-color-field input[type="color"] {
+  .mobile-tool-settings .brush-color-field > .color-picker-trigger {
     width: 42px;
     height: 42px;
   }
-  .brush-color-field input:not([type="color"]) {
+  .brush-color-field > input {
     flex: 1;
     width: 0;
   }
@@ -1650,18 +1632,11 @@ input[type="color"]::-webkit-color-swatch {
   border: 2px solid var(--studio-panel);
   border-radius: 6px;
 }
-.rail-colors .rail-color input {
+.rail-colors .rail-color .color-picker-trigger {
   display: block;
   border-radius: 4px;
 }
-.rail-colors input::-webkit-color-swatch {
-  border-radius: 4px;
-}
-.rail-colors input::-moz-color-swatch {
-  border: 0;
-  border-radius: 4px;
-}
-.rail-colors .secondary-color input {
+.rail-colors .secondary-color .color-picker-trigger {
   width: 18px !important;
   height: 18px !important;
 }

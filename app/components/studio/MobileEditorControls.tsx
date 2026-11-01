@@ -8,6 +8,7 @@ import {
   PhotoIcon,
   XMarkIcon,
 } from "@heroicons/react/24/outline";
+import { ColorPicker } from "./ColorPicker";
 import type { SkinDocument } from "@striped-skins/api";
 import type { PaintTool } from "./TextureEditor";
 import { Button, DesignIcon, Field, HexInput, IconButton } from "./ui";
@@ -25,30 +26,27 @@ export function BrushColors({
   secondary,
   onPrimary,
   onSecondary,
+  palette,
 }: {
   primary: string;
   secondary: string;
   onPrimary: (color: string) => void;
   onSecondary: (color: string) => void;
+  palette?: readonly string[];
 }) {
   return (
     <div className="rail-colors">
-      <label className="rail-color secondary-color" title="Дополнительный цвет">
-        <input
-          type="color"
-          aria-label="Дополнительный цвет"
+      <div className="rail-color secondary-color">
+        <ColorPicker
+          label="Дополнительный цвет"
           value={secondary}
-          onChange={(e) => onSecondary(e.target.value)}
+          onChange={onSecondary}
+          palette={palette}
         />
-      </label>
-      <label className="rail-color primary-color" title="Цвет кисти">
-        <input
-          type="color"
-          aria-label="Цвет кисти"
-          value={primary}
-          onChange={(e) => onPrimary(e.target.value)}
-        />
-      </label>
+      </div>
+      <div className="rail-color primary-color">
+        <ColorPicker label="Цвет кисти" value={primary} onChange={onPrimary} palette={palette} />
+      </div>
     </div>
   );
 }
@@ -115,6 +113,7 @@ export function MobileEditorFooter({
   secondary,
   onPrimary,
   onSecondary,
+  palette,
   onSwap,
   brushSize,
   onBrushSize,
@@ -129,6 +128,7 @@ export function MobileEditorFooter({
   secondary: string;
   onPrimary: (color: string) => void;
   onSecondary: (color: string) => void;
+  palette?: readonly string[];
   onSwap: () => void;
   brushSize: number;
   onBrushSize: (value: number) => void;
@@ -186,6 +186,7 @@ export function MobileEditorFooter({
           secondary={secondary}
           onPrimary={onPrimary}
           onSecondary={onSecondary}
+          palette={palette}
         />
         <IconButton
           label="Параметры инструмента"
@@ -240,24 +241,26 @@ export function MobileEditorFooter({
                 ))}
               </select>
             </Field>
-            <Field label="Цвет кисти">
+            <div className="studio-field">
+              <span>Цвет кисти</span>
               <div className="brush-color-field">
-                <input
-                  type="color"
-                  aria-label="Пикер цвета кисти"
+                <ColorPicker
+                  label="Пикер цвета кисти"
                   value={primary}
-                  onChange={(event) => onPrimary(event.target.value)}
+                  onChange={onPrimary}
+                  palette={palette}
                 />
                 <HexInput value={primary} onChange={onPrimary} />
               </div>
-            </Field>
-            <Field label="Дополнительный цвет">
+            </div>
+            <div className="studio-field">
+              <span>Дополнительный цвет</span>
               <div className="brush-color-field">
-                <input
-                  type="color"
-                  aria-label="Пикер дополнительного цвета"
+                <ColorPicker
+                  label="Пикер дополнительного цвета"
                   value={secondary}
-                  onChange={(event) => onSecondary(event.target.value)}
+                  onChange={onSecondary}
+                  palette={palette}
                 />
                 <HexInput
                   value={secondary}
@@ -265,7 +268,7 @@ export function MobileEditorFooter({
                   label="HEX дополнительного цвета"
                 />
               </div>
-            </Field>
+            </div>
           </>
         ) : null}
         <div className="mobile-tool-history">

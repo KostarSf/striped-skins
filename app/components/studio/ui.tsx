@@ -123,15 +123,18 @@ export function HexInput({
   value,
   onChange,
   label = "HEX цвета кисти",
+  id,
 }: {
   value: string;
   onChange: (value: string) => void;
   label?: string;
+  id?: string;
 }) {
   const [draft, setDraft] = useState(value.toUpperCase());
   useEffect(() => setDraft(value.toUpperCase()), [value]);
   return (
     <input
+      id={id}
       aria-label={label}
       value={draft}
       maxLength={7}

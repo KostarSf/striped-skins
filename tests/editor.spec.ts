@@ -1,3 +1,4 @@
+import { setColor } from "./color-picker-helpers";
 import { test, expect, type Page } from "@playwright/test";
 
 test.use({ viewport: { width: 1280, height: 900 } });
@@ -35,7 +36,7 @@ async function edit(page: Page, second = false) {
   await expect(page.getByTestId("skin-texture")).toBeVisible();
 }
 async function paint(page: Page, x = 12, y = 12) {
-  await page.getByLabel("Цвет кисти", { exact: true }).fill("#ff00ff");
+  await setColor(page, "Цвет кисти", "#ff00ff");
   await page.getByTestId("skin-texture").scrollIntoViewIfNeeded();
   const box = (await page.getByTestId("skin-texture").boundingBox())!;
   await page.mouse.click(
