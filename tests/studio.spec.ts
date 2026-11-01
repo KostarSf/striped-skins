@@ -452,6 +452,7 @@ test("original Figma UI assets load locally at their intended dimensions", async
       const i = node as HTMLImageElement;
       return {
         src: i.getAttribute("src")!,
+        paletteAdd: i.matches(".palette-add .design-icon"),
         ok: i.complete && i.naturalWidth > 0,
         w: i.getBoundingClientRect().width,
         h: i.getBoundingClientRect().height,
@@ -469,9 +470,19 @@ test("original Figma UI assets load locally at their intended dimensions", async
       "/design/expand.svg",
     ]),
   );
+  expect(images.filter((image) => image.paletteAdd).map((image) => image.src)).toEqual([
+    "/design/plus.svg",
+  ]);
   for (const image of images) {
     expect(image.ok, image.src).toBe(true);
-    const expected = image.src.endsWith("brand.svg") ? 18 : image.src.endsWith("eye.svg") ? 16 : 20;
+    // The compact palette tile intentionally uses a smaller icon than toolbar buttons.
+    const expected = image.paletteAdd
+      ? 12
+      : image.src.endsWith("brand.svg")
+        ? 18
+        : image.src.endsWith("eye.svg")
+          ? 16
+          : 20;
     expect(image.w, image.src).toBe(expected);
     expect(image.h, image.src).toBe(expected);
   }
