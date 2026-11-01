@@ -1,3 +1,6 @@
+import { documentLabel } from "../../i18n/document-labels";
+import { errorMessage } from "../../i18n/errors";
+import { useTranslation } from "react-i18next";
 import { useRef, useState, useSyncExternalStore, type DragEvent } from "react";
 import {
   ArrowUturnLeftIcon,
@@ -29,6 +32,7 @@ import {
 } from "./layer-drag";
 
 export function LayerPanel({ document: skin }: { document: SkinDocument }) {
+  const { t } = useTranslation();
   useSyncExternalStore(skin.subscribe, skin.getSnapshot, skin.getSnapshot);
   const [collapsed, setCollapsed] = useDocumentSetting<string[]>(skin, "collapsedGroups", []);
   const [error, setError] = useState("");
@@ -61,7 +65,7 @@ export function LayerPanel({ document: skin }: { document: SkinDocument }) {
       action();
       setError("");
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(errorMessage(t, e));
     }
   };
   const descendants = (id: string): string[] =>
@@ -129,7 +133,7 @@ export function LayerPanel({ document: skin }: { document: SkinDocument }) {
         />
       ) : null}
       <IconButton
-        label={`${node.visible ? "Скрыть слой" : "Показать слой"} ${node.name}`}
+        label={t(node.visible ? "layers.hideNamed" : "layers.showNamed", { name: node.name })}
         aria-pressed={node.visible}
         onClick={() => skin.updateLayer(node.id, { visible: !node.visible })}
       >
@@ -139,7 +143,10 @@ export function LayerPanel({ document: skin }: { document: SkinDocument }) {
         <button
           type="button"
           className="layer-fold"
-          aria-label={`${collapsed.includes(node.id) ? "Развернуть" : "Свернуть"} группу ${node.name}`}
+          aria-label={t(
+            collapsed.includes(node.id) ? "layers.expandNamed" : "layers.collapseNamed",
+            { name: node.name },
+          )}
           aria-expanded={!collapsed.includes(node.id)}
           onClick={() =>
             setCollapsed((ids) =>
@@ -153,7 +160,9 @@ export function LayerPanel({ document: skin }: { document: SkinDocument }) {
       <button
         type="button"
         className="layer-select"
-        aria-label={`Выбрать ${node.kind === "group" ? "группу" : "слой"} ${node.name}`}
+        aria-label={t(node.kind === "group" ? "layers.selectGroup" : "layers.selectLayer", {
+          name: node.name,
+        })}
         aria-pressed={active.id === node.id}
         onClick={() => skin.setActiveLayer(node.id)}
         title={node.name}
@@ -170,7 +179,7 @@ export function LayerPanel({ document: skin }: { document: SkinDocument }) {
       </button>
       <span className="layer-opacity">{node.opacity}%</span>
       <IconButton
-        label={`${node.locked ? "Разблокировать" : "Заблокировать"} ${node.name}`}
+        label={t(node.locked ? "layers.unlockNamed" : "layers.lockNamed", { name: node.name })}
         aria-pressed={node.locked}
         onClick={() => skin.updateLayer(node.id, { locked: !node.locked })}
       >
@@ -178,7 +187,7 @@ export function LayerPanel({ document: skin }: { document: SkinDocument }) {
       </IconButton>
       {node.kind === "layer" ? (
         <IconButton
-          label={`Блокировать прозрачность ${node.name}`}
+          label={t("layers.alphaLock", { name: node.name })}
           aria-pressed={node.alphaLocked}
           onClick={() => skin.updateLayer(node.id, { alphaLocked: !node.alphaLocked })}
         >
@@ -202,21 +211,21 @@ export function LayerPanel({ document: skin }: { document: SkinDocument }) {
     </div>
   ));
   return (
-    <section className="layers-panel" aria-label="Слои рисунка">
+    <section className="layers-panel" aria-label={t("layers.panel")}>
       <div className="layers-heading">
-        <h2>Слои</h2>
+        <h2>{t("layers.title")}</h2>
         <span>{skin.layers.length} / 128</span>
         <IconButton
-          label="Новый слой"
+          label={t("layers.new")}
           disabled={!skin.canAddLayer}
-          onClick={() => run(() => skin.addLayer())}
+          onClick={() => run(() => skin.addLayer("layer", undefined, t("layers.new")))}
         >
           <PlusIcon />
         </IconButton>
         <IconButton
-          label="Новая группа"
+          label={t("layers.newGroup")}
           disabled={skin.layers.length >= 128}
-          onClick={() => run(() => skin.addLayer("group"))}
+          onClick={() => run(() => skin.addLayer("group", undefined, t("layers.group")))}
         >
           <FolderPlusIcon />
         </IconButton>
@@ -224,7 +233,7 @@ export function LayerPanel({ document: skin }: { document: SkinDocument }) {
       <div
         ref={listRef}
         className="layer-list"
-        aria-label="Порядок слоёв сверху вниз"
+        aria-label={t("layers.order")}
         onDragLeave={(e) => {
           if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setDrop(null);
         }}
@@ -233,9 +242,9 @@ export function LayerPanel({ document: skin }: { document: SkinDocument }) {
       </div>
       <div className="layer-properties" key={active.id}>
         <label className="layer-name-field">
-          <span className="sr-only">Имя слоя</span>
+          <span className="sr-only">{t("layers.name")}</span>
           <input
-            aria-label="Имя слоя"
+            aria-label={t("layers.name")}
             defaultValue={active.name}
             key={`${active.id}-${active.name}`}
             onFocus={(e) => {
@@ -260,7 +269,7 @@ export function LayerPanel({ document: skin }: { document: SkinDocument }) {
         <label className="layer-alpha">
           α{" "}
           <NumberSlider
-            label="Непрозрачность слоя"
+            label={t("layers.opacity")}
             min={0}
             max={100}
             unit="%"
@@ -272,13 +281,13 @@ export function LayerPanel({ document: skin }: { document: SkinDocument }) {
           %
         </label>
         <label className="layer-parent">
-          <span>Группа</span>
+          <span>{t("layers.group")}</span>
           <select
-            aria-label="Группа слоя"
+            aria-label={t("layers.parent")}
             value={active.parentId ?? ""}
             onChange={(e) => skin.moveLayer(active.id, e.target.value || null)}
           >
-            <option value="">Корень документа</option>
+            <option value="">{t("layers.root")}</option>
             {groups.map((g) => (
               <option key={g.id} value={g.id}>
                 {g.name}
@@ -289,7 +298,7 @@ export function LayerPanel({ document: skin }: { document: SkinDocument }) {
       </div>
       <div className="layer-actions">
         <IconButton
-          label="Слой выше"
+          label={t("layers.moveUp")}
           disabled={index === siblings.length - 1}
           onClick={() =>
             skin.moveLayer(active.id, active.parentId, siblings[index + 2]?.id ?? null)
@@ -298,35 +307,37 @@ export function LayerPanel({ document: skin }: { document: SkinDocument }) {
           ↑
         </IconButton>
         <IconButton
-          label="Слой ниже"
+          label={t("layers.moveDown")}
           disabled={index === 0}
           onClick={() => skin.moveLayer(active.id, active.parentId, siblings[index - 1].id)}
         >
           ↓
         </IconButton>
         <IconButton
-          label="Дублировать слой или группу"
-          onClick={() => run(() => skin.duplicateLayer(active.id))}
+          label={t("layers.duplicate")}
+          onClick={() => run(() => skin.duplicateLayer(active.id, t("layers.copySuffix")))}
         >
           <DocumentDuplicateIcon />
         </IconButton>
         <IconButton
-          label="Удалить слой или группу"
+          label={t("layers.delete")}
           disabled={!skin.layers.some((n) => n.kind === "layer" && !excluded.has(n.id))}
           onClick={() => skin.deleteLayer(active.id)}
         >
           <TrashIcon />
         </IconButton>
         {active.kind === "group" ? (
-          <Button onClick={() => run(() => skin.mergeGroup(active.id))}>Объединить группу</Button>
+          <Button onClick={() => run(() => skin.mergeGroup(active.id))}>
+            {t("layers.mergeGroup")}
+          </Button>
         ) : (
           <Button disabled={!skin.canMergeDown} onClick={() => skin.mergeDown()}>
-            Объединить вниз
+            {t("layers.mergeDown")}
           </Button>
         )}
       </div>
       {skin.paintBlockedReason ? (
-        <output className="layer-notice">{skin.paintBlockedReason}</output>
+        <output className="layer-notice">{documentLabel(t, skin.paintBlockedReason)}</output>
       ) : null}
       {error ? (
         <p role="alert" className="studio-error">
@@ -338,6 +349,7 @@ export function LayerPanel({ document: skin }: { document: SkinDocument }) {
 }
 
 export function HistoryPanel({ document: skin }: { document: SkinDocument }) {
+  const { t } = useTranslation();
   useSyncExternalStore(skin.subscribe, skin.getSnapshot, skin.getSnapshot);
   const states = skin.historyStates;
   const current = states.findIndex((state) => state.status === "current");
@@ -345,22 +357,33 @@ export function HistoryPanel({ document: skin }: { document: SkinDocument }) {
     <details className="history-panel" open>
       <summary>
         <ClockIcon aria-hidden="true" />
-        <span>История</span>
-        <span className="history-count" aria-label={`Состояние ${current} из ${states.length - 1}`}>
+        <span>{t("history.title")}</span>
+        <span
+          className="history-count"
+          aria-label={t("history.position", { current: current, total: states.length - 1 })}
+        >
           {current} / {states.length - 1}
         </span>
         <ChevronDownIcon className="history-chevron" aria-hidden="true" />
       </summary>
       <div className="history-toolbar">
-        <span>Состояния проекта</span>
-        <IconButton label="Отменить действие" disabled={!skin.canUndo} onClick={() => skin.undo()}>
+        <span>{t("history.projectStates")}</span>
+        <IconButton
+          label={t("history.undoAction")}
+          disabled={!skin.canUndo}
+          onClick={() => skin.undo()}
+        >
           <ArrowUturnLeftIcon />
         </IconButton>
-        <IconButton label="Повторить действие" disabled={!skin.canRedo} onClick={() => skin.redo()}>
+        <IconButton
+          label={t("history.redoAction")}
+          disabled={!skin.canRedo}
+          onClick={() => skin.redo()}
+        >
           <ArrowUturnRightIcon />
         </IconButton>
       </div>
-      <ol className="history-list" aria-label="Состояния истории">
+      <ol className="history-list" aria-label={t("history.states")}>
         {states
           .slice()
           .reverse()
@@ -375,13 +398,15 @@ export function HistoryPanel({ document: skin }: { document: SkinDocument }) {
                 <span className="history-marker" aria-hidden="true">
                   {state.status === "current" ? <CheckIcon /> : states.length - 1 - index}
                 </span>
-                <span className="history-label">{state.label}</span>
+                <span className="history-label">{documentLabel(t, state.label)}</span>
                 {state.status === "current" ? (
                   <span className="history-current" aria-hidden="true">
-                    Сейчас
+                    {t("history.current")}
                   </span>
                 ) : null}
-                {state.status === "future" ? <span className="sr-only"> (отменено)</span> : null}
+                {state.status === "future" ? (
+                  <span className="sr-only"> {t("history.undone")}</span>
+                ) : null}
               </button>
             </li>
           ))}

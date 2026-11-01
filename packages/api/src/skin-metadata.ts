@@ -1,3 +1,4 @@
+import { SkinError } from "./SkinError.js";
 import type { SkinDocument } from "./SkinDocument.js";
 
 export const raceColors = {
@@ -106,14 +107,14 @@ export function writeSkinMetadata(
       new Set(items).size !== items.length ||
       items.some((v) => !(v in wearableNames)))
   )
-    throw new Error("PNG поддерживает до трёх различных аксессуаров");
+    throw new SkinError("wearableLimit", "PNG поддерживает до трёх различных аксессуаров");
   if (
     patch.tailLength !== undefined &&
     (!Number.isInteger(patch.tailLength) || patch.tailLength < 0 || patch.tailLength > 4)
   )
-    throw new Error("Invalid tail length");
+    throw new SkinError("tailLength", "Invalid tail length");
   if (patch.glow !== undefined && !/^[\da-f]{6}$/i.test(patch.glow))
-    throw new Error("Invalid glow color");
+    throw new SkinError("glowColor", "Invalid glow color");
   const changes: { x: number; y: number; color: readonly [number, number, number, number] }[] = [];
   const put = (x: number, y: number, value: number) => {
     changes.push({ x, y, color: [(value >> 16) & 255, (value >> 8) & 255, value & 255, 255] });

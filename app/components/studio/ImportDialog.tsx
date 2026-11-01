@@ -1,3 +1,5 @@
+import { errorMessage } from "../../i18n/errors";
+import { useTranslation } from "react-i18next";
 import { useEffect, useEffectEvent, useRef, useState } from "react";
 import { ArrowUpTrayIcon, XMarkIcon } from "@heroicons/react/24/outline";
 import { Button, IconButton } from "./ui";
@@ -20,6 +22,7 @@ export function ImportDialog({
   second: boolean;
   initialFile?: File;
 }) {
+  const { t } = useTranslation();
   const dialog = useRef<HTMLDialogElement>(null),
     input = useRef<HTMLInputElement>(null);
   const [url, setURL] = useState(""),
@@ -35,7 +38,7 @@ export function ImportDialog({
       else await onFile(value);
       onClose();
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : String(reason));
+      setError(errorMessage(t, reason));
     } finally {
       setBusy(false);
       setPending(null);
@@ -67,23 +70,23 @@ export function ImportDialog({
     >
       <div className="dialog-heading">
         <div>
-          <h2 id="import-title">Открыть скин или проект{second ? " · второй" : ""}</h2>
-          <p>Загрузите .striped или PNG с компьютера, либо PNG по ссылке</p>
+          <h2 id="import-title">
+            {t("import.title")}
+            {second ? t("import.secondSuffix") : ""}
+          </h2>
+          <p>{t("import.description")}</p>
         </div>
-        <IconButton label="Закрыть импорт" disabled={busy} onClick={onClose}>
+        <IconButton label={t("import.close")} disabled={busy} onClick={onClose}>
           <XMarkIcon />
         </IconButton>
       </div>
       {pending ? (
         <div className="replace-notice">
-          <h3>В текущем скине есть изменения</h3>
-          <p>
-            Несохранённые изменения будут потеряны. Перед заменой сохраните проект со всеми слоями и
-            настройками.
-          </p>
+          <h3>{t("import.unsavedTitle")}</h3>
+          <p>{t("import.unsavedDescription")}</p>
           <div className="dialog-actions">
             <Button onClick={() => (initialFile ? onClose() : setPending(null))} disabled={busy}>
-              Отмена
+              {t("common.cancel")}
             </Button>
             <Button
               onClick={async () => {
@@ -92,17 +95,17 @@ export function ImportDialog({
                   await onExport();
                   await run(pending);
                 } catch {
-                  setError("Не удалось сохранить текущий проект");
+                  setError(t("errors.saveProject"));
                 } finally {
                   setBusy(false);
                 }
               }}
               disabled={busy}
             >
-              Сохранить проект и открыть
+              {t("import.saveAndOpen")}
             </Button>
             <Button tone="primary" onClick={() => void run(pending)} disabled={busy}>
-              Заменить
+              {t("import.replace")}
             </Button>
           </div>
         </div>
@@ -123,10 +126,10 @@ export function ImportDialog({
             }}
           >
             <ArrowUpTrayIcon />
-            <h3>Перетащите PNG или .striped сюда</h3>
-            <p>64 × 64, 64 × 32 и HD до 2048 px</p>
+            <h3>{t("import.drop")}</h3>
+            <p>{t("import.dimensions")}</p>
             <Button disabled={busy} onClick={() => input.current?.click()}>
-              Выбрать файл
+              {t("import.chooseFile")}
             </Button>
           </div>
           <form
@@ -136,9 +139,9 @@ export function ImportDialog({
             }}
           >
             <label className="studio-field">
-              <span>Ссылка на PNG</span>
+              <span>{t("import.pngLink")}</span>
               <input
-                aria-label="Ссылка на скин"
+                aria-label={t("import.skinLink")}
                 type="url"
                 placeholder="https://example.com/skin.png"
                 required
@@ -148,7 +151,7 @@ export function ImportDialog({
             </label>
             <div className="dialog-actions">
               <Button type="submit" tone="primary" disabled={busy}>
-                Открыть по ссылке
+                {t("import.openLink")}
               </Button>
             </div>
           </form>
@@ -159,7 +162,7 @@ export function ImportDialog({
         className="sr-only"
         type="file"
         accept="image/png,.striped,application/zip"
-        aria-label="Открыть PNG"
+        aria-label={t("file.openPng")}
         disabled={busy}
         onChange={(e) => {
           const file = e.target.files?.[0];
@@ -167,14 +170,14 @@ export function ImportDialog({
           e.target.value = "";
         }}
       />
-      {busy ? <output>Загрузка скина…</output> : null}
+      {busy ? <output>{t("loading.skin")}</output> : null}
       {error ? (
         <p role="alert" className="studio-error">
           {error}
         </p>
       ) : null}
       <Button tone="ghost" disabled={busy} onClick={() => accept("/steve_pony.png")}>
-        Использовать пример скина
+        {t("import.example")}
       </Button>
     </dialog>
   );

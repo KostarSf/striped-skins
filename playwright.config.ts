@@ -10,6 +10,7 @@ export default defineConfig({
   // including the first evaluation of an otherwise immediately correct predicate.
   expect: { timeout: 15_000 },
   use: {
+    locale: "ru-RU",
     baseURL: "http://127.0.0.1:3100",
     viewport: { width: 1000, height: 800 },
     trace: "retain-on-failure",

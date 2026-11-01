@@ -1,3 +1,7 @@
+import { createInstance } from "i18next";
+import ru from "../../app/i18n/ru.ts";
+const i18n = createInstance();
+await i18n.init({ lng: "ru", resources: { ru: { translation: ru } }, keySeparator: false });
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
@@ -31,6 +35,7 @@ const tree = () =>
     (id) => partAvailable(id, metadata, defaultPreview),
     (id) => id,
     [],
+    i18n.t,
   );
 test("visibility tree derives all available faces from model nodes and separates clothing", () => {
   const roots = tree(),

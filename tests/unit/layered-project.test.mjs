@@ -34,7 +34,7 @@ test("history states seek across pixels, groups and metadata atomically in both 
   }
   const states = doc.historyStates;
   assert.equal(states.length, snapshots.length);
-  assert.equal(states[0].label, "Исходное состояние");
+  assert.equal(states[0].label, "history.initial");
   let notifications = 0;
   doc.subscribe(() => notifications++);
   const content = ({ layers, activeLayerId, pixels, metadata, stateId }) => ({
@@ -93,7 +93,7 @@ test("the earliest retained history state remains reachable after the history li
   for (let i = 0; i < 105; i++) paint(doc, i % 2 ? blue : red);
   const states = doc.historyStates;
   assert.equal(states.length, 101);
-  assert.equal(states[0].label, "Начало доступной истории");
+  assert.equal(states[0].label, "history.earliest");
   doc.goToHistoryState(states[0].id);
   assert.equal(doc.canUndo, false);
   assert.deepEqual(doc.readPixel(10, 10), red);
@@ -145,7 +145,7 @@ test("locks apply through ancestors, alpha lock preserves alpha, metadata is ind
   assert.equal(doc.readPixel(10, 10)[3], 128);
   doc.updateLayer(group, { locked: true });
   paint(doc, blue);
-  assert.match(doc.paintBlockedReason, /заблокированы/);
+  assert.equal(doc.paintBlockedReason, "paint.locked");
   assert.deepEqual(doc.readPixel(10, 10), [255, 0, 0, 128]);
   writeSkinMetadata(doc, { race: "KIRIN", wearables: [22, 50] });
   doc.updateLayer(group, { visible: false });

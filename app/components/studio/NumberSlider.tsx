@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { useCallback, useEffect, useId, useRef, useState, type KeyboardEvent } from "react";
 
 /** Text input permits reliable select-all; the range lives in the native top layer, including dialogs. */
@@ -18,6 +19,7 @@ export function NumberSlider({
   className?: string;
   onChange: (value: number, interaction: string) => void;
 }) {
+  const { t } = useTranslation();
   const id = useId();
   const input = useRef<HTMLInputElement>(null);
   const popup = useRef<HTMLSpanElement>(null);
@@ -150,7 +152,7 @@ export function NumberSlider({
         <input
           type="range"
           onKeyDown={escape}
-          aria-label={`${label}: слайдер`}
+          aria-label={t("common.slider", { label: label })}
           min={min}
           max={max}
           step={1}

@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import type { CSSProperties } from "react";
 
 type Mode = "viewer" | "editor";
@@ -20,6 +21,7 @@ function Control({ width = 80 }: { width?: number }) {
   );
 }
 function SkeletonHeader({ mode }: { mode: Mode }) {
+  const { t } = useTranslation();
   return (
     <header className="studio-header" aria-hidden="true">
       <div className="studio-brand">
@@ -28,10 +30,10 @@ function SkeletonHeader({ mode }: { mode: Mode }) {
       </div>
       <div className="mode-tabs">
         <span className="skeleton-tab" data-active={mode === "viewer"}>
-          Просмотр
+          {t("nav.viewer")}
         </span>
         <span className="skeleton-tab" data-active={mode === "editor"}>
-          Редактор
+          {t("nav.editor")}
         </span>
       </div>
       <div className="document-name">
@@ -219,6 +221,7 @@ export function StudioSkeleton({
   mode?: Mode;
   bodyOnly?: boolean;
 }) {
+  const { t } = useTranslation();
   const content = (
     <>
       {mode === "editor" ? (
@@ -231,7 +234,7 @@ export function StudioSkeleton({
       <Footer />
     </>
   );
-  const label = mode === "editor" ? "Загрузка редактора" : "Загрузка просмотрщика";
+  const label = mode === "editor" ? t("loading.editor") : t("loading.viewer");
   return bodyOnly ? (
     <div
       className="studio-skeleton skeleton-body"

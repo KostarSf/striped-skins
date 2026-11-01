@@ -366,7 +366,7 @@ button:disabled {
   position: absolute;
   right: 0;
 }
-.viewer-content .camera-actions > .icon-button[aria-label="Сброс вида"] {
+.viewer-content .camera-actions > .icon-button[data-action="reset-view"] {
   width: auto;
   padding-inline: 14px;
 }
@@ -2655,12 +2655,12 @@ button:disabled {
     min-height: 32px;
     font-size: 10px;
   }
-  .studio-app .file-actions .studio-button[aria-label="Сохранить проект"] {
+  .studio-app .file-actions .studio-button[data-action="save-project"] {
     max-width: 76px;
     white-space: normal;
     line-height: 12px;
   }
-  .editor-app .file-actions .studio-button[aria-label="Скачать PNG"] {
+  .editor-app .file-actions .studio-button[data-action="export-png"] {
     display: none;
   }
   .editor-app .editor-workspace {
@@ -2721,7 +2721,7 @@ button:disabled {
   }
 }
 @media (max-width: 640px) {
-  .studio-app .file-actions .studio-button[aria-label="Сохранить проект"] {
+  .studio-app .file-actions .studio-button[data-action="save-project"] {
     width: auto;
   }
 }
@@ -2946,7 +2946,7 @@ button:disabled {
   align-items: center;
   justify-content: center;
 }
-.studio-app .studio-header .file-actions > [aria-label="Сохранить проект"] {
+.studio-app .studio-header .file-actions > [data-action="save-project"] {
   white-space: normal;
 }
 @media (min-width: 641px) and (max-width: 1100px) {

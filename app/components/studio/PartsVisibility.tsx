@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { useEffect, useRef, useState } from "react";
 import { Squares2X2Icon, ChevronRightIcon } from "@heroicons/react/24/outline";
 import { Button } from "./ui";
@@ -14,6 +15,7 @@ function VisibilityNode({
   search: string;
   toggle: (node: PartTreeNode, visible: boolean) => void;
 }) {
+  const { t } = useTranslation();
   const [expansion, setExpansion] = useState({ search, open: false });
   const input = useRef<HTMLInputElement>(null);
   const leaves = partLeaves(node);
@@ -33,7 +35,7 @@ function VisibilityNode({
           <button
             type="button"
             className="part-expand"
-            aria-label={`${open ? "Свернуть" : "Развернуть"} ${node.label}`}
+            aria-label={`${open ? t("parts.collapse") : t("parts.expand")} ${node.label}`}
             aria-expanded={open}
             onClick={() => setExpansion({ search, open: !open })}
           >
@@ -46,7 +48,7 @@ function VisibilityNode({
         <input
           ref={input}
           type="checkbox"
-          aria-label={`Показать ${node.id}`}
+          aria-label={t("parts.show", { name: node.id })}
           checked={count === leaves.length}
           onChange={(e) => toggle(node, e.target.checked)}
         />
@@ -80,6 +82,7 @@ export function PartsVisibility({
   selected: string | null;
   parts: readonly { id: string }[];
 }) {
+  const { t } = useTranslation();
   const host = useRef<HTMLDetailsElement>(null);
   const [search, setSearch] = useState("");
   useEffect(() => {
@@ -116,17 +119,17 @@ export function PartsVisibility({
   }, []);
   return (
     <details ref={host} className="parts-popover">
-      <summary aria-label="Видимость частей" title="Видимость частей">
+      <summary aria-label={t("parts.visibility")} title={t("parts.visibility")}>
         <Squares2X2Icon />
-        <span>Части</span>
+        <span>{t("parts.title")}</span>
       </summary>
-      <section className="studio-panel" aria-label="Видимость частей модели">
-        <strong>Видимость частей</strong>
-        <p className="muted">Группы, детали и грани. PNG сохраняется целиком.</p>
+      <section className="studio-panel" aria-label={t("parts.panel")}>
+        <strong>{t("parts.visibility")}</strong>
+        <p className="muted">{t("parts.description")}</p>
         <input
           type="search"
-          aria-label="Найти часть"
-          placeholder="Найти часть…"
+          aria-label={t("parts.search")}
+          placeholder={t("parts.searchPlaceholder")}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
@@ -137,7 +140,7 @@ export function PartsVisibility({
               onHidden(new Set(parts.filter((p) => p.id !== selected).map((p) => p.id)))
             }
           >
-            Изолировать часть
+            {t("parts.isolate")}
           </Button>
           <Button
             disabled={!selected}
@@ -152,9 +155,9 @@ export function PartsVisibility({
               )
             }
           >
-            Скрыть ветку
+            {t("parts.hideBranch")}
           </Button>
-          <Button onClick={() => onHidden(new Set())}>Показать всё</Button>
+          <Button onClick={() => onHidden(new Set())}>{t("parts.showAll")}</Button>
         </div>
         <ul className="parts-list">
           {tree.map((node) => (

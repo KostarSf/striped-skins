@@ -1,3 +1,5 @@
+import { documentLabel } from "../../i18n/document-labels";
+import { useTranslation } from "react-i18next";
 import { useEffect, useRef, useSyncExternalStore } from "react";
 import type { SkinDocument } from "@striped-skins/api";
 import { Button } from "./ui";
@@ -15,6 +17,7 @@ export function EditorMenu({
   onSave: () => void;
   onExport: () => void;
 }) {
+  const { t } = useTranslation();
   const host = useRef<HTMLElement>(null);
   useSyncExternalStore(skin.subscribe, skin.getSnapshot, skin.getSnapshot);
   const close = () =>
@@ -61,28 +64,28 @@ export function EditorMenu({
     callback();
   };
   return (
-    <nav className="editor-menubar" aria-label="Меню редактора" ref={host}>
+    <nav className="editor-menubar" aria-label={t("menu.label")} ref={host}>
       <details name="editor-menu">
-        <summary>Файл</summary>
+        <summary>{t("menu.file")}</summary>
         <div className="editor-menu-popup">
-          <Button onClick={action(onOpen)}>Открыть PNG или проект…</Button>
+          <Button onClick={action(onOpen)}>{t("menu.open")}</Button>
           <Button disabled={saving} onClick={action(onSave)}>
-            Сохранить проект… <kbd>Ctrl/⌘ S</kbd>
+            {t("menu.save")} <kbd>Ctrl/⌘ S</kbd>
           </Button>
           <Button disabled={saving} onClick={action(onExport)}>
-            Экспортировать PNG…
+            {t("menu.export")}
           </Button>
-          <small>.striped сохраняет слои, историю и настройки.</small>
+          <small>{t("menu.projectHint")}</small>
         </div>
       </details>
       <details name="editor-menu">
-        <summary>Правка</summary>
+        <summary>{t("menu.edit")}</summary>
         <div className="editor-menu-popup">
           <Button disabled={!skin.canUndo} onClick={action(() => skin.undo())}>
-            Отменить {skin.undoLabel ?? ""}
+            {t("history.undo")} {documentLabel(t, skin.undoLabel)}
           </Button>
           <Button disabled={!skin.canRedo} onClick={action(() => skin.redo())}>
-            Повторить {skin.redoLabel ?? ""}
+            {t("history.redo")} {documentLabel(t, skin.redoLabel)}
           </Button>
         </div>
       </details>

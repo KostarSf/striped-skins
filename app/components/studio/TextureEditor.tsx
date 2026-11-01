@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent } from "react";
 import { type SkinDocument, type Pixel } from "@striped-skins/api";
 import { type SurfaceHover } from "@striped-skins/viewer/experimental";
@@ -51,6 +52,7 @@ export function TextureEditor({
   onShowUV: (visible: boolean) => void;
   onFileDrop?: (file: File) => void;
 }) {
+  const { t } = useTranslation();
   const drop = useSkinDrop(onFileDrop);
   const canvas = useRef<HTMLCanvasElement>(null),
     area = useRef<HTMLDivElement>(null);
@@ -235,18 +237,16 @@ export function TextureEditor({
     if (cancelled || event.pointerType === "touch") setCursor(null);
   };
   return (
-    <section className="texture-viewport" aria-label="Редактирование текстуры" {...drop.handlers}>
-      {drop.dragging ? (
-        <div className="skin-drop-overlay">Отпустите PNG, чтобы открыть скин</div>
-      ) : null}
+    <section className="texture-viewport" aria-label={t("texture.editor")} {...drop.handlers}>
+      {drop.dragging ? <div className="skin-drop-overlay">{t("import.dropPng")}</div> : null}
       <div className="viewport-heading">
-        <h2>2D-текстура</h2>
+        <h2>{t("texture.title")}</h2>
         <div className="inline-controls">
           <Button aria-pressed={uv} onClick={() => onShowUV(!uv)}>
             UV
           </Button>
           <Button aria-pressed={grid} onClick={() => setGrid((v) => !v)}>
-            Сетка
+            {t("texture.grid")}
           </Button>
         </div>
       </div>
@@ -349,7 +349,7 @@ export function TextureEditor({
             width={skin.width}
             height={skin.height}
             data-testid="skin-texture"
-            aria-label="Текстура скина, рисование пиксельной кистью"
+            aria-label={t("texture.canvasLabel")}
             style={{ width: skin.width * scale, height: skin.height * scale }}
           />
           {uv ? (
@@ -474,8 +474,8 @@ export function TextureEditor({
       <div className="viewport-footer">
         <div className="camera-actions">
           <span className="viewport-hint">
-            <span>ЛКМ · рисовать</span>
-            <span>ПКМ / пробел · панорама · колесо · масштаб</span>
+            <span>{t("texture.paintHint")}</span>
+            <span>{t("texture.panHint")}</span>
           </span>
           <div className="zoom-controls">
             <IconButton label="2D −" onClick={() => setZoom((z) => Math.max(0.15, z / 1.25))}>
@@ -487,7 +487,7 @@ export function TextureEditor({
             </IconButton>
           </div>
           <IconButton
-            label="Вписать текстуру"
+            label={t("texture.fit")}
             onClick={() => {
               setView({ zoom: 1, pan: { x: 0, y: 0 } });
             }}

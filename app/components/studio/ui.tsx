@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { useEffect, useState, type ButtonHTMLAttributes, type ReactNode } from "react";
 import { XMarkIcon } from "@heroicons/react/24/outline";
 export type DesignIconName =
@@ -79,6 +80,7 @@ export function PanelHeading({
   description?: string;
   onClose?: () => void;
 }) {
+  const { t } = useTranslation();
   return (
     <div className="panel-heading">
       <div>
@@ -86,7 +88,7 @@ export function PanelHeading({
         {description ? <p>{description}</p> : null}
       </div>
       {onClose ? (
-        <IconButton label="Закрыть параметры" onClick={onClose}>
+        <IconButton label={t("common.closeSettings")} onClick={onClose}>
           <XMarkIcon />
         </IconButton>
       ) : null}
@@ -122,7 +124,7 @@ export function Toggle({
 export function HexInput({
   value,
   onChange,
-  label = "HEX цвета кисти",
+  label,
   id,
 }: {
   value: string;
@@ -130,12 +132,14 @@ export function HexInput({
   label?: string;
   id?: string;
 }) {
+  const { t } = useTranslation();
+  const displayLabel = label ?? t("colors.brushHex");
   const [draft, setDraft] = useState(value.toUpperCase());
   useEffect(() => setDraft(value.toUpperCase()), [value]);
   return (
     <input
       id={id}
-      aria-label={label}
+      aria-label={displayLabel}
       value={draft}
       maxLength={7}
       spellCheck={false}

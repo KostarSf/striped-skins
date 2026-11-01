@@ -1,3 +1,4 @@
+import { SkinError } from "./SkinError.js";
 export type PaintBounds = { minX: number; minY: number; maxX: number; maxY: number };
 export type Pixel = readonly [number, number, number, number];
 export type LayerNode = {
@@ -85,6 +86,7 @@ export class SkinDocument {
     readonly height: number,
     pixels: ArrayLike<number>,
     readonly sourceFormat: "modern" | "legacy" = "modern",
+    baseLayerName = "Основа",
   ) {
     if (
       !Number.isInteger(width) ||
@@ -95,7 +97,7 @@ export class SkinDocument {
       height > 2048 ||
       pixels.length !== width * height * 4
     )
-      throw new Error("Invalid skin dimensions or RGBA data");
+      throw new SkinError("invalidImage", "Invalid skin dimensions or RGBA data");
     this.pixels = new Uint8ClampedArray(pixels);
     this.metadata = new Uint8ClampedArray(32);
     for (let y = 0; y < 2; y++)
@@ -105,7 +107,7 @@ export class SkinDocument {
       {
         id: this.active,
         kind: "layer",
-        name: "Основа",
+        name: baseLayerName,
         parentId: null,
         visible: true,
         locked: false,
@@ -167,7 +169,7 @@ export class SkinDocument {
     return [
       {
         id: commands[0]?.beforeId ?? this.stateId,
-        label: commands[0]?.beforeId ? "Начало доступной истории" : "Исходное состояние",
+        label: commands[0]?.beforeId ? "history.earliest" : "history.initial",
       },
       ...commands.map((command) => ({ id: command.afterId, label: command.label })),
     ].map((state, index) => ({
@@ -185,10 +187,10 @@ export class SkinDocument {
   }
   get paintBlockedReason(): string | null {
     const node = this.activeLayer;
-    if (node.kind !== "layer") return "Выберите слой рисунка внутри группы";
+    if (node.kind !== "layer") return "paint.selectLayer";
     for (let n: LayerNode | undefined = node; n; n = this.nodes.find((v) => v.id === n!.parentId)) {
-      if (n.locked) return "Слой или его группа заблокированы";
-      if (!n.visible || n.opacity === 0) return "Слой или его группа скрыты";
+      if (n.locked) return "paint.locked";
+      if (!n.visible || n.opacity === 0) return "paint.hidden";
     }
     return null;
   }
@@ -294,9 +296,9 @@ export class SkinDocument {
       (this.nodes.filter((n) => n.kind === "layer").length + 1) * this.pixels.length <= MAX_BYTES
     );
   }
-  addLayer(kind: "layer" | "group" = "layer", parentId?: string | null) {
+  addLayer(kind: "layer" | "group" = "layer", parentId?: string | null, name?: string) {
     if (this.nodes.length >= 128 || (kind === "layer" && !this.canAddLayer))
-      throw new Error("Достигнут лимит слоёв или памяти проекта (64 МиБ)");
+      throw new SkinError("layerLimit", "Достигнут лимит слоёв или памяти проекта (64 МиБ)");
     const current = this.activeLayer;
     const parent =
       parentId === undefined
@@ -306,11 +308,11 @@ export class SkinDocument {
         : parentId;
     if (parent && !this.nodes.some((n) => n.id === parent && n.kind === "group")) return;
     const id = `layer-${++this.sequence}`;
-    this.changeStructure(kind === "group" ? "Создание группы" : "Создание слоя", () => {
+    this.changeStructure(kind === "group" ? "history.createGroup" : "history.createLayer", () => {
       this.nodes.push({
         id,
         kind,
-        name: kind === "group" ? "Группа" : "Новый слой",
+        name: name ?? (kind === "group" ? "Группа" : "Новый слой"),
         parentId: parent,
         visible: true,
         locked: false,
@@ -335,7 +337,7 @@ export class SkinDocument {
     if (values.opacity !== undefined)
       values.opacity = Math.max(0, Math.min(100, Math.round(values.opacity) || 0));
     this.changeStructure(
-      "Свойства слоя",
+      "history.layerProperties",
       () => {
         Object.assign(node, values);
       },
@@ -345,7 +347,7 @@ export class SkinDocument {
   deleteLayer(id: string) {
     const ids = this.descendants(id);
     if (!this.nodes.some((n) => n.kind === "layer" && !ids.has(n.id))) return;
-    this.changeStructure("Удаление слоя / группы", () => {
+    this.changeStructure("history.deleteLayer", () => {
       this.nodes = this.nodes.filter((n) => !ids.has(n.id));
       if (ids.has(this.active))
         this.active = this.nodes
@@ -354,7 +356,7 @@ export class SkinDocument {
           .find((n) => n.kind === "layer")!.id;
     });
   }
-  duplicateLayer(id: string) {
+  duplicateLayer(id: string, suffix = " — копия") {
     const ids = this.descendants(id),
       source = this.nodes.filter((n) => ids.has(n.id));
     if (
@@ -363,11 +365,10 @@ export class SkinDocument {
         this.pixels.length >
         MAX_BYTES
     )
-      throw new Error("Недостаточно памяти для копии слоёв (лимит 64 МиБ)");
+      throw new SkinError("duplicateMemory", "Недостаточно памяти для копии слоёв (лимит 64 МиБ)");
     if (!source.length) return;
     const mapping = new Map(source.map((n) => [n.id, `layer-${++this.sequence}`]));
-    const suffix = " — копия";
-    this.changeStructure("Дублирование слоя / группы", () => {
+    this.changeStructure("history.duplicateLayer", () => {
       const copies = source.map((n) => ({
         ...n,
         id: mapping.get(n.id)!,
@@ -390,7 +391,7 @@ export class SkinDocument {
         !this.nodes.some((n) => n.id === beforeId && n.parentId === parentId && !ids.has(n.id)))
     )
       return;
-    this.changeStructure("Перемещение слоя", () => {
+    this.changeStructure("history.moveLayer", () => {
       this.nodes = this.nodes.filter((n) => n.id !== id);
       node.parentId = parentId;
       const index = beforeId ? this.nodes.findIndex((n) => n.id === beforeId) : this.nodes.length;
@@ -404,14 +405,17 @@ export class SkinDocument {
     const ids = this.descendants(id);
     const remainingRasters = this.nodes.filter((n) => n.kind === "layer" && !ids.has(n.id)).length;
     if ((remainingRasters + 1) * this.pixels.length > MAX_BYTES)
-      throw new Error("Недостаточно памяти для объединения группы (лимит 64 МиБ)");
+      throw new SkinError(
+        "mergeMemory",
+        "Недостаточно памяти для объединения группы (лимит 64 МиБ)",
+      );
     const pixels = this.render(id, {
       minX: 0,
       minY: 0,
       maxX: this.width - 1,
       maxY: this.height - 1,
     });
-    this.changeStructure("Объединение группы", () => {
+    this.changeStructure("history.mergeGroup", () => {
       this.nodes = this.nodes.filter((n) => n.id === id || !ids.has(n.id));
       Object.assign(group, { kind: "layer", pixels });
       this.active = id;
@@ -441,7 +445,7 @@ export class SkinDocument {
       { minX: 0, minY: 0, maxX: this.width - 1, maxY: this.height - 1 },
       [lower, top],
     );
-    this.changeStructure("Объединение с нижним слоем", () => {
+    this.changeStructure("history.mergeDown", () => {
       this.nodes = this.nodes.filter((n) => n.id !== top.id);
       Object.assign(lower, { pixels, opacity: 100, alphaLocked: false });
       this.active = lower.id;
@@ -517,7 +521,7 @@ export class SkinDocument {
     for (const { x, y, color } of changes)
       if (Number.isInteger(x) && Number.isInteger(y) && x >= 0 && y >= 0 && isTrigger(x, y))
         this.record((y * 4 + x) * 4, color);
-    this.endStroke("Параметры MLP");
+    this.endStroke("history.metadata");
   }
   beginStroke() {
     this.endStroke();
@@ -590,7 +594,7 @@ export class SkinDocument {
       this.emit();
     }
   }
-  endStroke(label = "Штрих") {
+  endStroke(label = "history.stroke") {
     if (!this.stroke) return;
     const { layerId } = this.stroke,
       changes = [...this.stroke.changes.values()].filter((c) =>
@@ -682,7 +686,7 @@ export class SkinDocument {
           ...this.undoStack,
           {
             kind: "pixels",
-            label: "Штрих",
+            label: "history.stroke",
             layerId: this.stroke!.layerId,
             changes: pending,
             beforeId: this.stateId,
@@ -745,7 +749,7 @@ export class SkinDocument {
 /** Validate untrusted project data before constructing buffers or replaying history. */
 export function validateSnapshot(s: ProjectSnapshot) {
   const fail = () => {
-    throw new Error("Повреждённый или неподдерживаемый проект Striped");
+    throw new SkinError("projectInvalid", "Повреждённый или неподдерживаемый проект Striped");
   };
   if (
     !s ||

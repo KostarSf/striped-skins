@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import {
   createContext,
   useCallback,
@@ -8,7 +9,12 @@ import {
   useSyncExternalStore,
   type ReactNode,
 } from "react";
-import { documentCanvas, encodeSkinProject, type SkinDocument } from "@striped-skins/api";
+import {
+  SkinError,
+  documentCanvas,
+  encodeSkinProject,
+  type SkinDocument,
+} from "@striped-skins/api";
 type Info = { name: string; baseline: string | null };
 const recovered = new WeakMap<SkinDocument, { dirty: boolean; name?: string }>();
 export function markRecoveredDocument(document: SkinDocument, dirty: boolean, name?: string) {
@@ -34,6 +40,7 @@ function download(blob: Blob, name: string) {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 export function useDocumentInfo(document: SkinDocument, fallback = "skin.png") {
+  const { t } = useTranslation();
   const session = useContext(Context);
   if (!session) throw new Error("DocumentSession is missing");
   useSyncExternalStore(document.subscribe, document.getSnapshot, document.getSnapshot);
@@ -71,7 +78,7 @@ export function useDocumentInfo(document: SkinDocument, fallback = "skin.png") {
     exportPNG: async () => {
       const canvas = documentCanvas(document);
       const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/png"));
-      if (!blob) throw new Error("Не удалось экспортировать PNG");
+      if (!blob) throw new SkinError("exportPng", t("errors.exportPng"));
       download(blob, info.name.replace(/\.[^.]+$/, "") + ".png");
     },
   };
