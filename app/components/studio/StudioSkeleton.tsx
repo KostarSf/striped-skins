@@ -45,7 +45,12 @@ function SkeletonHeader({ mode }: { mode: Mode }) {
         <span className="studio-button">
           <Bone width={60} height={9} />
         </span>
-        <span className="studio-button primary skeleton-export">
+        {mode === "editor" ? (
+          <span className="studio-button primary skeleton-project">
+            <Bone width={100} height={9} />
+          </span>
+        ) : null}
+        <span className={`studio-button skeleton-export ${mode === "viewer" ? "primary" : ""}`}>
           <Bone width={90} height={9} />
         </span>
       </div>
@@ -80,6 +85,22 @@ function Viewport({ texture = false, viewer = false }: { texture?: boolean; view
           <Control width={36} />
         </div>
         {viewer ? <Control width={36} /> : null}
+      </div>
+    </div>
+  );
+}
+function SkeletonPalette({ rail = false }: { rail?: boolean }) {
+  return (
+    <div className="palette-panel">
+      <div className="skin-palette">
+        {!rail ? <Bone width={80} height={7} /> : null}
+        <div>
+          {[0, 1, 2, 3, 4, 5, 6, 7].map((i) => (
+            <span key={i} className="palette-entry">
+              <Bone width={rail ? 18 : 22} height={rail ? 18 : 22} />
+            </span>
+          ))}
+        </div>
       </div>
     </div>
   );
@@ -119,11 +140,15 @@ function EditorBody() {
               <Bone width={18} height={18} />
             </span>
           ))}
-          <span className="rail-divider" />
-          <Bone width={30} height={30} />
-          <Bone width={18} height={18} />
-          <span className="rail-spacer" />
-          <Bone width={18} height={18} />
+          <div className="rail-bottom">
+            <div className="rail-color-controls">
+              <Bone width={38} height={38} />
+              <span className="icon-button skeleton-tool">
+                <Bone width={18} height={18} />
+              </span>
+            </div>
+            <SkeletonPalette rail />
+          </div>
         </div>
         <div className="editor-center">
           <div className="editor-views">
@@ -132,41 +157,36 @@ function EditorBody() {
               <Viewport texture />
             </div>
           </div>
-          <div className="palette-panel">
-            <div className="skin-palette">
-              <Bone width={80} height={7} />
-              <div>
-                {[0, 1, 2, 3, 4, 5, 6, 7].map((i) => (
-                  <Bone key={i} width={22} height={22} />
-                ))}
-              </div>
-            </div>
-          </div>
+          <SkeletonPalette />
         </div>
-        <div className="inspector studio-panel">
-          <Bone width={80} height={13} />
-          <Bone width={170} height={7} />
-          <div className="skin-settings">
-            {[0, 1, 2].map((i) => (
-              <div key={i} className="settings-group skeleton-settings">
-                <Bone width={55 + i * 10} height={8} />
-                <Control width={240} />
+        <div className="inspector studio-panel editor-inspector">
+          <div className="inspector-tabs">
+            <span className="skeleton-inspector-tab">
+              <Bone width={55} height={9} />
+            </span>
+            <span className="skeleton-inspector-tab">
+              <Bone width={95} height={9} />
+            </span>
+          </div>
+          <div className="inspector-panel">
+            <div className="layers-panel">
+              <div className="layers-heading">
+                <Bone width={80} height={13} />
               </div>
-            ))}
-            <div className="settings-group skeleton-settings">
-              <Bone width={100} />
-              <Bone width={180} height={7} />
-              <div className="skeleton-accessories">
-                {[0, 1, 2, 3, 4, 5, 6, 7].map((i) => (
-                  <Control key={i} width={105} />
-                ))}
+              <div className="layer-list">
+                <Bone height={30} />
+                <Bone height={30} />
+              </div>
+              <div className="layer-properties">
+                <Bone height={28} />
+                <Bone height={28} />
               </div>
             </div>
             <div className="settings-group skeleton-settings">
-              <Bone width={110} />
-              <Bone width="100%" height={32} />
-              <Bone width="80%" height={6} />
+              <Bone width={150} height={9} />
+              <Control width={240} />
             </div>
+            <Bone width={90} height={9} />
           </div>
         </div>
       </div>
@@ -231,6 +251,12 @@ export function StudioSkeleton({
     >
       <output className="sr-only">{label}</output>
       <SkeletonHeader mode={mode} />
+      {mode === "editor" ? (
+        <div className="editor-menubar" aria-hidden="true">
+          <Bone width={38} height={8} />
+          <Bone width={48} height={8} />
+        </div>
+      ) : null}
       {content}
     </main>
   );

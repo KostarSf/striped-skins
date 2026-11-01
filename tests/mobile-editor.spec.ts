@@ -40,13 +40,13 @@ test("phone tabs fill the workspace, keep the palette and footer reachable, and 
   await expect(page.locator(".tool-rail, .brush-toolbar, .brush-color")).toHaveCount(0);
   for (const width of [390, 320, 600]) {
     await page.setViewportSize({ width, height: 844 });
-    for (const name of ["3D вид", "2D вид", "Параметры модели"]) {
+    for (const name of ["3D вид", "2D вид", "Параметры документа"]) {
       await footer.getByRole("button", { name, exact: true }).tap();
       await expect(footer.getByRole("button", { name, exact: true })).toHaveAttribute(
         "aria-pressed",
         "true",
       );
-      const settings = name === "Параметры модели";
+      const settings = name === "Параметры документа";
       await expect(page.locator(".palette-panel")).toBeVisible({ visible: !settings });
       await expect(page.locator(".inspector")).toBeVisible({ visible: settings });
       await expect(page.locator(".model-viewport")).toBeVisible({ visible: name === "3D вид" });
@@ -74,9 +74,10 @@ test("phone tabs fill the workspace, keep the palette and footer reachable, and 
       }
     }
   }
+  await page.getByRole("tab", { name: "Параметры скина", exact: true }).tap();
   await page.getByLabel("Раса", { exact: true }).selectOption("KIRIN");
   await footer.getByRole("button", { name: "3D вид", exact: true }).tap();
-  await footer.getByRole("button", { name: "Параметры модели", exact: true }).tap();
+  await footer.getByRole("button", { name: "Параметры документа", exact: true }).tap();
   await expect(page.getByLabel("Раса", { exact: true })).toHaveValue("KIRIN");
   await page.setViewportSize({ width: 1440, height: 1000 });
   await expect(footer).toHaveCount(0);
@@ -120,13 +121,14 @@ test("touch tools update the floating icon, edit the same pixels across views, a
   await expect(page.getByLabel("Цвет кисти", { exact: true })).toHaveValue("#ff00ff");
   await page.getByRole("button", { name: "Параметры инструмента", exact: true }).tap();
   await page.getByLabel("Размер кисти", { exact: true }).fill("3");
-  await page.getByLabel("Непрозрачность кисти", { exact: true }).selectOption("50");
+  await page.getByLabel("Непрозрачность кисти", { exact: true }).fill("50");
+  await page.keyboard.press("Escape");
   await page.keyboard.press("Escape");
   await expect(
     page.getByRole("button", { name: "Параметры инструмента", exact: true }),
   ).toBeFocused();
   await page.getByRole("button", { name: "3D вид", exact: true }).tap();
-  await page.getByRole("button", { name: "Параметры модели", exact: true }).tap();
+  await page.getByRole("button", { name: "Параметры документа", exact: true }).tap();
   await page.getByRole("button", { name: "2D вид", exact: true }).tap();
   await expect.poll(() => pixel(page)).toEqual([255, 0, 255, 255]);
   await page.getByRole("button", { name: "Параметры инструмента", exact: true }).tap();
@@ -234,4 +236,46 @@ test("two-finger texture gestures zoom around the fingers and pan without painti
   await touchPixel(page);
   await expect.poll(() => pixel(page)).toEqual([255, 0, 255, 255]);
   await session.detach();
+});
+
+test("quick tool button toggles hand with the last drawing tool across views and reload", async ({
+  page,
+}) => {
+  page.on("dialog", (dialog) => void dialog.accept());
+  const quick = page.locator(".mobile-tool-toggle");
+  const main = page.locator(".mobile-tool-menu summary");
+  const small = (await quick.boundingBox())!,
+    large = (await main.boundingBox())!;
+  expect(small.x + small.width).toBeLessThan(large.x);
+  expect(small.width).toBeLessThan(large.width);
+  expect(small.width).toBeGreaterThanOrEqual(44);
+  expect(small.y + small.height / 2).toBeCloseTo(large.y + large.height / 2, 0);
+  await expect(quick.locator("img")).toHaveAttribute("src", "/design/hand.svg");
+  await quick.tap();
+  await expect(main).toHaveAccessibleName("Инструменты: Перемещение");
+  await expect(quick).toHaveAccessibleName("Вернуться к инструменту: Кисть");
+  await expect(quick.locator("img")).toHaveAttribute("src", "/design/brush.svg");
+  await quick.tap();
+  await expect(main).toHaveAccessibleName("Инструменты: Кисть");
+  await chooseTool(page, "Ластик");
+  await quick.tap();
+  await page.getByRole("button", { name: "2D вид", exact: true }).tap();
+  await expect(quick.locator("img")).toHaveAttribute("src", "/design/eraser.svg");
+  const before = await pixel(page);
+  await touchPixel(page);
+  expect(await pixel(page)).toEqual(before);
+  await expect(page.getByTestId("autosave-status")).toHaveCount(0);
+  await page.reload();
+  await expect(main).toHaveAccessibleName("Инструменты: Перемещение");
+  await expect(quick.locator("img")).toHaveAttribute("src", "/design/eraser.svg");
+  await quick.tap();
+  await expect(main).toHaveAccessibleName("Инструменты: Ластик");
+  await chooseTool(page, "Пипетка");
+  await quick.tap();
+  await expect(quick.locator("img")).toHaveAttribute("src", "/design/drop.svg");
+  await page.getByRole("button", { name: "3D вид", exact: true }).tap();
+  await quick.tap();
+  await expect(main).toHaveAccessibleName("Инструменты: Пипетка");
+  await page.getByRole("button", { name: "Параметры документа", exact: true }).tap();
+  await expect(quick).toHaveCount(0);
 });

@@ -9,6 +9,7 @@ import {
   XMarkIcon,
 } from "@heroicons/react/24/outline";
 import type { SkinDocument } from "@striped-skins/api";
+import { NumberSlider } from "./NumberSlider";
 import type { PaintTool } from "./TextureEditor";
 import { Button, DesignIcon, Field, HexInput, IconButton } from "./ui";
 
@@ -55,9 +56,11 @@ export function BrushColors({
 
 export function MobileToolMenu({
   tool,
+  lastTool,
   onTool,
 }: {
   tool: PaintTool;
+  lastTool: Exclude<PaintTool, "hand">;
   onTool: (tool: PaintTool) => void;
 }) {
   const host = useRef<HTMLDetailsElement>(null);
@@ -78,31 +81,48 @@ export function MobileToolMenu({
       document.removeEventListener("keydown", escape);
     };
   }, []);
+  const alternate = tool === "hand" ? lastTool : "hand";
   return (
-    <details className="mobile-tool-menu" ref={host}>
-      <summary
-        aria-label={`Инструменты: ${toolNames[tool]}`}
-        title={`Инструменты: ${toolNames[tool]}`}
+    <>
+      <IconButton
+        className="mobile-tool-toggle"
+        label={
+          tool === "hand"
+            ? `Вернуться к инструменту: ${toolNames[lastTool]}`
+            : "Переключиться на перемещение"
+        }
+        onClick={() => {
+          onTool(alternate);
+          if (host.current) host.current.open = false;
+        }}
       >
-        <DesignIcon name={tool} />
-      </summary>
-      <div className="studio-panel" role="toolbar" aria-label="Инструменты">
-        {(["hand", "brush", "eraser", "drop"] as const).map((id) => (
-          <Button
-            key={id}
-            aria-pressed={tool === id}
-            onClick={() => {
-              onTool(id);
-              if (host.current) host.current.open = false;
-              host.current?.querySelector("summary")?.focus();
-            }}
-          >
-            <DesignIcon name={id} />
-            {toolNames[id]}
-          </Button>
-        ))}
-      </div>
-    </details>
+        <DesignIcon name={alternate} />
+      </IconButton>
+      <details className="mobile-tool-menu" ref={host}>
+        <summary
+          aria-label={`Инструменты: ${toolNames[tool]}`}
+          title={`Инструменты: ${toolNames[tool]}`}
+        >
+          <DesignIcon name={tool} />
+        </summary>
+        <div className="studio-panel" role="toolbar" aria-label="Инструменты">
+          {(["hand", "brush", "eraser", "drop"] as const).map((id) => (
+            <Button
+              key={id}
+              aria-pressed={tool === id}
+              onClick={() => {
+                onTool(id);
+                if (host.current) host.current.open = false;
+                host.current?.querySelector("summary")?.focus();
+              }}
+            >
+              <DesignIcon name={id} />
+              {toolNames[id]}
+            </Button>
+          ))}
+        </div>
+      </details>
+    </>
   );
 }
 
@@ -167,7 +187,7 @@ export function MobileEditorFooter({
             [
               ["3d", "3D вид", "3D", CubeIcon],
               ["2d", "2D вид", "2D", PhotoIcon],
-              ["settings", "Параметры модели", "Модель", AdjustmentsHorizontalIcon],
+              ["settings", "Параметры документа", "Документ", AdjustmentsHorizontalIcon],
             ] as const
           ).map(([id, label, text, Icon]) => (
             <Button
@@ -209,13 +229,13 @@ export function MobileEditorFooter({
         </div>
         {tool === "brush" || tool === "eraser" ? (
           <Field label="Размер кисти · px">
-            <input
-              aria-label="Размер кисти"
-              type="number"
+            <NumberSlider
+              label="Размер кисти"
               min={1}
               max={32}
+              unit=" px"
               value={brushSize}
-              onChange={(e) => onBrushSize(Math.max(1, Math.min(32, +e.target.value || 1)))}
+              onChange={onBrushSize}
             />
           </Field>
         ) : (
@@ -227,18 +247,15 @@ export function MobileEditorFooter({
         )}
         {tool === "brush" ? (
           <>
-            <Field label="Непрозрачность">
-              <select
-                aria-label="Непрозрачность кисти"
+            <Field label="Непрозрачность · %">
+              <NumberSlider
+                label="Непрозрачность кисти"
+                min={0}
+                max={100}
+                unit="%"
                 value={opacity}
-                onChange={(e) => onOpacity(+e.target.value)}
-              >
-                {[25, 50, 75, 100].map((value) => (
-                  <option key={value} value={value}>
-                    {value}%
-                  </option>
-                ))}
-              </select>
+                onChange={onOpacity}
+              />
             </Field>
             <Field label="Цвет кисти">
               <div className="brush-color-field">

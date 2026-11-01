@@ -1,6 +1,13 @@
 import { test, expect } from "@playwright/test";
 
 test.use({ viewport: { width: 1440, height: 1000 } });
+test.beforeEach(async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem("viewer.options.animations", "");
+    localStorage.setItem("viewer.options.smoothCamera", "");
+    localStorage.setItem("viewer.options.antialiasing", "off");
+  });
+});
 for (const [path, mode] of [
   ["/", "viewer"],
   ["/editor", "editor"],
@@ -32,7 +39,8 @@ for (const [path, mode] of [
     if (mode === "editor") {
       await expect(skeleton.locator('[data-skeleton-panel="texture"]')).toBeVisible();
       await expect(skeleton.locator(".tool-rail")).toBeVisible();
-      await expect(skeleton.locator(".palette-panel")).toBeVisible();
+      await expect(skeleton.locator(".tool-rail .palette-panel")).toBeVisible();
+      await expect(skeleton.locator(".editor-center > .palette-panel")).toBeHidden();
       await expect(skeleton.locator(".inspector")).toBeVisible();
     }
     // Let hydration replace its SSR fallback before recording the placeholder geometry.
@@ -88,19 +96,24 @@ test("viewer to editor shows the destination skeleton while the route module is 
 test("lazy editor workspace keeps the real header and replaces the skeleton without losing the document", async ({
   page,
 }) => {
+  let release!: () => void;
+  let held!: () => void;
+  const blocked = new Promise<void>((resolve) => (held = resolve));
+  const gate = new Promise<void>((resolve) => (release = resolve));
+  // Intercept before loading the viewer, so module preloading cannot bypass the gate.
+  await page.route("**/assets/EditorWorkspace-*.js", async (route) => {
+    held();
+    await gate;
+    await route.continue();
+  });
   await page.goto("/");
   await expect(page.locator(".model-viewport canvas")).toBeVisible();
   await expect(page.getByTestId("studio-skeleton")).toHaveCount(0);
   await page.getByRole("button", { name: "Параметры скина", exact: true }).click();
   await page.getByLabel("Раса", { exact: true }).selectOption("KIRIN");
   await page.getByRole("button", { name: "Закрыть параметры", exact: true }).click();
-  let release!: () => void;
-  const gate = new Promise<void>((resolve) => (release = resolve));
-  await page.route("**/assets/EditorWorkspace-*.js", async (route) => {
-    await gate;
-    await route.continue();
-  });
   await page.getByRole("link", { name: "Редактировать", exact: true }).click();
+  await blocked;
   const skeleton = page.getByTestId("studio-skeleton");
   await expect(skeleton).toBeVisible();
   await expect(skeleton).toHaveAttribute("data-mode", "editor");
@@ -140,4 +153,42 @@ test("initial skin download keeps the layout skeleton until the document is avai
   release();
   await expect(page.locator(".model-viewport canvas")).toBeVisible();
   await expect(skeleton).toHaveCount(0);
+});
+
+test("viewer and editor share compact header sizing on phones, tablets and desktop", async ({
+  page,
+}) => {
+  for (const width of [320, 390, 800, 1280]) {
+    await page.setViewportSize({ width, height: 844 });
+    await page.goto("/");
+    await expect(page.locator(".model-viewport canvas")).toBeVisible();
+    const buttons = () =>
+      page.locator(
+        ".studio-header .mode-tabs a:visible, .studio-header .file-actions button:visible",
+      );
+    const checkButtons = async () => {
+      const boxes = await Promise.all(
+        (await buttons().all()).map((button) => button.boundingBox()),
+      );
+      for (const box of boxes) {
+        expect(box!.width).toBe(boxes[0]!.width);
+        expect(box!.height).toBe(36);
+        expect(box!.y).toBe(boxes[0]!.y);
+      }
+    };
+    await checkButtons();
+    const viewer = (await page.locator(".studio-header").boundingBox())!;
+    const brand = (await page.locator(".brand-mark").boundingBox())!;
+    await expect(page.getByRole("button", { name: "Открыть", exact: true })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Скачать PNG", exact: true })).toBeVisible();
+    await page.getByRole("link", { name: "Редактировать", exact: true }).click();
+    await expect(page.getByTestId("skin-texture")).toBeAttached();
+    await checkButtons();
+    const editor = (await page.locator(".studio-header").boundingBox())!;
+    const editorBrand = (await page.locator(".brand-mark").boundingBox())!;
+    expect(editor.height).toBe(viewer.height);
+    expect(viewer.height).toBeLessThanOrEqual(60);
+    expect(editorBrand).toEqual(brand);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(width);
+  }
 });

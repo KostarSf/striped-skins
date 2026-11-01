@@ -13,6 +13,7 @@ import {
 } from "three";
 import { decodeSkinMetadata, type SkinDocument, type SkinMetadata } from "@striped-skins/api";
 import { UVOutlines } from "./UVOutlines.js";
+import { PartHighlight } from "./PartHighlight.js";
 import { updateSurfaceVisibility } from "./SurfaceVisibility.js";
 import { skinMaterial, type SkinMaterial, type ModelShading } from "./SkinMaterial.js";
 import {
@@ -45,6 +46,8 @@ export type GeneratedPonyProps = {
   motionLayers?: readonly MotionLayer[];
   showUV?: boolean;
   shading?: ModelShading;
+  highlightedPart?: string | null;
+  activePart?: string | null;
 };
 export function geometryFor(quads: ModelQuad[]) {
   const geometry = new BufferGeometry(),
@@ -81,6 +84,8 @@ export function GeneratedPony({
   motionLayers = EMPTY_LAYERS,
   showUV = false,
   shading = "flat",
+  highlightedPart,
+  activePart = null,
 }: GeneratedPonyProps) {
   const revision = useSyncExternalStore(
     skinDocument.subscribe,
@@ -307,7 +312,21 @@ export function GeneratedPony({
   return (
     <>
       <primitive object={instance.root} dispose={null} />
-      {showUV ? <UVOutlines meshes={instance.meshes} hidden={hidden} /> : null}
+      {showUV ? (
+        <UVOutlines
+          meshes={
+            activePart
+              ? instance.meshes.filter((mesh) => mesh.userData.partId === activePart)
+              : instance.meshes
+          }
+          hidden={hidden}
+        />
+      ) : null}
+      {highlightedPart
+        ? instance.meshes
+            .filter((mesh) => mesh.userData.partId === highlightedPart)
+            .map((mesh) => <PartHighlight key={mesh.uuid} mesh={mesh} />)
+        : null}
     </>
   );
 }
