@@ -95,13 +95,14 @@ export function GeneratedPony({
   const metadata: SkinMetadata = { ...decodeSkinMetadata(skinDocument), ...overrides };
   const model = resolveModel(metadata, preview);
   const invalidate = useThree((s) => s.invalidate);
+  const { width: textureWidth, height: textureHeight } = skinDocument;
   const surface = useMemo(() => {
     const canvas = document.createElement("canvas");
-    canvas.width = skinDocument.width;
-    canvas.height = skinDocument.height;
+    canvas.width = textureWidth;
+    canvas.height = textureHeight;
     const texture = configureTexture(new CanvasTexture(canvas));
     return { canvas, texture, material: skinMaterial(texture, shading) };
-  }, [skinDocument, shading]);
+  }, [textureWidth, textureHeight, shading]);
   useEffect(() => {
     let pending: number | null = null;
     const update = () => {

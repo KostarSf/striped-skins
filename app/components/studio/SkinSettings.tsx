@@ -6,9 +6,11 @@ import {
   type SkinDocument,
   type SkinMetadata,
   type RaceId,
+  SKIN_RESOLUTIONS,
 } from "@striped-skins/api";
 import { bodySizes, type PreviewSettings } from "@striped-skins/models";
-import { useSyncExternalStore } from "react";
+import { useState, useSyncExternalStore } from "react";
+import { errorMessage } from "../../i18n/errors";
 import { ColorPicker } from "./ColorPicker";
 import { Field, Toggle } from "./ui";
 export function SkinSettings({
@@ -27,6 +29,7 @@ export function SkinSettings({
   palette?: readonly string[];
 }) {
   const { t } = useTranslation();
+  const [resizeError, setResizeError] = useState("");
   const wearableNames = getWearableNames(t);
   const raceNames = getRaceNames(t);
   const sizes = getSizeNames(t);
@@ -43,6 +46,34 @@ export function SkinSettings({
         </span>
       </p>
       <div className="settings-group">
+        <Field label={t("skin.resolution")}>
+          <select
+            aria-label={t("skin.resolution")}
+            value={document.width}
+            onChange={(event) => {
+              try {
+                document.resize(Number(event.target.value));
+                setResizeError("");
+              } catch (error) {
+                setResizeError(errorMessage(t, error));
+              }
+            }}
+          >
+            {[...new Set([...SKIN_RESOLUTIONS, document.width])]
+              .sort((a, b) => a - b)
+              .map((size) => (
+                <option key={size} value={size}>
+                  {size} × {size} px
+                </option>
+              ))}
+          </select>
+          <small>{t("skin.resolutionHint")}</small>
+        </Field>
+        {resizeError ? (
+          <p className="studio-error" role="alert">
+            {resizeError}
+          </p>
+        ) : null}
         <Field label={t("skin.race")}>
           <select
             aria-label={t("skin.race")}

@@ -120,15 +120,19 @@ export class PonySkin {
     const source = new ImageTransformer();
     const canvas = documentCanvas(document);
     source.setCanvas(canvas);
-    document.subscribe(() =>
+    document.subscribe(() => {
+      if (canvas.width !== document.width || canvas.height !== document.height) {
+        canvas.width = document.width;
+        canvas.height = document.height;
+      }
       canvas
         .getContext("2d")!
         .putImageData(
           new ImageData(new Uint8ClampedArray(document.pixels), document.width, document.height),
           0,
           0,
-        ),
-    );
+        );
+    });
     const skin = new PonySkin(
       source,
       Race.fromPixel(RacePixel.Earthpony),

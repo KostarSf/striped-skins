@@ -1,4 +1,5 @@
 export { SkinError } from "./SkinError.js";
+export { MAX_SKIN_SIZE, MAX_EDITABLE_SKIN_SIZE, SKIN_RESOLUTIONS } from "./skin-resolution.js";
 export { PonySkin } from "./PonySkin.js";
 export type { TailSize } from "./skin-parameters/index.js";
 export { SkinDocument, uvToPixel } from "./SkinDocument.js";

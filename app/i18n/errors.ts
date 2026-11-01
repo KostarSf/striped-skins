@@ -14,6 +14,7 @@ const errorKeys = {
   layerLimit: "errors.layerLimit",
   duplicateMemory: "errors.duplicateMemory",
   mergeMemory: "errors.mergeMemory",
+  resizeMemory: "errors.resizeMemory",
   wearableLimit: "errors.wearableLimit",
   tailLength: "errors.tailLength",
   glowColor: "errors.glowColor",

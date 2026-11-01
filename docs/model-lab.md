@@ -15,13 +15,19 @@ surface. Accessory textures are visible but not brush targets. Select a part to
 see its UV outline. Scroll the 2D pane after zooming. Parent geometry and child
 geometry have independent checkboxes; **Скрыть ветку** hides both.
 
-Modern square and legacy half-height PNGs, including HD up to 2048 pixels, are
+Modern square and legacy half-height PNGs, including HD up to 4096 pixels, are
 accepted. Legacy imports are upgraded to modern square PNG on export. Trigger
 coordinates remain physical pixels at the atlas origin. The brush protects them;
 metadata controls change them explicitly. Local recovery preserves the layered document, workspace settings and undo/redo
 history after reloads. Save `.striped` to keep an editable project; PNG export
 contains the composite skin and metadata. See [the development roadmap](editor-development-roadmap.md)
 and [project format](project-format.md).
+
+Use **Skin resolution / Разрешение скина** in skin settings to resize each layer
+without smoothing. Resizing is undoable and keeps metadata at physical trigger
+coordinates. Above 1024×1024, the editor shows a 3D preview and skin settings;
+texture tools return after resizing to 1024 or less. Merge layers at a smaller
+resolution first if increasing the size would exceed the 64 MiB raster budget.
 
 ```sh
 npm ci

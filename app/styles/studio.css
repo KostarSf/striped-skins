@@ -2980,3 +2980,30 @@ button:disabled {
     --header-button-width: 60px;
   }
 }
+.skin-parameters-workspace {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 304px;
+  gap: 8px;
+  padding: 8px;
+}
+.parameters-inspector {
+  min-height: 0;
+  overflow-y: auto;
+  padding: 12px;
+}
+.parameters-notice {
+  flex: none;
+  margin: 8px 8px 0;
+}
+@media (max-width: 640px) {
+  .skin-parameters-workspace {
+    grid-template-columns: 1fr;
+    grid-template-rows: minmax(240px, 40svh) auto;
+    overflow-y: auto;
+  }
+  .parameters-inspector {
+    overflow: visible;
+  }
+}

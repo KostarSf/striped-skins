@@ -1,4 +1,13 @@
 export default {
+  "errors.resizeMemory":
+    "Not enough memory to resize layers (64 MiB limit). Merge layers at a smaller resolution first.",
+  "history.resize": "Resize skin",
+  "skin.resolution": "Skin resolution",
+  "skin.resolutionHint":
+    "Nearest-neighbour scaling, up to 4096 × 4096. Texture editing is available up to 1024 × 1024.",
+  "skin.parametersOnly":
+    "This skin is larger than 1024 px. Only skin parameters can be changed. Reduce the resolution to 1024 or less to edit the texture.",
+
   "colors.add": "Add color to palette",
   "colors.blue": "Blue",
   "colors.brush": "Brush color",
@@ -41,7 +50,7 @@ export default {
   "errors.duplicateMemory": "Not enough memory to duplicate layers (64 MiB limit)",
   "errors.exportPng": "Could not export PNG",
   "errors.glowColor": "Invalid glow color",
-  "errors.invalidDimensions": "A 64×64 or 64×32 PNG, or an HD variant up to 2048 px, is required",
+  "errors.invalidDimensions": "A 64×64 or 64×32 PNG, or an HD variant up to 4096 px, is required",
   "errors.invalidImage": "Invalid skin dimensions or image data",
   "errors.layerLimit": "The layer or project memory limit has been reached (64 MiB)",
   "errors.loadSkin": "Could not load the skin. Check the file or link and try again.",
@@ -95,7 +104,7 @@ export default {
   "import.chooseFile": "Choose file",
   "import.close": "Close import",
   "import.description": "Upload a .striped project or PNG from your computer, or open a PNG link",
-  "import.dimensions": "64 × 64, 64 × 32 and HD up to 2048 px",
+  "import.dimensions": "64 × 64, 64 × 32 and HD up to 4096 px",
   "import.drop": "Drop PNG or .striped here",
   "import.dropPng": "Drop PNG to open skin",
   "import.example": "Use example skin",
