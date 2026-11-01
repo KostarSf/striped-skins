@@ -329,6 +329,8 @@ export default {
   "view.animations": "Анимации",
   "view.antialiasing": "Сглаживание",
   "view.groundGrid": "Сетка под моделью",
+  "view.language": "Язык",
+  "view.languageAuto": "Автоматически",
   "view.settings": "Параметры вида",
   "view.smoothCamera": "Плавная камера",
   "view.title": "Вид",

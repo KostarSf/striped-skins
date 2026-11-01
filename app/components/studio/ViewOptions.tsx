@@ -5,10 +5,15 @@ import { useViewerPreferencesContext } from "../striped-viewer.client";
 import { Toggle } from "./ui";
 import type { SkinDocument } from "@striped-skins/api";
 import type { AntialiasingMode } from "@striped-skins/viewer";
+import { useFetcher, useRouteLoaderData } from "react-router";
+import type { loader, action } from "../../root";
 
 /** The same persisted display preferences in the viewer and editor. */
 export function ViewOptions({ document }: { document?: SkinDocument } = {}) {
   const { t } = useTranslation();
+  const root = useRouteLoaderData<typeof loader>("root");
+  const language = useFetcher<typeof action>();
+  const preference = language.formData?.get("language") ?? root?.languagePreference ?? "auto";
   const defaults = useViewerPreferencesContext((s) => s.userOptions);
   const setDefaults = useViewerPreferencesContext((s) => s.setUserOptions);
   const options = document?.getWorkspace("viewOptions", { ...defaults }) ?? defaults;
@@ -41,6 +46,22 @@ export function ViewOptions({ document }: { document?: SkinDocument } = {}) {
         <span>{t("view.title")}</span>
       </summary>
       <div className="studio-panel">
+        <language.Form method="post" action="/" preventScrollReset>
+          <input type="hidden" name="intent" value="language" />
+          <label className="aa-option">
+            <span>{t("view.language")}</span>
+            <select
+              name="language"
+              aria-label={t("view.language")}
+              value={String(preference)}
+              onChange={(event) => void language.submit(event.currentTarget.form)}
+            >
+              <option value="auto">{t("view.languageAuto")}</option>
+              <option value="ru">Русский</option>
+              <option value="en">English</option>
+            </select>
+          </label>
+        </language.Form>
         <label className="aa-option">
           <span>{t("view.antialiasing")}</span>
           <select

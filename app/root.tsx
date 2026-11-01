@@ -1,16 +1,39 @@
-import { Links, Meta, Outlet, Scripts, ScrollRestoration } from "react-router";
+import { data, Links, Meta, Outlet, Scripts, ScrollRestoration } from "react-router";
+import { useEffect } from "react";
 import styles from "./tailwind.css?url";
 import type { LinksFunction, MetaFunction } from "react-router";
 import { WorkspaceBoundary } from "./components/WorkspaceBoundary";
 import { useTranslation } from "react-i18next";
 import { getInstance, getLocale, i18nextMiddleware } from "./i18n/middleware.server";
 import type { Route } from "./+types/root";
+import { readLanguagePreference, saveLanguagePreference } from "./i18n/preference.server";
 
 export const middleware = [i18nextMiddleware];
 
-export function loader({ context }: Route.LoaderArgs) {
+export async function loader({ context, request }: Route.LoaderArgs) {
   const t = getInstance(context).t;
-  return { locale: getLocale(context), title: t("meta.title"), description: t("meta.description") };
+  return {
+    locale: getLocale(context),
+    languagePreference: (await readLanguagePreference(request)) ?? "auto",
+    title: t("meta.title"),
+    description: t("meta.description"),
+  };
+}
+
+export async function action({ request }: Route.ActionArgs) {
+  const form = await request.formData();
+  const preference = form.get("language");
+  if (
+    form.get("intent") !== "language" ||
+    (preference !== "auto" && preference !== "en" && preference !== "ru")
+  )
+    return data({ saved: false }, { status: 400 });
+  return data(
+    { saved: true },
+    {
+      headers: { "Set-Cookie": await saveLanguagePreference(request, preference) },
+    },
+  );
 }
 
 export const links: LinksFunction = () => [{ rel: "stylesheet", href: styles }];
@@ -27,8 +50,11 @@ export const meta: MetaFunction<typeof loader> = ({ loaderData }) => {
   ];
 };
 
-export default function App() {
+export default function App({ loaderData }: Route.ComponentProps) {
   const { i18n } = useTranslation();
+  useEffect(() => {
+    if (i18n.language !== loaderData.locale) void i18n.changeLanguage(loaderData.locale);
+  }, [i18n, loaderData.locale]);
   return (
     <html lang={i18n.language}>
       <head>

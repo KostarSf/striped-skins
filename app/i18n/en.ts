@@ -326,6 +326,8 @@ export default {
   "view.animations": "Animations",
   "view.antialiasing": "Antialiasing",
   "view.groundGrid": "Ground grid",
+  "view.language": "Language",
+  "view.languageAuto": "Automatic",
   "view.settings": "View options",
   "view.smoothCamera": "Smooth camera",
   "view.title": "View",

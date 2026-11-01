@@ -21,9 +21,11 @@ checked in; no MineLittlePony checkout is needed.
 
 The application supports English and Russian using `remix-i18next` and
 `react-i18next`. Each request negotiates `Accept-Language`, including regional
-variants and quality weights, and falls back to English. The browser hydrates
-with the server's `<html lang>`; language detection does not write cookies,
-browser storage, or project settings. Both typed catalogs are bundled in
+variants and quality weights, and falls back to English. The View menu offers
+Automatic, Русский and English. An explicit choice is saved for one year in an
+HttpOnly, SameSite=Lax cookie and takes priority over browser preferences on
+the first server render. Automatic deletes the cookie. The browser hydrates
+with the server's `<html lang>`. Both typed catalogs are bundled in
 `app/i18n/en.ts` and `app/i18n/ru.ts`.
 
 Use semantic keys with `useTranslation()` for UI text, including accessible
@@ -33,13 +35,15 @@ Russian operation labels. Layer names are document content: new names use the
 current language and existing names are preserved when opening a project.
 Library validation errors expose `SkinError.code` for app-owned translations.
 
-A future persisted preference belongs in `app/i18n/middleware.server.ts`, before
-the browser-language fallback. A cookie or account setting lets SSR respect the
-preference on the initial request. No changes to translation consumers are needed.
+Language changes submit a React Router fetcher form to the root action and
+revalidate the locale and metadata without navigating or replacing the workspace.
+The preference is separate from document settings and is never stored in a
+`.striped` project. Cookie handling lives in `app/i18n/preference.server.ts`;
+`app/i18n/middleware.server.ts` resolves the preference before browser detection.
 
 Existing browser tests explicitly use Russian; `tests/i18n.spec.ts` covers both
-languages, SSR isolation, cross-language project imports and the absence of
-language persistence.
+languages, SSR isolation, cross-language project imports, persisted language
+selection and returning to automatic browser detection.
 
 ## Checks
 

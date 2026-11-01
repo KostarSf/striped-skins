@@ -33,10 +33,114 @@ test("SSR negotiates the complete language list and isolates concurrent requests
   );
 });
 
+test("saved preference overrides browser language on SSR and automatic removes it", async ({
+  request,
+}) => {
+  const saved = await request.post("/", { form: { intent: "language", language: "en" } });
+  expect(saved.status()).toBe(200);
+  expect(saved.headers()["set-cookie"]).toMatch(/striped-skins-language=.*Max-Age=31536000/i);
+  expect(saved.headers()["set-cookie"]).toMatch(/HttpOnly/i);
+  const explicit = await request.get("/editor", { headers: { "Accept-Language": "ru-RU" } });
+  expect(explicit.headers()["content-language"]).toBe("en");
+  expect(explicit.headers().vary).toMatch(/Cookie/i);
+  expect(await explicit.text()).toContain('<html lang="en">');
+  const invalid = await request.post("/", { form: { intent: "language", language: "de" } });
+  expect(invalid.status()).toBe(400);
+  expect(invalid.headers()["set-cookie"]).toBeUndefined();
+  const automatic = await request.post("/", { form: { intent: "language", language: "auto" } });
+  expect(automatic.headers()["set-cookie"]).toMatch(/Max-Age=0/i);
+  const detected = await request.get("/editor", { headers: { "Accept-Language": "ru-RU" } });
+  expect(await detected.text()).toContain('<html lang="ru">');
+  const malformed = await request.get("/editor", {
+    headers: {
+      "Accept-Language": "en-US",
+      Cookie: "striped-skins-language=invalid",
+    },
+  });
+  expect(malformed.status()).toBe(200);
+  expect(malformed.headers()["content-language"]).toBe("en");
+});
+
 for (const locale of ["en-US", "ru-RU"] as const) {
   test.describe(locale, () => {
     test.use({ locale, viewport: { width: 1280, height: 900 } });
     const en = locale === "en-US";
+    test("View language preference switches in place, persists and can return to automatic", async ({
+      page,
+      context,
+    }, testInfo) => {
+      page.on("dialog", (dialog) => void dialog.accept());
+      const errors: string[] = [];
+      page.on("pageerror", (error) => errors.push(error.message));
+      page.on("console", (message) => {
+        if (message.type() === "error") errors.push(message.text());
+      });
+      await page.goto("/editor");
+      await expect(page.getByTestId("skin-texture")).toBeVisible();
+      await page
+        .getByRole("button", { name: en ? "New layer" : "Новый слой", exact: true })
+        .click();
+      await page
+        .getByLabel(en ? "Layer name" : "Имя слоя", { exact: true })
+        .fill("My пользовательский слой");
+      await page.getByLabel(en ? "Layer name" : "Имя слоя", { exact: true }).press("Enter");
+      const revision = await page.getByTestId("document-status").getAttribute("data-revision");
+      const pixels = await page
+        .getByTestId("skin-texture")
+        .evaluate((canvas) => (canvas as HTMLCanvasElement).toDataURL());
+      await page
+        .getByTestId("skin-texture")
+        .evaluate((canvas) => canvas.setAttribute("data-language-test", "same-canvas"));
+      await page.locator(".view-options > summary").click();
+      const select = page.locator('.view-options select[name="language"]');
+      await expect(select).toHaveValue("auto");
+      await select.selectOption(en ? "ru" : "en");
+      await expect(page.locator("html")).toHaveAttribute("lang", en ? "ru" : "en");
+      await expect(select).toHaveValue(en ? "ru" : "en");
+      await expect(page.getByTestId("skin-texture")).toHaveAttribute(
+        "data-language-test",
+        "same-canvas",
+      );
+      await expect(page.getByTestId("document-status")).toHaveAttribute("data-revision", revision!);
+      expect(
+        await page
+          .getByTestId("skin-texture")
+          .evaluate((canvas) => (canvas as HTMLCanvasElement).toDataURL()),
+      ).toBe(pixels);
+      await expect(page.getByLabel(en ? "Имя слоя" : "Layer name", { exact: true })).toHaveValue(
+        "My пользовательский слой",
+      );
+      await expect(page).toHaveTitle(en ? /просмотрщик и редактор/ : /skin viewer and editor/);
+      const cookie = (await context.cookies()).find(
+        (entry) => entry.name === "striped-skins-language",
+      )!;
+      expect(cookie.httpOnly).toBe(true);
+      expect(cookie.expires).toBeGreaterThan(Date.now() / 1000 + 300 * 86400);
+      await expect(page.getByTestId("autosave-status")).toHaveCount(0);
+      await page.reload();
+      await expect(page.getByLabel(en ? "Имя слоя" : "Layer name", { exact: true })).toHaveValue(
+        "My пользовательский слой",
+      );
+      await expect(page.locator("html")).toHaveAttribute("lang", en ? "ru" : "en");
+      await page.locator(".studio-brand").click();
+      await expect(page.locator(".viewer-content canvas")).toBeVisible();
+      await page.locator(".view-options > summary").click();
+      await expect(select).toHaveValue(en ? "ru" : "en");
+      await page.setViewportSize({ width: 390, height: 844 });
+      expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)).toBe(
+        false,
+      );
+      await page.screenshot({ path: testInfo.outputPath(`${locale}-language-setting.png`) });
+      await select.selectOption("auto");
+      await expect(page.locator("html")).toHaveAttribute("lang", en ? "en" : "ru");
+      await expect(select).toHaveValue("auto");
+      expect(
+        (await context.cookies()).some((entry) => entry.name === "striped-skins-language"),
+      ).toBe(false);
+      await page.reload();
+      await expect(page.locator("html")).toHaveAttribute("lang", en ? "en" : "ru");
+      expect(errors).toEqual([]);
+    });
     test("viewer, editor, errors and project history use the detected language without saving it", async ({
       page,
       context,
