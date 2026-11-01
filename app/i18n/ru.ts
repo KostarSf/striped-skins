@@ -1,6 +1,15 @@
 import type en from "./en";
 
 export default {
+  "errors.resizeMemory":
+    "Недостаточно памяти для изменения размера слоёв (лимит 64 МиБ). Сначала объедините слои при меньшем разрешении.",
+  "history.resize": "Изменение разрешения скина",
+  "skin.resolution": "Разрешение скина",
+  "skin.resolutionHint":
+    "Масштабирование без сглаживания, до 4096 × 4096. Редактирование текстуры доступно до 512 × 512.",
+  "skin.parametersOnly":
+    "Скин больше 512 пикселей. Доступны только параметры скина. Уменьшите разрешение до 512 или ниже, чтобы редактировать текстуру.",
+
   "colors.add": "Добавить цвет в палитру",
   "colors.blue": "Синий",
   "colors.brush": "Цвет кисти",
@@ -43,7 +52,7 @@ export default {
   "errors.duplicateMemory": "Недостаточно памяти для копии слоёв (лимит 64 МиБ)",
   "errors.exportPng": "Не удалось экспортировать PNG",
   "errors.glowColor": "Некорректный цвет свечения",
-  "errors.invalidDimensions": "Нужен PNG 64×64, 64×32 или их HD-вариант (до 2048 пикселей)",
+  "errors.invalidDimensions": "Нужен PNG 64×64, 64×32 или их HD-вариант (до 4096 пикселей)",
   "errors.invalidImage": "Некорректные размеры скина или данные изображения",
   "errors.layerLimit": "Достигнут лимит слоёв или памяти проекта (64 МиБ)",
   "errors.loadSkin": "Не удалось загрузить скин. Проверьте файл или ссылку и попробуйте ещё раз.",
@@ -97,7 +106,7 @@ export default {
   "import.chooseFile": "Выбрать файл",
   "import.close": "Закрыть импорт",
   "import.description": "Загрузите .striped или PNG с компьютера, либо PNG по ссылке",
-  "import.dimensions": "64 × 64, 64 × 32 и HD до 2048 px",
+  "import.dimensions": "64 × 64, 64 × 32 и HD до 4096 px",
   "import.drop": "Перетащите PNG или .striped сюда",
   "import.dropPng": "Отпустите PNG, чтобы открыть скин",
   "import.example": "Использовать пример скина",

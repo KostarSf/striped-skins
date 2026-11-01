@@ -95,33 +95,40 @@ export function GeneratedPony({
   const metadata: SkinMetadata = { ...decodeSkinMetadata(skinDocument), ...overrides };
   const model = resolveModel(metadata, preview);
   const invalidate = useThree((s) => s.invalidate);
+  const { width: textureWidth, height: textureHeight } = skinDocument;
   const surface = useMemo(() => {
     const canvas = document.createElement("canvas");
-    canvas.width = skinDocument.width;
-    canvas.height = skinDocument.height;
+    canvas.width = textureWidth;
+    canvas.height = textureHeight;
     const texture = configureTexture(new CanvasTexture(canvas));
     return { canvas, texture, material: skinMaterial(texture, shading) };
-  }, [skinDocument, shading]);
+  }, [textureWidth, textureHeight, shading]);
   useEffect(() => {
     let pending: number | null = null;
+    let textureRevision = -1;
     const update = () => {
       pending = null;
+      if (
+        surface.canvas.width !== skinDocument.width ||
+        surface.canvas.height !== skinDocument.height
+      ) {
+        surface.canvas.width = skinDocument.width;
+        surface.canvas.height = skinDocument.height;
+      }
       surface.canvas
         .getContext("2d")!
         .putImageData(
-          new ImageData(
-            new Uint8ClampedArray(skinDocument.pixels),
-            skinDocument.width,
-            skinDocument.height,
-          ),
+          new ImageData(skinDocument.pixels, skinDocument.width, skinDocument.height),
           0,
           0,
         );
       surface.texture.needsUpdate = true;
+      textureRevision = skinDocument.getTextureSnapshot();
       invalidate();
     };
     update();
     const unsubscribe = skinDocument.subscribe(() => {
+      if (textureRevision === skinDocument.getTextureSnapshot()) return;
       pending ??= requestAnimationFrame(update);
     });
     return () => {
@@ -133,6 +140,7 @@ export function GeneratedPony({
     () => () => {
       surface.texture.dispose();
       surface.material.dispose();
+      surface.canvas.width = surface.canvas.height = 0;
     },
     [surface],
   );

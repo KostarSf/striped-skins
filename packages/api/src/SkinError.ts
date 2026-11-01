@@ -13,6 +13,7 @@ export class SkinError extends Error {
       | "layerLimit"
       | "duplicateMemory"
       | "mergeMemory"
+      | "resizeMemory"
       | "wearableLimit"
       | "tailLength"
       | "glowColor"

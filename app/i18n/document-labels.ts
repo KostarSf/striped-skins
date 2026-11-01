@@ -20,7 +20,7 @@ const legacyLabels = {
 
 export function documentLabel(t: TFunction, label: string | null | undefined): string {
   if (!label) return "";
-  const key = legacyLabels[label as keyof typeof legacyLabels] ?? label;
+  const key: string = legacyLabels[label as keyof typeof legacyLabels] ?? label;
   switch (key) {
     case "history.earliest":
       return t("history.earliest");
@@ -46,6 +46,10 @@ export function documentLabel(t: TFunction, label: string | null | undefined): s
       return t("history.metadata");
     case "history.stroke":
       return t("history.stroke");
+    case "history.resize":
+      return t("history.resize");
+    case "skin.parametersOnly":
+      return t("skin.parametersOnly");
     case "paint.selectLayer":
       return t("paint.selectLayer");
     case "paint.locked":

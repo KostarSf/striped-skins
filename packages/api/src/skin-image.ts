@@ -1,5 +1,6 @@
 import { SkinError } from "./SkinError.js";
 import { SkinDocument } from "./SkinDocument.js";
+import { MAX_SKIN_SIZE } from "./skin-resolution.js";
 
 /** Normalizes vanilla legacy limb islands, then MLP's extra wing island. */
 export function normalizeSkinPixels(
@@ -8,10 +9,17 @@ export function normalizeSkinPixels(
   pixels: ArrayLike<number>,
   baseLayerName?: string,
 ): SkinDocument {
-  if (width < 64 || width > 2048 || width % 64 !== 0 || (height !== width && height !== width / 2))
+  if (
+    !Number.isInteger(width) ||
+    !Number.isInteger(height) ||
+    width < 64 ||
+    width > MAX_SKIN_SIZE ||
+    width % 64 !== 0 ||
+    (height !== width && height !== width / 2)
+  )
     throw new SkinError(
       "invalidDimensions",
-      "Нужен PNG 64×64, 64×32 или их HD-вариант (до 2048 пикселей)",
+      "Нужен PNG 64×64, 64×32 или их HD-вариант (до 4096 пикселей)",
     );
   if (pixels.length !== width * height * 4)
     throw new SkinError("invalidImage", "Invalid image data");
@@ -68,6 +76,8 @@ export async function loadSkinDocument(url: string, baseLayerName?: string): Pro
   image.crossOrigin = "anonymous";
   image.src = url;
   await image.decode();
+  if (image.width > MAX_SKIN_SIZE || image.height > MAX_SKIN_SIZE)
+    throw new SkinError("invalidDimensions", "Максимальный размер скина — 4096 пикселей");
   const canvas = document.createElement("canvas");
   canvas.width = image.width;
   canvas.height = image.height;

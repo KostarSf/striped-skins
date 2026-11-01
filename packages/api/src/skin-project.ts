@@ -3,7 +3,8 @@ import { strFromU8, strToU8, unzipSync, zipSync } from "fflate";
 import { SkinDocument, validateSnapshot, type ProjectSnapshot } from "./SkinDocument.js";
 
 const MAX_ARCHIVE = 64 * 1024 * 1024;
-const MAX_EXPANDED = 128 * 1024 * 1024;
+// A 4K composite and raster already occupy 128 MiB, before metadata and resize history.
+const MAX_EXPANDED = 320 * 1024 * 1024;
 /** ZIP manifest and raw RGBA entries preserve invisible RGB and shared history buffers. */
 export function encodeSkinProject(document: SkinDocument): Uint8Array {
   if (document.isDrawing) document.endStroke();

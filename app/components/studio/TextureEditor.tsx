@@ -111,18 +111,18 @@ export function TextureEditor({
       Array.from({ length: skin.height + 1 }, (_, y) => `M0 ${y}H${skin.width}`).join(""),
     [skin.width, skin.height],
   );
+  const { width: textureWidth, height: textureHeight } = skin;
   useEffect(() => {
-    const update = () =>
+    const update = () => {
+      // A resize notifies before React updates the canvas dimensions; the next effect draws it.
+      if (skin.width !== textureWidth || skin.height !== textureHeight) return;
       canvas.current
         ?.getContext("2d")
-        ?.putImageData(
-          new ImageData(new Uint8ClampedArray(skin.pixels), skin.width, skin.height),
-          0,
-          0,
-        );
+        ?.putImageData(new ImageData(skin.pixels, textureWidth, textureHeight), 0, 0);
+    };
     update();
     return skin.subscribe(update);
-  }, [skin]);
+  }, [skin, textureWidth, textureHeight]);
   useEffect(() => {
     const observer = new ResizeObserver(([entry]) =>
       setSize({ width: entry.contentRect.width, height: entry.contentRect.height }),

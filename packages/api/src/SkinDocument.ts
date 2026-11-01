@@ -1,4 +1,5 @@
 import { SkinError } from "./SkinError.js";
+import { MAX_SKIN_SIZE, MAX_EDITABLE_SKIN_SIZE, resizeSkinPixels } from "./skin-resolution.js";
 export type PaintBounds = { minX: number; minY: number; maxX: number; maxY: number };
 export type Pixel = readonly [number, number, number, number];
 export type LayerNode = {
@@ -20,7 +21,7 @@ export type WorkspaceValue =
   | WorkspaceValue[]
   | { [key: string]: WorkspaceValue };
 type Change = { index: number; before: Pixel; after: Pixel };
-type Structure = { layers: LayerNode[]; activeLayerId: string };
+type Structure = { layers: LayerNode[]; activeLayerId: string; width?: number; height?: number };
 type Command = {
   label: string;
   beforeId: number;
@@ -56,14 +57,14 @@ let documentSequence = 0;
 const MAX_BYTES = 64 * 1024 * 1024;
 const MAX_LAYER_NAME = 100;
 const MAX_HISTORY = 100;
-const HISTORY_BYTES = 32 * 1024 * 1024;
+const HISTORY_BYTES = 128 * 1024 * 1024;
 const isTrigger = (x: number, y: number) => x < 4 && y < 2;
 const copy = <T>(value: T): T => structuredClone(value);
 
 /** Raster layers are stored bottom to top; groups composite in isolation. No DOM dependency. */
 export class SkinDocument {
   readonly id = ++documentSequence;
-  readonly pixels: Uint8ClampedArray;
+  pixels: Uint8ClampedArray<ArrayBuffer>;
   private metadata: Uint8ClampedArray;
   private nodes: LayerNode[];
   private active: string;
@@ -74,6 +75,8 @@ export class SkinDocument {
   private workspace: Record<string, WorkspaceValue> = {};
   private listeners = new Set<() => void>();
   private revision = 0;
+  private contentRevision = 0;
+  private textureRevision = 0;
   private rasterRevisions = new Map<string, number>();
   private historyInteraction: string | undefined;
   private stroke: { layerId: string | null; changes: Map<number, Change> } | null = null;
@@ -82,8 +85,8 @@ export class SkinDocument {
   private lastPoint: { x: number; y: number; surface: string } | null = null;
 
   constructor(
-    readonly width: number,
-    readonly height: number,
+    public width: number,
+    public height: number,
     pixels: ArrayLike<number>,
     readonly sourceFormat: "modern" | "legacy" = "modern",
     baseLayerName = "Основа",
@@ -93,8 +96,8 @@ export class SkinDocument {
       !Number.isInteger(height) ||
       width < 4 ||
       height < 2 ||
-      width > 2048 ||
-      height > 2048 ||
+      width > MAX_SKIN_SIZE ||
+      height > MAX_SKIN_SIZE ||
       pixels.length !== width * height * 4
     )
       throw new SkinError("invalidImage", "Invalid skin dimensions or RGBA data");
@@ -124,6 +127,12 @@ export class SkinDocument {
     };
   };
   getSnapshot = () => this.revision;
+  /** Camera and other workspace changes do not alter document content or texture bytes. */
+  getContentSnapshot = () => this.contentRevision;
+  getTextureSnapshot = () => this.textureRevision;
+  workspaceSnapshot() {
+    return { workspace: copy(this.workspace), workspaceRevision: this.workspaceRevision };
+  }
   /** Completed raster edits; live strokes still notify composite subscribers. */
   getLayerRevision(id: string) {
     return this.rasterRevisions.get(id) ?? 0;
@@ -131,7 +140,8 @@ export class SkinDocument {
   private rasterChanged(id: string) {
     this.rasterRevisions.set(id, this.getLayerRevision(id) + 1);
   }
-  private emit() {
+  private emit(contentChanged = true) {
+    if (contentChanged) this.contentRevision++;
     this.revision++;
     this.listeners.forEach((listener) => listener());
   }
@@ -186,6 +196,7 @@ export class SkinDocument {
     return this.stroke !== null;
   }
   get paintBlockedReason(): string | null {
+    if (!this.canEditTexture) return "skin.parametersOnly";
     const node = this.activeLayer;
     if (node.kind !== "layer") return "paint.selectLayer";
     for (let n: LayerNode | undefined = node; n; n = this.nodes.find((v) => v.id === n!.parentId)) {
@@ -205,7 +216,7 @@ export class SkinDocument {
     if (JSON.stringify(this.workspace[key]) === JSON.stringify(value)) return;
     this.workspace = { ...this.workspace, [key]: copy(value) };
     this.workspaceRevision++;
-    this.emit();
+    this.emit(false);
   }
   setActiveLayer(id: string) {
     this.endStroke();
@@ -214,9 +225,21 @@ export class SkinDocument {
     this.emit();
   }
   private structure(): Structure {
-    return { layers: this.nodes.map((n) => ({ ...n })), activeLayerId: this.active };
+    return {
+      layers: this.nodes.map((n) => ({ ...n })),
+      activeLayerId: this.active,
+      width: this.width,
+      height: this.height,
+    };
   }
   private restoreStructure(state: Structure) {
+    const width = state.width ?? this.width,
+      height = state.height ?? this.height;
+    if (width !== this.width || height !== this.height) {
+      this.width = width;
+      this.height = height;
+      this.pixels = new Uint8ClampedArray(width * height * 4);
+    }
     this.nodes = state.layers.map((n) => ({ ...n }));
     this.active = state.activeLayerId;
   }
@@ -239,7 +262,7 @@ export class SkinDocument {
     this.redoStack = [];
     this.stateId = command.afterId;
     // Bound retained buffers as well as pixel deltas, including deleted/merged HD layers.
-    const size = () => {
+    const overBudget = () => {
       const buffers = new Set<Uint8ClampedArray>();
       let bytes = 0;
       for (const c of this.undoStack) {
@@ -248,12 +271,12 @@ export class SkinDocument {
           for (const state of [c.before, c.after])
             for (const n of state.layers) if (n.pixels) buffers.add(n.pixels);
       }
-      return bytes + [...buffers].reduce((sum, b) => sum + b.byteLength, 0);
+      return (
+        bytes > 32 * 1024 * 1024 ||
+        bytes + [...buffers].reduce((sum, b) => sum + b.byteLength, 0) > HISTORY_BYTES
+      );
     };
-    while (
-      this.undoStack.length > MAX_HISTORY ||
-      (this.undoStack.length > 1 && size() > HISTORY_BYTES)
-    )
+    while (this.undoStack.length > MAX_HISTORY || (this.undoStack.length > 1 && overBudget()))
       this.undoStack.shift();
   }
   private changeStructure(label: string, update: () => void, interaction?: string) {
@@ -264,7 +287,9 @@ export class SkinDocument {
     if (
       JSON.stringify(before.layers.map(({ pixels: _pixels, ...n }) => n)) ===
         JSON.stringify(after.layers.map(({ pixels: _pixels, ...n }) => n)) &&
-      before.activeLayerId === after.activeLayerId
+      before.activeLayerId === after.activeLayerId &&
+      before.width === after.width &&
+      before.height === after.height
     )
       return;
     this.push(
@@ -295,6 +320,30 @@ export class SkinDocument {
       this.nodes.length < 128 &&
       (this.nodes.filter((n) => n.kind === "layer").length + 1) * this.pixels.length <= MAX_BYTES
     );
+  }
+  get canEditTexture() {
+    return this.width <= MAX_EDITABLE_SKIN_SIZE && this.height <= MAX_EDITABLE_SKIN_SIZE;
+  }
+  /** Resize each raster independently; protected metadata stays at physical pixels (0..3, 0..1). */
+  resize(size: number) {
+    if (!Number.isInteger(size) || size < 64 || size > MAX_SKIN_SIZE || size % 64 !== 0)
+      throw new SkinError("invalidDimensions", "Нужен размер от 64 до 4096, кратный 64");
+    if (size === this.width && size === this.height) return;
+    if (this.nodes.filter((n) => n.kind === "layer").length * size * size * 4 > MAX_BYTES)
+      throw new SkinError(
+        "resizeMemory",
+        "Недостаточно памяти для изменения размера слоёв (64 МиБ)",
+      );
+    this.changeStructure("history.resize", () => {
+      this.nodes = this.nodes.map((node) => ({
+        ...node,
+        ...(node.pixels
+          ? { pixels: resizeSkinPixels(node.pixels, this.width, this.height, size) }
+          : {}),
+      }));
+      this.width = this.height = size;
+      this.pixels = new Uint8ClampedArray(size * size * 4);
+    });
   }
   addLayer(kind: "layer" | "group" = "layer", parentId?: string | null, name?: string) {
     if (this.nodes.length >= 128 || (kind === "layer" && !this.canAddLayer))
@@ -493,6 +542,7 @@ export class SkinDocument {
       );
     for (let y = 0; y < 2; y++)
       this.pixels.set(this.metadata.subarray(y * 16, y * 16 + 16), y * this.width * 4);
+    this.textureRevision++;
   }
   readPixel(x: number, y: number): Pixel {
     const i = (y * this.width + x) * 4;
@@ -613,7 +663,7 @@ export class SkinDocument {
         afterId: this.nextId++,
       });
     }
-    if (layerId === null) this.compose();
+    if (layerId === null) this.compose({ minX: 0, minY: 0, maxX: 3, maxY: 1 });
     this.emit();
   }
   cancelStroke() {
@@ -758,8 +808,8 @@ export function validateSnapshot(s: ProjectSnapshot) {
     !Number.isInteger(s.height) ||
     s.width < 4 ||
     s.height < 2 ||
-    s.width > 2048 ||
-    s.height > 2048 ||
+    s.width > MAX_SKIN_SIZE ||
+    s.height > MAX_SKIN_SIZE ||
     !["modern", "legacy"].includes(s.sourceFormat)
   )
     fail();
@@ -772,9 +822,21 @@ export function validateSnapshot(s: ProjectSnapshot) {
   )
     fail();
   const buffers = new Set<Uint8ClampedArray>([s.pixels, s.metadata]);
-  const structure = (value: Structure) => {
+  const structure = (value: Structure, width: number, height: number) => {
     if (!value || !Array.isArray(value.layers) || !value.layers.length || value.layers.length > 128)
       return fail();
+    width = value.width ?? width;
+    height = value.height ?? height;
+    if (
+      !Number.isInteger(width) ||
+      !Number.isInteger(height) ||
+      width < 4 ||
+      height < 2 ||
+      width > MAX_SKIN_SIZE ||
+      height > MAX_SKIN_SIZE
+    )
+      fail();
+    const size = width * height * 4;
     const nodes = value.layers,
       ids = new Set(nodes.map((n) => n.id));
     if (
@@ -813,7 +875,7 @@ export function validateSnapshot(s: ProjectSnapshot) {
     }
     if (nodes.filter((n) => n.kind === "layer").length * size > MAX_BYTES) fail();
   };
-  structure({ layers: s.layers, activeLayerId: s.activeLayerId });
+  structure({ layers: s.layers, activeLayerId: s.activeLayerId }, s.width, s.height);
   validateWorkspace(s.workspace, fail);
   if (
     !s.workspace ||
@@ -837,8 +899,8 @@ export function validateSnapshot(s: ProjectSnapshot) {
     )
       fail();
     if (c.kind === "structure") {
-      structure(c.before);
-      structure(c.after);
+      // Validate dimensions and buffers while replaying each side of the history cursor.
+      if (!c.before || !c.after) fail();
     } else if (c.kind === "pixels") {
       if (!Array.isArray(c.changes) || (c.layerId !== null && typeof c.layerId !== "string"))
         fail();
@@ -848,7 +910,6 @@ export function validateSnapshot(s: ProjectSnapshot) {
           !Number.isInteger(change.index) ||
           change.index < 0 ||
           change.index % 4 ||
-          change.index + 4 > (c.layerId === null ? 32 : size) ||
           ![change.before, change.after].every(
             (p) =>
               Array.isArray(p) &&
@@ -859,25 +920,43 @@ export function validateSnapshot(s: ProjectSnapshot) {
           fail();
     } else fail();
   }
-  if (
-    changes * 40 > MAX_BYTES ||
-    [...buffers].reduce((sum, b) => sum + b.byteLength, 0) > 128 * 1024 * 1024
-  )
-    fail();
   // Verify that every pixel command targets a raster present at that point in history.
   const replay = (commands: Command[], direction: "before" | "after") => {
     let nodes = s.layers,
-      stateId = s.stateId;
+      stateId = s.stateId,
+      width = s.width,
+      height = s.height;
     for (const c of commands.slice().reverse()) {
       if (stateId !== (direction === "before" ? c.afterId : c.beforeId)) fail();
-      if (c.kind === "structure") nodes = c[direction].layers;
-      else if (c.layerId !== null && !nodes.some((n) => n.id === c.layerId && n.kind === "layer"))
-        fail();
+      if (c.kind === "structure") {
+        const current = c[direction === "before" ? "after" : "before"];
+        if ((current.width ?? width) !== width || (current.height ?? height) !== height) fail();
+        structure(current, width, height);
+        const next = c[direction];
+        structure(next, width, height);
+        width = next.width ?? width;
+        height = next.height ?? height;
+        nodes = next.layers;
+      } else {
+        if (c.layerId !== null && !nodes.some((n) => n.id === c.layerId && n.kind === "layer"))
+          fail();
+        if (
+          c.changes.some(
+            (change) => change.index + 4 > (c.layerId === null ? 32 : width * height * 4),
+          )
+        )
+          fail();
+      }
       stateId = direction === "before" ? c.beforeId : c.afterId;
     }
   };
   replay(s.undo, "before");
   replay(s.redo, "after");
+  if (
+    changes * 40 > MAX_BYTES ||
+    [...buffers].reduce((sum, b) => sum + b.byteLength, 0) > 288 * 1024 * 1024
+  )
+    fail();
 }
 export function uvToPixel(u: number, v: number, width: number, height: number) {
   return {

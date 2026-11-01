@@ -18,6 +18,7 @@ import { ImportDialog } from "./ImportDialog";
 import { skinName, useDocumentInfo } from "./DocumentSession";
 import { ModelViewport } from "./ModelViewport";
 import { SkinSettings } from "./SkinSettings";
+import { SkinParametersWorkspace } from "./SkinParametersWorkspace";
 import { Button, PanelHeading } from "./ui";
 import { StudioSkeleton } from "./StudioSkeleton";
 const EditorWorkspace = lazy(() => import("./EditorWorkspace"));
@@ -161,6 +162,7 @@ export default function Studio({ mode }: { mode: "viewer" | "editor" }) {
   useEffect(() => {
     if (!loading) setHasLoaded(true);
   }, [loading]);
+  const Workspace = document.canEditTexture ? EditorWorkspace : SkinParametersWorkspace;
   if (!hasLoaded && loading && !error && !preferences.defaultSkinError)
     return <StudioSkeleton mode={mode} />;
   return (
@@ -183,7 +185,7 @@ export default function Studio({ mode }: { mode: "viewer" | "editor" }) {
       ) : null}
       {mode === "editor" ? (
         <Suspense fallback={<StudioSkeleton mode="editor" bodyOnly />}>
-          <EditorWorkspace
+          <Workspace
             key={document.id}
             document={document}
             preview={document.getWorkspace("preview", pony.preview)}
