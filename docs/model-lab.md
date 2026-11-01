@@ -25,8 +25,8 @@ and [project format](project-format.md).
 
 Use **Skin resolution / Разрешение скина** in skin settings to resize each layer
 without smoothing. Resizing is undoable and keeps metadata at physical trigger
-coordinates. Above 1024×1024, the editor shows a 3D preview and skin settings;
-texture tools return after resizing to 1024 or less. Merge layers at a smaller
+coordinates. Above 512×512, the editor shows a 3D preview and skin settings;
+texture tools return after resizing to 512 or less. Merge layers at a smaller
 resolution first if increasing the size would exceed the 64 MiB raster budget.
 
 ```sh

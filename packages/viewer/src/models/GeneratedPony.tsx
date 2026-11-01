@@ -105,24 +105,30 @@ export function GeneratedPony({
   }, [textureWidth, textureHeight, shading]);
   useEffect(() => {
     let pending: number | null = null;
+    let textureRevision = -1;
     const update = () => {
       pending = null;
+      if (
+        surface.canvas.width !== skinDocument.width ||
+        surface.canvas.height !== skinDocument.height
+      ) {
+        surface.canvas.width = skinDocument.width;
+        surface.canvas.height = skinDocument.height;
+      }
       surface.canvas
         .getContext("2d")!
         .putImageData(
-          new ImageData(
-            new Uint8ClampedArray(skinDocument.pixels),
-            skinDocument.width,
-            skinDocument.height,
-          ),
+          new ImageData(skinDocument.pixels, skinDocument.width, skinDocument.height),
           0,
           0,
         );
       surface.texture.needsUpdate = true;
+      textureRevision = skinDocument.getTextureSnapshot();
       invalidate();
     };
     update();
     const unsubscribe = skinDocument.subscribe(() => {
+      if (textureRevision === skinDocument.getTextureSnapshot()) return;
       pending ??= requestAnimationFrame(update);
     });
     return () => {
@@ -134,6 +140,7 @@ export function GeneratedPony({
     () => () => {
       surface.texture.dispose();
       surface.material.dispose();
+      surface.canvas.width = surface.canvas.height = 0;
     },
     [surface],
   );

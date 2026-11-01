@@ -13,6 +13,8 @@ export type SavedDocuments = Record<
 >;
 let connection: Promise<IDBDatabase> | undefined;
 let ready: IDBDatabase | undefined;
+const bufferKeys = new WeakMap<Uint8ClampedArray, string>();
+const snapshots = new WeakMap<SkinDocument, { revision: number; snapshot: RecoverySnapshot }>();
 
 /** Chromium limits an individual IndexedDB value; a 4K snapshot exceeds that limit. */
 function splitBuffers(saved: SavedDocuments) {
@@ -33,14 +35,15 @@ function splitBuffers(saved: SavedDocuments) {
   }
   // Keep ordinary sessions in their original representation. Large sessions shard all
   // rasters, including small layers retained in history, rather than only the largest ones.
-  if ([...retained].reduce((bytes, buffer) => bytes + buffer.byteLength, 0) < 64 * 1024 * 1024)
+  if ([...retained].reduce((bytes, buffer) => bytes + buffer.byteLength, 0) < 4 * 1024 * 1024)
     return { session: saved, entries };
   const visit = (value: unknown): unknown => {
     if (value instanceof Uint8ClampedArray) {
       if (value.byteLength < 64 * 64 * 4) return value;
       let key = buffers.get(value);
       if (!key) {
-        key = `rgba/${buffers.size}`;
+        key = bufferKeys.get(value) ?? `rgba/${crypto.randomUUID()}`;
+        bufferKeys.set(value, key);
         buffers.set(value, key);
         entries.set(key, value);
       }
@@ -101,7 +104,14 @@ function database() {
   }));
 }
 export function recoverySnapshot(document: SkinDocument): RecoverySnapshot {
-  return document.snapshot();
+  const revision = document.getContentSnapshot();
+  let cached = snapshots.get(document);
+  if (!cached || cached.revision !== revision) {
+    cached = { revision, snapshot: document.snapshot() };
+    snapshots.set(document, cached);
+  }
+  // Recovery owns these immutable copies. Camera updates only copy the small workspace.
+  return { ...cached.snapshot, ...document.workspaceSnapshot() };
 }
 export async function readSavedDocuments(): Promise<SavedDocuments | undefined> {
   try {
@@ -149,8 +159,21 @@ export function saveDocuments(saved: SavedDocuments) {
     await new Promise<void>((resolve, reject) => {
       const tx = db.transaction("documents", "readwrite");
       const store = tx.objectStore("documents");
-      store.clear();
-      for (const [key, pixels] of entries) store.put(pixels, key);
+      for (const [key, pixels] of entries) {
+        // Check inside this transaction: overlapping saves and failed writes remain atomic.
+        // getKey avoids reading/copying a large buffer just to check that it exists.
+        const existing = store.getKey(key);
+        existing.onsuccess = () => {
+          if (existing.result === undefined) store.put(pixels, key);
+        };
+      }
+      const cursor = store.openKeyCursor();
+      cursor.onsuccess = () => {
+        const entry = cursor.result;
+        if (!entry) return;
+        if (entry.key !== "session" && !entries.has(String(entry.key))) store.delete(entry.key);
+        entry.continue();
+      };
       store.put(session, "session");
       tx.oncomplete = () => resolve();
       tx.onabort = () => reject(tx.error ?? new Error("Recovery write aborted"));

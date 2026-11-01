@@ -239,11 +239,21 @@ async function savedPixel(page: Page, x: number, y: number) {
           const db = request.result;
           const tx = db.transaction("documents", "readonly");
           const value = tx.objectStore("documents").get("session");
+          let pixels: Uint8ClampedArray | undefined;
+          value.onsuccess = () => {
+            const stored = value.result?.first?.document.pixels;
+            if (stored?.recoveryBuffer) {
+              const buffer = tx.objectStore("documents").get(stored.recoveryBuffer);
+              buffer.onsuccess = () => {
+                pixels = buffer.result;
+              };
+            } else pixels = stored;
+          };
           tx.oncomplete = () => {
             const doc = value.result?.first?.document;
             resolve(
-              doc
-                ? Array.from(doc.pixels.slice((y * doc.width + x) * 4, (y * doc.width + x) * 4 + 4))
+              doc && pixels
+                ? Array.from(pixels.slice((y * doc.width + x) * 4, (y * doc.width + x) * 4 + 4))
                 : null,
             );
             db.close();
@@ -276,14 +286,16 @@ test("HD recovery stores binary pixels beyond localStorage limits and restores a
   await page
     .getByLabel("Открыть PNG", { exact: true })
     .setInputFiles({ name: "hd.png", mimeType: "image/png", buffer: Buffer.from(png, "base64") });
-  await expect(page.getByTestId("skin-texture")).toHaveAttribute("width", "1024");
-  await page.getByRole("tab", { name: "Параметры скина", exact: true }).click();
+  await expect(page.getByTestId("document-status")).toContainText("1024 × 1024");
+  await expect(page.getByTestId("skin-texture")).toHaveCount(0);
   await page.getByLabel("Раса", { exact: true }).selectOption("KIRIN");
   await expect.poll(() => savedPixel(page, 12, 12)).toEqual([145, 76, 56, 255]);
   await expect(page.locator(".recovery-warning")).toHaveCount(0);
   await page.reload();
-  await expect(page.getByTestId("skin-texture")).toHaveAttribute("width", "1024");
+  await expect(page.getByTestId("document-status")).toContainText("1024 × 1024");
   await expect(page.getByLabel("Раса", { exact: true })).toHaveValue("KIRIN");
+  await page.getByLabel("Разрешение скина", { exact: true }).selectOption("512");
+  await expect(page.getByTestId("skin-texture")).toHaveAttribute("width", "512");
   await expect.poll(() => pixel(page, 12, 12)).toEqual([145, 76, 56, 255]);
 });
 

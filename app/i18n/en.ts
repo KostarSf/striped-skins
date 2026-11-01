@@ -4,9 +4,9 @@ export default {
   "history.resize": "Resize skin",
   "skin.resolution": "Skin resolution",
   "skin.resolutionHint":
-    "Nearest-neighbour scaling, up to 4096 × 4096. Texture editing is available up to 1024 × 1024.",
+    "Nearest-neighbour scaling, up to 4096 × 4096. Texture editing is available up to 512 × 512.",
   "skin.parametersOnly":
-    "This skin is larger than 1024 px. Only skin parameters can be changed. Reduce the resolution to 1024 or less to edit the texture.",
+    "This skin is larger than 512 px. Only skin parameters can be changed. Reduce the resolution to 512 or less to edit the texture.",
 
   "colors.add": "Add color to palette",
   "colors.blue": "Blue",

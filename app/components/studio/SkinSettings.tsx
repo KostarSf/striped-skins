@@ -7,6 +7,7 @@ import {
   type SkinMetadata,
   type RaceId,
   SKIN_RESOLUTIONS,
+  MAX_EDITABLE_SKIN_SIZE,
 } from "@striped-skins/api";
 import { bodySizes, type PreviewSettings } from "@striped-skins/models";
 import { useState, useSyncExternalStore } from "react";
@@ -63,7 +64,7 @@ export function SkinSettings({
               .sort((a, b) => a - b)
               .map((size) => (
                 <option key={size} value={size}>
-                  {size} × {size} px
+                  {size} × {size} px{size > MAX_EDITABLE_SKIN_SIZE ? " (no edit)" : ""}
                 </option>
               ))}
           </select>

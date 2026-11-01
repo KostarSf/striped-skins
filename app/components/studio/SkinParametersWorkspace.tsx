@@ -7,6 +7,7 @@ import { ModelViewport } from "./ModelViewport";
 import { SkinSettings } from "./SkinSettings";
 import { useDocumentSetting } from "./useDocumentSetting";
 import { Button, PanelHeading } from "./ui";
+import { inspectorTabs } from "./inspector-tabs";
 
 const empty = new Set<string>();
 
@@ -28,6 +29,7 @@ export function SkinParametersWorkspace({
   const [slim, setSlim] = useDocumentSetting(document, "slim", decodeSkinMetadata(document).slim);
   useEffect(() => {
     document.initializeWorkspace("preview", { ...preview });
+    inspectorTabs.set(document, "skin");
   }, [document, preview]);
   useEffect(() => {
     const key = (event: KeyboardEvent) => {

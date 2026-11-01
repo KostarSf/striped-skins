@@ -186,7 +186,7 @@ export default function Studio({ mode }: { mode: "viewer" | "editor" }) {
       {mode === "editor" ? (
         <Suspense fallback={<StudioSkeleton mode="editor" bodyOnly />}>
           <Workspace
-            key={`${document.id}/${document.width}/${document.height}`}
+            key={document.id}
             document={document}
             preview={document.getWorkspace("preview", pony.preview)}
             onPreview={(patch) => {

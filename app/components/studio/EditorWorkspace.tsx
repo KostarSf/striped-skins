@@ -32,13 +32,14 @@ import { LayerPanel, HistoryPanel } from "./LayerPanel";
 import { useDocumentSetting } from "./useDocumentSetting";
 import { usePhoneLayout } from "./usePhoneLayout";
 import { useViewerPreferencesContext } from "../striped-viewer.client";
-function paletteFor(skin: SkinDocument) {
+import { inspectorTabs } from "./inspector-tabs";
+function paletteFor(pixels: Uint8ClampedArray) {
   const counts = new Map<string, number>();
-  for (let i = 32; i < skin.pixels.length; i += 4) {
-    if (skin.pixels[i + 3] < 200) continue;
+  for (let i = 32; i < pixels.length; i += 4) {
+    if (pixels[i + 3] < 200) continue;
     const hex =
       "#" +
-      Array.from(skin.pixels.slice(i, i + 3))
+      Array.from(pixels.slice(i, i + 3))
         .map((v) => v.toString(16).padStart(2, "0"))
         .join("");
     counts.set(hex, (counts.get(hex) ?? 0) + 1);
@@ -69,7 +70,13 @@ export default function EditorWorkspace({
   const defaults = useViewerPreferencesContext((s) => s.userOptions);
   const [options] = useDocumentSetting(skin, "viewOptions", { ...defaults });
   const isPhone = usePhoneLayout();
-  const [inspectorTab, setInspectorTab] = useState<"texture" | "skin">("texture");
+  const [inspectorTab, setCurrentInspectorTab] = useState<"texture" | "skin">(
+    () => inspectorTabs.get(skin) ?? "texture",
+  );
+  const setInspectorTab = (tab: "texture" | "skin") => {
+    inspectorTabs.set(skin, tab);
+    setCurrentInspectorTab(tab);
+  };
   const [highlightedPart, setHighlightedPart] = useState<string | null>(null);
   const inspectorId = useId();
   const [mobileView, setMobileView] = useDocumentSetting<MobileEditorView>(
@@ -129,7 +136,8 @@ export default function EditorWorkspace({
     });
     setCustomColors((v) => [hex, ...v.filter((c) => c !== hex)].slice(0, 16));
   };
-  const palette = useMemo(() => paletteFor(skin), [skin]);
+  const pixels = skin.pixels;
+  const palette = useMemo(() => paletteFor(pixels), [pixels]);
   const pickerPalette = [...new Set([...customColors, ...palette])].filter(
     (c) => !removedColors.has(c),
   );
@@ -519,7 +527,7 @@ export default function EditorWorkspace({
             <div className="settings-group">
               <h3>{t("tools.surfacePainting")}</h3>
               <PaintPartSelect
-                key={`${skin.id}/${definition.id}/${availablePartIds}`}
+                key={`${skin.id}/${skin.width}/${skin.height}/${definition.id}/${availablePartIds}`}
                 document={skin}
                 parts={partOptions}
                 value={selected}

@@ -64,7 +64,7 @@ const copy = <T>(value: T): T => structuredClone(value);
 /** Raster layers are stored bottom to top; groups composite in isolation. No DOM dependency. */
 export class SkinDocument {
   readonly id = ++documentSequence;
-  pixels: Uint8ClampedArray;
+  pixels: Uint8ClampedArray<ArrayBuffer>;
   private metadata: Uint8ClampedArray;
   private nodes: LayerNode[];
   private active: string;
@@ -75,6 +75,8 @@ export class SkinDocument {
   private workspace: Record<string, WorkspaceValue> = {};
   private listeners = new Set<() => void>();
   private revision = 0;
+  private contentRevision = 0;
+  private textureRevision = 0;
   private rasterRevisions = new Map<string, number>();
   private historyInteraction: string | undefined;
   private stroke: { layerId: string | null; changes: Map<number, Change> } | null = null;
@@ -125,6 +127,12 @@ export class SkinDocument {
     };
   };
   getSnapshot = () => this.revision;
+  /** Camera and other workspace changes do not alter document content or texture bytes. */
+  getContentSnapshot = () => this.contentRevision;
+  getTextureSnapshot = () => this.textureRevision;
+  workspaceSnapshot() {
+    return { workspace: copy(this.workspace), workspaceRevision: this.workspaceRevision };
+  }
   /** Completed raster edits; live strokes still notify composite subscribers. */
   getLayerRevision(id: string) {
     return this.rasterRevisions.get(id) ?? 0;
@@ -132,7 +140,8 @@ export class SkinDocument {
   private rasterChanged(id: string) {
     this.rasterRevisions.set(id, this.getLayerRevision(id) + 1);
   }
-  private emit() {
+  private emit(contentChanged = true) {
+    if (contentChanged) this.contentRevision++;
     this.revision++;
     this.listeners.forEach((listener) => listener());
   }
@@ -207,7 +216,7 @@ export class SkinDocument {
     if (JSON.stringify(this.workspace[key]) === JSON.stringify(value)) return;
     this.workspace = { ...this.workspace, [key]: copy(value) };
     this.workspaceRevision++;
-    this.emit();
+    this.emit(false);
   }
   setActiveLayer(id: string) {
     this.endStroke();
@@ -533,6 +542,7 @@ export class SkinDocument {
       );
     for (let y = 0; y < 2; y++)
       this.pixels.set(this.metadata.subarray(y * 16, y * 16 + 16), y * this.width * 4);
+    this.textureRevision++;
   }
   readPixel(x: number, y: number): Pixel {
     const i = (y * this.width + x) * 4;

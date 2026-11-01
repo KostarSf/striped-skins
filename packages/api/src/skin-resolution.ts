@@ -1,5 +1,5 @@
 export const MAX_SKIN_SIZE = 4096;
-export const MAX_EDITABLE_SKIN_SIZE = 1024;
+export const MAX_EDITABLE_SKIN_SIZE = 512;
 export const SKIN_RESOLUTIONS = [64, 128, 256, 512, 1024, 2048, 4096] as const;
 
 /** Nearest-neighbour sampling preserves pixel art and invisible RGB channels. */

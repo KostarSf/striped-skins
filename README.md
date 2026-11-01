@@ -5,8 +5,8 @@ Mine Little Pony skin viewer and editor. View and compare skins, paint in 2D and
 React viewer and a standalone browser bundle.
 
 Skin settings include nearest-neighbour resizing from 64×64 up to 4096×4096.
-Skins above 1024×1024 open with a 3D preview and skin parameters only; reducing
-the resolution to 1024 or less enables texture editing. Resizing preserves
+Skins above 512×512 open with a 3D preview and skin parameters only; reducing
+the resolution to 512 or less enables texture editing. Resizing preserves
 layers and MLP metadata and supports undo/redo. The 64 MiB raster budget still
 applies: merge layers at a smaller resolution before increasing beyond it.
 

@@ -13,6 +13,30 @@ async function parameters(page: Page) {
   await page.getByRole("tab", { name: "Параметры скина", exact: true }).click();
 }
 
+test("resizing retains the skin tab and marks every resolution above 512 as no edit", async ({
+  page,
+}) => {
+  await page.goto("/editor");
+  await expect(page.getByTestId("skin-texture")).toBeVisible();
+  await parameters(page);
+  const resolution = page.getByLabel("Разрешение скина", { exact: true });
+  for (const size of [64, 128, 256, 512, 1024, 2048, 4096]) {
+    await expect(resolution.locator(`option[value="${size}"]`)).toHaveText(
+      `${size} × ${size} px${size > 512 ? " (no edit)" : ""}`,
+    );
+  }
+  for (const size of [128, 512, 256, 1024, 512, 64]) {
+    await resolution.selectOption(String(size));
+    if (size <= 512) {
+      await expect(page.getByRole("tab", { name: "Параметры скина", exact: true })).toHaveAttribute(
+        "aria-selected",
+        "true",
+      );
+      await expect(page.getByTestId("skin-texture")).toHaveAttribute("width", String(size));
+    } else await expect(page.getByTestId("skin-texture")).toHaveCount(0);
+  }
+});
+
 async function savedWidth(page: Page) {
   return page.evaluate(
     () =>
@@ -32,7 +56,7 @@ async function savedWidth(page: Page) {
   );
 }
 
-test("resize to 4K switches to parameters, preserves metadata, exports PNG, recovers and re-enables editing at 1024", async ({
+test("resize to 4K switches to parameters, preserves metadata, exports PNG, recovers and re-enables editing at 512", async ({
   page,
 }) => {
   test.setTimeout(120_000);
@@ -47,7 +71,7 @@ test("resize to 4K switches to parameters, preserves metadata, exports PNG, reco
   await expect(page.getByTestId("document-status")).toContainText("4096 × 4096");
   await expect(page.getByTestId("skin-texture")).toHaveCount(0);
   await expect(page.locator(".tool-rail, .brush-toolbar, .layers-panel")).toHaveCount(0);
-  await expect(page.getByText("Скин больше 1024 пикселей.", { exact: false })).toBeVisible();
+  await expect(page.getByText("Скин больше 512 пикселей.", { exact: false })).toBeVisible();
   await expect(page.getByLabel("Раса", { exact: true })).toHaveValue("KIRIN");
   await expect(page.getByLabel("Размер модели")).toHaveValue("FOAL");
   await page.getByLabel("Раса", { exact: true }).selectOption("ALICORN");
@@ -74,8 +98,8 @@ test("resize to 4K switches to parameters, preserves metadata, exports PNG, reco
   await page.getByRole("button", { name: "Заменить", exact: true }).click();
   await expect(page.getByTestId("document-status")).toContainText("4096 × 4096");
   await expect(page.getByLabel("Раса", { exact: true })).toHaveValue("ALICORN");
-  await page.getByLabel("Разрешение скина", { exact: true }).selectOption("1024");
-  await expect(page.getByTestId("skin-texture")).toHaveAttribute("width", "1024");
+  await page.getByLabel("Разрешение скина", { exact: true }).selectOption("512");
+  await expect(page.getByTestId("skin-texture")).toHaveAttribute("width", "512");
   await expect(page.locator(".tool-rail")).toBeVisible();
   await parameters(page);
   await expect(page.getByLabel("Раса", { exact: true })).toHaveValue("ALICORN");
@@ -117,6 +141,6 @@ test("phone imports an HD legacy skin into parameters and can reduce it to an ed
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   const size = page.getByLabel("Разрешение скина", { exact: true });
   await size.scrollIntoViewIfNeeded();
-  await size.selectOption("1024");
-  await expect(page.getByTestId("skin-texture")).toHaveAttribute("width", "1024");
+  await size.selectOption("512");
+  await expect(page.getByTestId("skin-texture")).toHaveAttribute("width", "512");
 });
