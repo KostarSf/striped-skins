@@ -49,7 +49,7 @@ test("HEX, RGB, spectrum and keyboard stay synchronized without painting; the or
   await expect(trigger(page)).toHaveAttribute("data-color", "#ff3456");
   await hex.press("Tab");
   await expect(hex).toHaveValue("#FF3456");
-  const hue = popup.getByRole("slider").last();
+  const hue = popup.locator(".react-colorful").getByRole("slider").last();
   await hue.focus();
   await hue.press("ArrowRight");
   await expect(trigger(page)).not.toHaveAttribute("data-color", "#ff3456");
@@ -66,6 +66,57 @@ test("HEX, RGB, spectrum and keyboard stay synchronized without painting; the or
   expect(await texture(page)).toBe(pixels);
   await expect(page.getByRole("button", { name: "Отменить штрих", exact: true })).toBeDisabled();
   await expect(page.locator('input[type="color"]')).toHaveCount(0);
+});
+
+test("spectrum color limit is shared and persisted while exact colors and skin pixels stay intact", async ({
+  page,
+}, testInfo) => {
+  await editor(page);
+  const pixels = await texture(page);
+  await trigger(page).click();
+  let popup = picker(page);
+  let limit = popup.getByRole("slider", { name: "Количество цветов", exact: true });
+  await expect(limit).toHaveValue("5");
+  await expect(limit).toHaveAttribute("aria-valuetext", "Без ограничений");
+  await popup.getByLabel("HEX выбранного цвета").fill("#123456");
+  await limit.fill("1");
+  await expect(limit).toHaveAttribute("aria-valuetext", "64");
+  await expect(trigger(page)).toHaveAttribute("data-color", "#123456");
+  await popup.locator(".react-colorful__saturation").click({ position: { x: 110, y: 55 } });
+  const color = (await trigger(page).getAttribute("data-color"))!;
+  expect(color).toMatch(/^#(?:00|55|aa|ff){3}$/);
+  await page.screenshot({ path: testInfo.outputPath("quantized-spectrum.png") });
+  await popup.getByLabel("HEX выбранного цвета").fill("#abcdef");
+  await expect(trigger(page)).toHaveAttribute("data-color", "#abcdef");
+  await popup.getByLabel("Красный", { exact: true }).fill("18");
+  await expect(trigger(page)).toHaveAttribute("data-color", "#12cdef");
+  const swatch = popup
+    .getByRole("group", { name: "Палитра скина", exact: true })
+    .getByRole("button")
+    .first();
+  const paletteColor = (await swatch.getAttribute("aria-label"))!.split(": ")[1];
+  await swatch.click();
+  await expect(trigger(page)).toHaveAttribute("data-color", paletteColor);
+  await popup.getByRole("button", { name: "Исходный", exact: true }).click();
+  await popup.getByRole("button", { name: "Закрыть выбор цвета" }).click();
+  await trigger(page, "Дополнительный цвет").click();
+  popup = picker(page, "Дополнительный цвет");
+  limit = popup.getByRole("slider", { name: "Количество цветов", exact: true });
+  await expect(limit).toHaveValue("1");
+  await popup.getByRole("button", { name: "Закрыть выбор цвета" }).click();
+  expect(await texture(page)).toBe(pixels);
+  await expect(page.getByRole("button", { name: "Отменить штрих", exact: true })).toBeDisabled();
+  await page.reload();
+  await expect(trigger(page)).toBeVisible();
+  await trigger(page).click();
+  limit = picker(page).getByRole("slider", { name: "Количество цветов", exact: true });
+  await expect(limit).toHaveValue("1");
+  await limit.fill("5");
+  await expect(picker(page).locator("filter")).toHaveCount(0);
+  await picker(page)
+    .locator(".react-colorful__saturation")
+    .click({ position: { x: 95, y: 65 } });
+  expect(await trigger(page).getAttribute("data-color")).not.toMatch(/^#(?:00|55|aa|ff){3}$/);
 });
 
 test("skin swatches and recent colors are shared between pickers and survive reload", async ({
@@ -262,6 +313,32 @@ test("picker fits narrow screens and Escape closes only the nested color popup",
 
 test.describe("touch and model lab", () => {
   test.use({ hasTouch: true });
+  test("phone spectrum uses the saved limit with touch and keyboard controls", async ({
+    page,
+  }, testInfo) => {
+    await page.setViewportSize({ width: 320, height: 844 });
+    await editor(page);
+    await trigger(page).tap();
+    const popup = picker(page);
+    const limit = popup.getByRole("slider", { name: "Количество цветов", exact: true });
+    await limit.fill("1");
+    await limit.focus();
+    await limit.press("Home");
+    await expect(limit).toHaveAttribute("aria-valuetext", "8");
+    const box = (await popup.locator(".react-colorful__saturation").boundingBox())!;
+    await page.touchscreen.tap(box.x + box.width * 0.7, box.y + box.height * 0.3);
+    expect(await trigger(page).getAttribute("data-color")).toMatch(/^#(?:00|ff){3}$/);
+    const range = (await limit.boundingBox())!;
+    expect(range.x).toBeGreaterThanOrEqual(8);
+    expect(range.x + range.width).toBeLessThanOrEqual(312);
+    await page.screenshot({ path: testInfo.outputPath("phone-quantized-spectrum.png") });
+    await page.reload();
+    await expect(trigger(page)).toBeVisible();
+    await trigger(page).tap();
+    await expect(
+      picker(page).getByRole("slider", { name: "Количество цветов", exact: true }),
+    ).toHaveValue("0");
+  });
   test("phone color fields show complete HEX and RGB values", async ({ page }, testInfo) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await editor(page);
