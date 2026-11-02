@@ -110,9 +110,6 @@
   margin: 0;
   accent-color: #f97316;
 }
-.color-picker-quantization small {
-  line-height: 1.4;
-}
 .color-picker-values {
   display: grid;
   grid-template-columns: 1.7fr repeat(3, 1fr);

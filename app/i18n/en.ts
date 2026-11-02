@@ -21,7 +21,6 @@ export default {
   "colors.green": "Green",
   "colors.label": "Colors",
   "colors.limit": "Number of colors",
-  "colors.limitHint": "Spectrum only. HEX, RGB and palette colors stay exact.",
   "colors.named": "Color {{color}}",
   "colors.original": "Original",
   "colors.palette": "Skin palette",

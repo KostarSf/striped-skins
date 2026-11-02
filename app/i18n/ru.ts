@@ -23,7 +23,6 @@ export default {
   "colors.green": "Зелёный",
   "colors.label": "Цвета",
   "colors.limit": "Количество цветов",
-  "colors.limitHint": "Только спектр. HEX, RGB и палитра сохраняют точные цвета.",
   "colors.named": "Цвет {{color}}",
   "colors.original": "Исходный",
   "colors.palette": "Палитра скина",

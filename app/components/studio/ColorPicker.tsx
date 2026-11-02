@@ -177,7 +177,6 @@ export function ColorPicker({
               <input
                 type="range"
                 aria-label={t("colors.limit")}
-                aria-describedby={`${id}-limit-hint`}
                 aria-valuetext={colorCount}
                 min={0}
                 max={colorLevels.length - 1}
@@ -193,7 +192,6 @@ export function ColorPicker({
                   }
                 }}
               />
-              <small id={`${id}-limit-hint`}>{t("colors.limitHint")}</small>
             </label>
             <div className="color-picker-values">
               <label htmlFor={`${id}-hex`}>
