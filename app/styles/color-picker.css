@@ -145,6 +145,14 @@
   outline: 2px solid #f97316;
   outline-offset: 2px;
 }
+@media (max-width: 600px), (pointer: coarse) {
+  .color-picker-values {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .color-picker-values label:first-child {
+    grid-column: 1 / -1;
+  }
+}
 @media (pointer: coarse) {
   .color-picker-close {
     width: 40px;

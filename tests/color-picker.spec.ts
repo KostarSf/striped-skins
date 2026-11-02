@@ -262,6 +262,47 @@ test("picker fits narrow screens and Escape closes only the nested color popup",
 
 test.describe("touch and model lab", () => {
   test.use({ hasTouch: true });
+  test("phone color fields show complete HEX and RGB values", async ({ page }, testInfo) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await editor(page);
+    await trigger(page).tap();
+    const popup = picker(page);
+    const hex = popup.getByLabel("HEX выбранного цвета");
+    for (const width of [320, 390, 430, 600]) {
+      await page.setViewportSize({ width, height: 844 });
+      await hex.fill("#dddddd");
+      await hex.blur();
+      await page.evaluate(() => document.fonts.ready);
+      for (const input of await popup.locator("input").all()) {
+        await expect(input).toBeVisible();
+        const metrics = await input.evaluate((element: HTMLInputElement) => {
+          const style = getComputedStyle(element);
+          const context = document.createElement("canvas").getContext("2d")!;
+          context.font = style.font;
+          const box = element.getBoundingClientRect();
+          const dialog = element.closest("dialog")!.getBoundingClientRect();
+          return {
+            textWidth: context.measureText(element.value).width,
+            availableWidth:
+              element.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight),
+            fontSize: parseFloat(style.fontSize),
+            insideDialog: box.left >= dialog.left && box.right <= dialog.right,
+          };
+        });
+        expect(metrics.availableWidth).toBeGreaterThanOrEqual(metrics.textWidth);
+        expect(metrics.fontSize).toBeGreaterThanOrEqual(16);
+        expect(metrics.insideDialog).toBe(true);
+      }
+      expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
+        width,
+      );
+      await page.screenshot({ path: testInfo.outputPath(`phone-picker-${width}.png`) });
+    }
+    await hex.fill("#ffffff");
+    await popup.getByLabel("Красный", { exact: true }).fill("128");
+    await expect(hex).toHaveValue("#80FFFF");
+    await expect(trigger(page)).toHaveAttribute("data-color", "#80ffff");
+  });
   test("spectrum accepts touch and model lab uses the same custom controls", async ({ page }) => {
     await page.goto("/model-lab");
     await expect(page.getByTestId("skin-texture")).toBeVisible();

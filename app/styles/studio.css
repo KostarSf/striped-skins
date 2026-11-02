@@ -1418,7 +1418,7 @@ button:disabled {
     width: 42px;
     height: 42px;
   }
-  .mobile-editor-footer .primary-color input {
+  .mobile-editor-footer .primary-color > .color-picker-trigger {
     width: 36px !important;
     height: 36px !important;
   }
