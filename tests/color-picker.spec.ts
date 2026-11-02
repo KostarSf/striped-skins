@@ -112,11 +112,101 @@ test("spectrum color limit is shared and persisted while exact colors and skin p
   limit = picker(page).getByRole("slider", { name: "Количество цветов", exact: true });
   await expect(limit).toHaveValue("1");
   await limit.fill("5");
-  await expect(picker(page).locator("filter")).toHaveCount(0);
+  await expect(picker(page).locator(".color-spectrum-stepped")).toHaveCount(0);
   await picker(page)
     .locator(".react-colorful__saturation")
     .click({ position: { x: 95, y: 65 } });
   expect(await trigger(page).getAttribute("data-color")).not.toMatch(/^#(?:00|55|aa|ff){3}$/);
+});
+
+test("rectangular spectrum cells match selection and preserve hue through gray and black", async ({
+  page,
+}, testInfo) => {
+  await editor(page);
+  await trigger(page).click();
+  const popup = picker(page);
+  const hex = popup.getByLabel("HEX выбранного цвета");
+  const limit = popup.getByRole("slider", { name: "Количество цветов", exact: true });
+  const field = popup.locator(".react-colorful__saturation");
+  const hue = popup.locator(".react-colorful__hue [role=slider]");
+  const area = popup.locator(".react-colorful__saturation [role=slider]");
+  await hex.fill("#00ff00");
+  await limit.fill("2");
+  const box = (await field.boundingBox())!;
+  const point = (x: number, y: number) => ({ x: box.width * x, y: (box.height - 12) * y });
+  // A single uninterrupted drag crosses both achromatic regions.
+  await field.click({ position: point(0.7, 0.3) });
+  await page.mouse.down();
+  for (const [x, y] of [
+    [0.02, 0.3],
+    [0.7, 0.98],
+    [0.7, 0.3],
+  ]) {
+    await page.mouse.move(box.x + point(x, y).x, box.y + point(x, y).y, { steps: 8 });
+    await expect(hue).toHaveAttribute("aria-valuenow", "120");
+    if (x === 0.02)
+      await expect(trigger(page)).toHaveAttribute("data-color", /^#([\da-f]{2})\1\1$/);
+    if (y === 0.98) await expect(trigger(page)).toHaveAttribute("data-color", "#000000");
+  }
+  await page.mouse.up();
+  await expect
+    .poll(async () => {
+      const selected = (await trigger(page).getAttribute("data-color"))!;
+      return (
+        parseInt(selected.slice(3, 5), 16) > parseInt(selected.slice(1, 3), 16) &&
+        selected.slice(1, 3) === selected.slice(5, 7)
+      );
+    })
+    .toBe(true);
+  // Exact gray input also retains the previous hue, while exact chromatic input replaces it.
+  await hex.fill("#808080");
+  await expect(hue).toHaveAttribute("aria-valuenow", "120");
+  await hex.fill("#0000ff");
+  await expect(hue).toHaveAttribute("aria-valuenow", "240");
+  for (const [setting, levels] of [
+    [0, 2],
+    [1, 4],
+    [2, 8],
+    [3, 16],
+    [4, 32],
+  ]) {
+    await limit.fill(String(setting));
+    const data = await field.evaluate((element) => {
+      const image = getComputedStyle(element).backgroundImage;
+      const svg = decodeURIComponent(image.slice(image.indexOf(",") + 1, image.lastIndexOf('"')));
+      return [
+        ...new DOMParser().parseFromString(svg, "image/svg+xml").querySelectorAll("rect"),
+      ].map((rect) => ({
+        x: Number(rect.getAttribute("x")),
+        y: Number(rect.getAttribute("y")),
+        color: rect.getAttribute("fill"),
+      }));
+    });
+    expect(data).toHaveLength(levels ** 2);
+    const cell = data[Math.floor(levels / 2) * levels + Math.floor(levels / 2)];
+    for (const offset of [0.2, 0.8]) {
+      await field.click({
+        position: point((cell.x + offset) / levels, (cell.y + offset) / levels),
+      });
+      await expect(trigger(page)).toHaveAttribute("data-color", cell.color!);
+    }
+    await expect(hue).toHaveAttribute("aria-valuenow", "240");
+  }
+  await limit.fill("2");
+  await hex.fill("#a100ff");
+  await field.click({ position: point(0.95, 0.02) });
+  await popup.screenshot({ path: testInfo.outputPath("rectangular-spectrum-512.png") });
+  await area.focus();
+  const marker = popup.locator(".react-colorful__saturation-pointer");
+  const before = (await marker.boundingBox())!;
+  await area.press("ArrowLeft");
+  expect((await marker.boundingBox())!.x).toBeLessThan(before.x - box.width / 9);
+  // Returning to unlimited mode must keep hue through black too.
+  await limit.fill("5");
+  await hex.fill("#00ff00");
+  await field.click({ position: point(0.8, 0.999) });
+  await field.click({ position: point(0.8, 0.3) });
+  await expect(hue).toHaveAttribute("aria-valuenow", "120");
 });
 
 test("skin swatches and recent colors are shared between pickers and survive reload", async ({
@@ -325,9 +415,22 @@ test.describe("touch and model lab", () => {
     await limit.focus();
     await limit.press("Home");
     await expect(limit).toHaveAttribute("aria-valuetext", "8");
+    await popup.getByLabel("HEX выбранного цвета").fill("#00ff00");
     const box = (await popup.locator(".react-colorful__saturation").boundingBox())!;
     await page.touchscreen.tap(box.x + box.width * 0.7, box.y + box.height * 0.3);
     expect(await trigger(page).getAttribute("data-color")).toMatch(/^#(?:00|ff){3}$/);
+    for (const [x, y] of [
+      [0.05, 0.3],
+      [0.7, 0.95],
+      [0.7, 0.3],
+    ]) {
+      await page.touchscreen.tap(box.x + box.width * x, box.y + (box.height - 12) * y);
+      await expect(popup.locator(".react-colorful__hue [role=slider]")).toHaveAttribute(
+        "aria-valuenow",
+        "120",
+      );
+    }
+    await expect(trigger(page)).toHaveAttribute("data-color", "#00ff00");
     const range = (await limit.boundingBox())!;
     expect(range.x).toBeGreaterThanOrEqual(8);
     expect(range.x + range.width).toBeLessThanOrEqual(312);

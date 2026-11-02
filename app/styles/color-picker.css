@@ -64,9 +64,36 @@
   width: 22px;
   height: 22px;
 }
-.color-picker-filter {
+.color-spectrum-stepped .react-colorful__saturation {
+  background-image: var(--spectrum-grid);
+  background-size: 100% 100%;
+}
+.color-spectrum-stepped .react-colorful__saturation::before {
+  content: "";
   position: absolute;
+  inset: 0;
+  border-radius: inherit;
   pointer-events: none;
+  background-image:
+    linear-gradient(to right, #ffffff0a 1px, transparent 1px),
+    linear-gradient(to bottom, #ffffff0a 1px, transparent 1px);
+  background-size: calc(100% / var(--spectrum-columns)) calc(100% / var(--spectrum-columns));
+}
+.color-spectrum-stepped .react-colorful__hue {
+  background-image: var(--spectrum-hues);
+}
+.color-spectrum-stepped .react-colorful__saturation-pointer {
+  left: var(--spectrum-x) !important;
+  top: var(--spectrum-y) !important;
+}
+.color-spectrum-stepped .react-colorful__hue-pointer {
+  left: var(--spectrum-h) !important;
+}
+.color-spectrum-stepped .react-colorful__saturation-pointer .react-colorful__pointer-fill {
+  background: var(--spectrum-color) !important;
+}
+.color-spectrum-stepped .react-colorful__hue-pointer .react-colorful__pointer-fill {
+  background: var(--spectrum-hue-color) !important;
 }
 .color-picker-quantization {
   display: grid;

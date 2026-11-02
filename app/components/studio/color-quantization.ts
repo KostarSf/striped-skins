@@ -5,7 +5,7 @@ export function normalizeColorLevels(value: unknown): number {
   return colorLevels.some((level) => level === value) ? Number(value) : 256;
 }
 
-/** Equal RGB bins, matching SVG's discrete component transfer in sRGB. */
+/** Equal RGB bins with both endpoints, shared by spectrum cells and selection. */
 export function quantizeColor(color: string, levels: number): string {
   if (normalizeColorLevels(levels) === 256) return color.toLowerCase();
   return (

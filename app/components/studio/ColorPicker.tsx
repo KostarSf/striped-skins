@@ -1,13 +1,8 @@
 import { useTranslation } from "react-i18next";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
-import { HexColorPicker } from "react-colorful";
+import { ColorSpectrum } from "./ColorSpectrum";
 import { HexInput } from "./ui";
-import {
-  colorLevels,
-  colorQuantizationKey,
-  quantizeColor,
-  readColorLevels,
-} from "./color-quantization";
+import { colorLevels, colorQuantizationKey, readColorLevels } from "./color-quantization";
 
 const historyKey = "striped-skins:recent-colors";
 const validHex = /^#[\da-f]{6}$/i;
@@ -52,10 +47,6 @@ export function ColorPicker({
   const [recent, setRecent] = useState<string[]>([]);
   const [levels, setLevels] = useState(256);
   const quantized = levels !== 256;
-  const filterId = `${id}-quantization`;
-  const transfer = quantized
-    ? Array.from({ length: levels }, (_, index) => index / (levels - 1)).join(" ")
-    : "";
   const colorCount = quantized ? String(levels ** 3) : t("colors.unlimited");
   const normalized = value.toLowerCase();
   const swatches = [...new Set(palette.map((c) => c.toLowerCase()))].filter((c) =>
@@ -172,22 +163,11 @@ export function ColorPicker({
                 ×
               </button>
             </div>
-            {quantized ? (
-              <svg width="0" height="0" aria-hidden="true" className="color-picker-filter">
-                <filter id={filterId} colorInterpolationFilters="sRGB">
-                  <feComponentTransfer>
-                    <feFuncR type="discrete" tableValues={transfer} />
-                    <feFuncG type="discrete" tableValues={transfer} />
-                    <feFuncB type="discrete" tableValues={transfer} />
-                  </feComponentTransfer>
-                </filter>
-              </svg>
-            ) : null}
-            <HexColorPicker
+            <ColorSpectrum
               color={value}
-              onChange={(color) => choose(quantizeColor(color, levels))}
-              aria-label={t("colors.spectrum")}
-              style={quantized ? { filter: `url(#${filterId})` } : undefined}
+              onChange={choose}
+              label={t("colors.spectrum")}
+              levels={levels}
             />
             <label className="color-picker-quantization">
               <span>
