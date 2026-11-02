@@ -12,6 +12,9 @@ test("color limits accept only supported settings and default to unlimited", () 
     assert.equal(normalizeColorLevels(value), 256);
   assert.equal(quantizeColor("#ABCDEF", 256), "#abcdef");
   assert.equal(quantizeColor("#123456", 3), "#123456");
+  assert.deepEqual(colorLevels, [2, 4, 8, 16, 256]);
+  assert.equal(normalizeColorLevels(32), 16);
+  assert.equal(quantizeColor("#123456", 32), quantizeColor("#123456", 16));
 });
 
 test("RGB bins include both endpoints and match discrete spectrum boundaries", () => {

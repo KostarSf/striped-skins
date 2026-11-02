@@ -26,7 +26,7 @@ test("HSV round-trips exact RGB colors, retaining undefined hue and saturation",
 });
 
 test("spectrum cells have constant colors throughout each rectangle and keep the RGB palette", () => {
-  for (const levels of [2, 4, 8, 16, 32]) {
+  for (const levels of [2, 4, 8, 16]) {
     const channels = new Set(
       Array.from({ length: levels }, (_, i) => Math.round((i * 255) / (levels - 1))),
     );
@@ -55,7 +55,7 @@ test("spectrum cells have constant colors throughout each rectangle and keep the
 });
 
 test("the rectangular spectrum can still select every color in each limited RGB palette", () => {
-  for (const levels of [2, 4, 8, 16, 32]) {
+  for (const levels of [2, 4, 8, 16]) {
     const colors = new Set();
     const hues = hueSteps(levels);
     for (let h = 0; h < hues; h++) {

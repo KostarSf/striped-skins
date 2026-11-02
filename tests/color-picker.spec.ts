@@ -76,7 +76,7 @@ test("spectrum color limit is shared and persisted while exact colors and skin p
   await trigger(page).click();
   let popup = picker(page);
   let limit = popup.getByRole("slider", { name: "Количество цветов", exact: true });
-  await expect(limit).toHaveValue("5");
+  await expect(limit).toHaveValue("4");
   await expect(limit).toHaveAttribute("aria-valuetext", "Без ограничений");
   await popup.getByLabel("HEX выбранного цвета").fill("#123456");
   await limit.fill("1");
@@ -111,7 +111,7 @@ test("spectrum color limit is shared and persisted while exact colors and skin p
   await trigger(page).click();
   limit = picker(page).getByRole("slider", { name: "Количество цветов", exact: true });
   await expect(limit).toHaveValue("1");
-  await limit.fill("5");
+  await limit.fill("4");
   await expect(picker(page).locator(".color-spectrum-stepped")).toHaveCount(0);
   await picker(page)
     .locator(".react-colorful__saturation")
@@ -168,15 +168,10 @@ test("rectangular spectrum cells match selection and preserve hue through gray a
     [1, 4],
     [2, 8],
     [3, 16],
-    [4, 32],
   ]) {
     await limit.fill(String(setting));
     const data = await field.evaluate((element) => {
-      const image = getComputedStyle(element).backgroundImage;
-      const svg = decodeURIComponent(image.slice(image.indexOf(",") + 1, image.lastIndexOf('"')));
-      return [
-        ...new DOMParser().parseFromString(svg, "image/svg+xml").querySelectorAll("rect"),
-      ].map((rect) => ({
+      return [...element.querySelectorAll(".color-spectrum-grid rect")].map((rect) => ({
         x: Number(rect.getAttribute("x")),
         y: Number(rect.getAttribute("y")),
         color: rect.getAttribute("fill"),
@@ -202,11 +197,85 @@ test("rectangular spectrum cells match selection and preserve hue through gray a
   await area.press("ArrowLeft");
   expect((await marker.boundingBox())!.x).toBeLessThan(before.x - box.width / 9);
   // Returning to unlimited mode must keep hue through black too.
-  await limit.fill("5");
+  await limit.fill("4");
   await hex.fill("#00ff00");
   await field.click({ position: point(0.8, 0.999) });
   await field.click({ position: point(0.8, 0.3) });
   await expect(hue).toHaveAttribute("aria-valuenow", "120");
+});
+
+test("removed color limit migrates to 4096 and the last step is unlimited", async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem("striped-skins:color-levels:v1", "32"));
+  await editor(page);
+  await trigger(page).click();
+  const popup = picker(page);
+  const limit = popup.getByRole("slider", { name: "Количество цветов", exact: true });
+  await expect(limit).toHaveValue("3");
+  await expect(limit).toHaveAttribute("aria-valuetext", "4096");
+  await limit.press("ArrowRight");
+  await expect(limit).toHaveValue("4");
+  await expect(limit).toHaveAttribute("max", "4");
+  await expect(limit).toHaveAttribute("aria-valuetext", "Без ограничений");
+  await expect(popup.locator(".color-spectrum-grid")).toHaveCount(0);
+  await limit.press("ArrowLeft");
+  await expect(limit).toHaveAttribute("aria-valuetext", "4096");
+  await expect(popup.locator(".color-spectrum-grid rect")).toHaveCount(256);
+});
+
+test("hue dragging keeps the spectrum painted without cell outlines or image reloads", async ({
+  page,
+}, testInfo) => {
+  await editor(page);
+  await trigger(page).click();
+  const popup = picker(page);
+  await popup.getByRole("slider", { name: "Количество цветов", exact: true }).fill("3");
+  const field = popup.locator(".react-colorful__saturation");
+  const svg = field.locator(".color-spectrum-grid");
+  await expect(svg.locator("rect")).toHaveCount(256);
+  const original = await svg.elementHandle();
+  expect(await field.evaluate((element) => getComputedStyle(element).backgroundImage)).toBe("none");
+  expect(await field.evaluate((element) => getComputedStyle(element, "::before").content)).toBe(
+    "none",
+  );
+  expect(
+    await svg
+      .locator("rect")
+      .first()
+      .evaluate((element) => getComputedStyle(element).stroke),
+  ).toBe("none");
+  const hue = (await popup.locator(".react-colorful__hue").boundingBox())!;
+  await page.mouse.move(hue.x + hue.width * 0.05, hue.y + hue.height / 2);
+  await page.mouse.down();
+  for (const fraction of [0.15, 0.35, 0.55, 0.75, 0.95, 0.45]) {
+    await page.mouse.move(hue.x + hue.width * fraction, hue.y + hue.height / 2, { steps: 4 });
+    expect(await svg.evaluate((element, previous) => element === previous, original)).toBe(true);
+    const png = await field.screenshot();
+    const pixels = await page.evaluate(
+      async (bytes) => {
+        const image = await createImageBitmap(
+          new Blob([new Uint8Array(bytes)], { type: "image/png" }),
+        );
+        const canvas = document.createElement("canvas");
+        canvas.width = image.width;
+        canvas.height = image.height;
+        const context = canvas.getContext("2d")!;
+        context.drawImage(image, 0, 0);
+        const top = [...context.getImageData(5, 5, 1, 1).data].slice(0, 3);
+        const bottom = [
+          ...context.getImageData(5, Math.floor(image.height * 0.85), 1, 1).data,
+        ].slice(0, 3);
+        image.close();
+        return { top, bottom };
+      },
+      [...png],
+    );
+    expect(pixels.top).toEqual([255, 255, 255]);
+    expect(pixels.bottom[0]).toBeLessThan(60);
+    expect(new Set(pixels.bottom).size).toBe(1);
+  }
+  await page.mouse.up();
+  await original?.dispose();
+  await popup.screenshot({ path: testInfo.outputPath("spectrum-4096-no-outlines.png") });
 });
 
 test("skin swatches and recent colors are shared between pickers and survive reload", async ({
