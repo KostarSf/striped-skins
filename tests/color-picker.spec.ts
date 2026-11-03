@@ -401,10 +401,19 @@ test("picker colors and palette stay consistent through project saving, recovery
   await expect(trigger(page, "Дополнительный цвет")).toHaveAttribute("data-color", "#abcdef");
   await page.getByRole("tab", { name: "Параметры скина", exact: true }).click();
   await expect(trigger(page, "Цвет свечения")).toHaveAttribute("data-color", "#0f1e2d");
+  // Make replacement deterministic even if recovery restores a clean save baseline.
+  await setColor(page, "Цвет кисти", "#010203");
+  await expect(trigger(page)).toHaveAttribute("data-color", "#010203");
+  await expect(page.locator(".document-dot")).toHaveAttribute("data-dirty", "true");
   await page.getByRole("button", { name: "Открыть", exact: true }).click();
   await page
     .getByLabel("Открыть PNG", { exact: true })
     .setInputFiles({ name: "colors.striped", mimeType: "application/zip", buffer: bytes });
+  await page.getByRole("button", { name: "Заменить", exact: true }).click();
+  await expect(
+    page.getByRole("dialog", { name: "Открыть скин или проект", exact: true }),
+  ).not.toBeVisible();
+  await expect(page.locator(".document-name strong")).toHaveText("colors.striped");
   await expect(trigger(page)).toHaveAttribute("data-color", "#654321");
   await page.setViewportSize({ width: 390, height: 844 });
   await page.getByRole("button", { name: "Параметры инструмента", exact: true }).click();
