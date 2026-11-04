@@ -49,7 +49,7 @@ test("HEX, RGB, spectrum and keyboard stay synchronized without painting; the or
   await expect(trigger(page)).toHaveAttribute("data-color", "#ff3456");
   await hex.press("Tab");
   await expect(hex).toHaveValue("#FF3456");
-  const hue = popup.getByRole("slider").last();
+  const hue = popup.locator(".react-colorful").getByRole("slider").last();
   await hue.focus();
   await hue.press("ArrowRight");
   await expect(trigger(page)).not.toHaveAttribute("data-color", "#ff3456");
@@ -66,6 +66,216 @@ test("HEX, RGB, spectrum and keyboard stay synchronized without painting; the or
   expect(await texture(page)).toBe(pixels);
   await expect(page.getByRole("button", { name: "Отменить штрих", exact: true })).toBeDisabled();
   await expect(page.locator('input[type="color"]')).toHaveCount(0);
+});
+
+test("spectrum color limit is shared and persisted while exact colors and skin pixels stay intact", async ({
+  page,
+}, testInfo) => {
+  await editor(page);
+  const pixels = await texture(page);
+  await trigger(page).click();
+  let popup = picker(page);
+  let limit = popup.getByRole("slider", { name: "Количество цветов", exact: true });
+  await expect(limit).toHaveValue("4");
+  await expect(limit).toHaveAttribute("aria-valuetext", "Без ограничений");
+  await popup.getByLabel("HEX выбранного цвета").fill("#123456");
+  await limit.fill("1");
+  await expect(limit).toHaveAttribute("aria-valuetext", "64");
+  await expect(trigger(page)).toHaveAttribute("data-color", "#123456");
+  await popup.locator(".react-colorful__saturation").click({ position: { x: 110, y: 55 } });
+  const color = (await trigger(page).getAttribute("data-color"))!;
+  expect(color).toMatch(/^#(?:00|55|aa|ff){3}$/);
+  await page.screenshot({ path: testInfo.outputPath("quantized-spectrum.png") });
+  await popup.getByLabel("HEX выбранного цвета").fill("#abcdef");
+  await expect(trigger(page)).toHaveAttribute("data-color", "#abcdef");
+  await popup.getByLabel("Красный", { exact: true }).fill("18");
+  await expect(trigger(page)).toHaveAttribute("data-color", "#12cdef");
+  const swatch = popup
+    .getByRole("group", { name: "Палитра скина", exact: true })
+    .getByRole("button")
+    .first();
+  const paletteColor = (await swatch.getAttribute("aria-label"))!.split(": ")[1];
+  await swatch.click();
+  await expect(trigger(page)).toHaveAttribute("data-color", paletteColor);
+  await popup.getByRole("button", { name: "Исходный", exact: true }).click();
+  await popup.getByRole("button", { name: "Закрыть выбор цвета" }).click();
+  await trigger(page, "Дополнительный цвет").click();
+  popup = picker(page, "Дополнительный цвет");
+  limit = popup.getByRole("slider", { name: "Количество цветов", exact: true });
+  await expect(limit).toHaveValue("1");
+  await popup.getByRole("button", { name: "Закрыть выбор цвета" }).click();
+  expect(await texture(page)).toBe(pixels);
+  await expect(page.getByRole("button", { name: "Отменить штрих", exact: true })).toBeDisabled();
+  await page.reload();
+  await expect(trigger(page)).toBeVisible();
+  await trigger(page).click();
+  limit = picker(page).getByRole("slider", { name: "Количество цветов", exact: true });
+  await expect(limit).toHaveValue("1");
+  await limit.fill("4");
+  await expect(picker(page).locator(".color-spectrum-stepped")).toHaveCount(0);
+  await picker(page)
+    .locator(".react-colorful__saturation")
+    .click({ position: { x: 95, y: 65 } });
+  expect(await trigger(page).getAttribute("data-color")).not.toMatch(/^#(?:00|55|aa|ff){3}$/);
+});
+
+test("rectangular spectrum cells match selection and preserve hue through gray and black", async ({
+  page,
+}, testInfo) => {
+  await editor(page);
+  await trigger(page).click();
+  const popup = picker(page);
+  const hex = popup.getByLabel("HEX выбранного цвета");
+  const limit = popup.getByRole("slider", { name: "Количество цветов", exact: true });
+  const field = popup.locator(".react-colorful__saturation");
+  const hue = popup.locator(".react-colorful__hue [role=slider]");
+  const area = popup.locator(".react-colorful__saturation [role=slider]");
+  await hex.fill("#00ff00");
+  await limit.fill("2");
+  const box = (await field.boundingBox())!;
+  const point = (x: number, y: number) => ({ x: box.width * x, y: (box.height - 12) * y });
+  // A single uninterrupted drag crosses both achromatic regions.
+  await field.click({ position: point(0.7, 0.3) });
+  await page.mouse.down();
+  for (const [x, y] of [
+    [0.02, 0.3],
+    [0.7, 0.98],
+    [0.7, 0.3],
+  ]) {
+    await page.mouse.move(box.x + point(x, y).x, box.y + point(x, y).y, { steps: 8 });
+    await expect(hue).toHaveAttribute("aria-valuenow", "120");
+    if (x === 0.02)
+      await expect(trigger(page)).toHaveAttribute("data-color", /^#([\da-f]{2})\1\1$/);
+    if (y === 0.98) await expect(trigger(page)).toHaveAttribute("data-color", "#000000");
+  }
+  await page.mouse.up();
+  await expect
+    .poll(async () => {
+      const selected = (await trigger(page).getAttribute("data-color"))!;
+      return (
+        parseInt(selected.slice(3, 5), 16) > parseInt(selected.slice(1, 3), 16) &&
+        selected.slice(1, 3) === selected.slice(5, 7)
+      );
+    })
+    .toBe(true);
+  // Exact gray input also retains the previous hue, while exact chromatic input replaces it.
+  await hex.fill("#808080");
+  await expect(hue).toHaveAttribute("aria-valuenow", "120");
+  await hex.fill("#0000ff");
+  await expect(hue).toHaveAttribute("aria-valuenow", "240");
+  for (const [setting, levels] of [
+    [0, 2],
+    [1, 4],
+    [2, 8],
+    [3, 16],
+  ]) {
+    await limit.fill(String(setting));
+    const data = await field.evaluate((element) => {
+      return [...element.querySelectorAll(".color-spectrum-grid rect")].map((rect) => ({
+        x: Number(rect.getAttribute("x")),
+        y: Number(rect.getAttribute("y")),
+        color: rect.getAttribute("fill"),
+      }));
+    });
+    expect(data).toHaveLength(levels ** 2);
+    const cell = data[Math.floor(levels / 2) * levels + Math.floor(levels / 2)];
+    for (const offset of [0.2, 0.8]) {
+      await field.click({
+        position: point((cell.x + offset) / levels, (cell.y + offset) / levels),
+      });
+      await expect(trigger(page)).toHaveAttribute("data-color", cell.color!);
+    }
+    await expect(hue).toHaveAttribute("aria-valuenow", "240");
+  }
+  await limit.fill("2");
+  await hex.fill("#a100ff");
+  await field.click({ position: point(0.95, 0.02) });
+  await popup.screenshot({ path: testInfo.outputPath("rectangular-spectrum-512.png") });
+  await area.focus();
+  const marker = popup.locator(".react-colorful__saturation-pointer");
+  const before = (await marker.boundingBox())!;
+  await area.press("ArrowLeft");
+  expect((await marker.boundingBox())!.x).toBeLessThan(before.x - box.width / 9);
+  // Returning to unlimited mode must keep hue through black too.
+  await limit.fill("4");
+  await hex.fill("#00ff00");
+  await field.click({ position: point(0.8, 0.999) });
+  await field.click({ position: point(0.8, 0.3) });
+  await expect(hue).toHaveAttribute("aria-valuenow", "120");
+});
+
+test("removed color limit migrates to 4096 and the last step is unlimited", async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem("striped-skins:color-levels:v1", "32"));
+  await editor(page);
+  await trigger(page).click();
+  const popup = picker(page);
+  const limit = popup.getByRole("slider", { name: "Количество цветов", exact: true });
+  await expect(limit).toHaveValue("3");
+  await expect(limit).toHaveAttribute("aria-valuetext", "4096");
+  await limit.press("ArrowRight");
+  await expect(limit).toHaveValue("4");
+  await expect(limit).toHaveAttribute("max", "4");
+  await expect(limit).toHaveAttribute("aria-valuetext", "Без ограничений");
+  await expect(popup.locator(".color-spectrum-grid")).toHaveCount(0);
+  await limit.press("ArrowLeft");
+  await expect(limit).toHaveAttribute("aria-valuetext", "4096");
+  await expect(popup.locator(".color-spectrum-grid rect")).toHaveCount(256);
+});
+
+test("hue dragging keeps the spectrum painted without cell outlines or image reloads", async ({
+  page,
+}, testInfo) => {
+  await editor(page);
+  await trigger(page).click();
+  const popup = picker(page);
+  await popup.getByRole("slider", { name: "Количество цветов", exact: true }).fill("3");
+  const field = popup.locator(".react-colorful__saturation");
+  const svg = field.locator(".color-spectrum-grid");
+  await expect(svg.locator("rect")).toHaveCount(256);
+  const original = await svg.elementHandle();
+  expect(await field.evaluate((element) => getComputedStyle(element).backgroundImage)).toBe("none");
+  expect(await field.evaluate((element) => getComputedStyle(element, "::before").content)).toBe(
+    "none",
+  );
+  expect(
+    await svg
+      .locator("rect")
+      .first()
+      .evaluate((element) => getComputedStyle(element).stroke),
+  ).toBe("none");
+  const hue = (await popup.locator(".react-colorful__hue").boundingBox())!;
+  await page.mouse.move(hue.x + hue.width * 0.05, hue.y + hue.height / 2);
+  await page.mouse.down();
+  for (const fraction of [0.15, 0.35, 0.55, 0.75, 0.95, 0.45]) {
+    await page.mouse.move(hue.x + hue.width * fraction, hue.y + hue.height / 2, { steps: 4 });
+    expect(await svg.evaluate((element, previous) => element === previous, original)).toBe(true);
+    const png = await field.screenshot();
+    const pixels = await page.evaluate(
+      async (bytes) => {
+        const image = await createImageBitmap(
+          new Blob([new Uint8Array(bytes)], { type: "image/png" }),
+        );
+        const canvas = document.createElement("canvas");
+        canvas.width = image.width;
+        canvas.height = image.height;
+        const context = canvas.getContext("2d")!;
+        context.drawImage(image, 0, 0);
+        const top = [...context.getImageData(5, 5, 1, 1).data].slice(0, 3);
+        const bottom = [
+          ...context.getImageData(5, Math.floor(image.height * 0.85), 1, 1).data,
+        ].slice(0, 3);
+        image.close();
+        return { top, bottom };
+      },
+      [...png],
+    );
+    expect(pixels.top).toEqual([255, 255, 255]);
+    expect(pixels.bottom[0]).toBeLessThan(60);
+    expect(new Set(pixels.bottom).size).toBe(1);
+  }
+  await page.mouse.up();
+  await original?.dispose();
+  await popup.screenshot({ path: testInfo.outputPath("spectrum-4096-no-outlines.png") });
 });
 
 test("skin swatches and recent colors are shared between pickers and survive reload", async ({
@@ -191,10 +401,19 @@ test("picker colors and palette stay consistent through project saving, recovery
   await expect(trigger(page, "Дополнительный цвет")).toHaveAttribute("data-color", "#abcdef");
   await page.getByRole("tab", { name: "Параметры скина", exact: true }).click();
   await expect(trigger(page, "Цвет свечения")).toHaveAttribute("data-color", "#0f1e2d");
+  // Make replacement deterministic even if recovery restores a clean save baseline.
+  await setColor(page, "Цвет кисти", "#010203");
+  await expect(trigger(page)).toHaveAttribute("data-color", "#010203");
+  await expect(page.locator(".document-dot")).toHaveAttribute("data-dirty", "true");
   await page.getByRole("button", { name: "Открыть", exact: true }).click();
   await page
     .getByLabel("Открыть PNG", { exact: true })
     .setInputFiles({ name: "colors.striped", mimeType: "application/zip", buffer: bytes });
+  await page.getByRole("button", { name: "Заменить", exact: true }).click();
+  await expect(
+    page.getByRole("dialog", { name: "Открыть скин или проект", exact: true }),
+  ).not.toBeVisible();
+  await expect(page.locator(".document-name strong")).toHaveText("colors.striped");
   await expect(trigger(page)).toHaveAttribute("data-color", "#654321");
   await page.setViewportSize({ width: 390, height: 844 });
   await page.getByRole("button", { name: "Параметры инструмента", exact: true }).click();
@@ -262,6 +481,86 @@ test("picker fits narrow screens and Escape closes only the nested color popup",
 
 test.describe("touch and model lab", () => {
   test.use({ hasTouch: true });
+  test("phone spectrum uses the saved limit with touch and keyboard controls", async ({
+    page,
+  }, testInfo) => {
+    await page.setViewportSize({ width: 320, height: 844 });
+    await editor(page);
+    await trigger(page).tap();
+    const popup = picker(page);
+    const limit = popup.getByRole("slider", { name: "Количество цветов", exact: true });
+    await limit.fill("1");
+    await limit.focus();
+    await limit.press("Home");
+    await expect(limit).toHaveAttribute("aria-valuetext", "8");
+    await popup.getByLabel("HEX выбранного цвета").fill("#00ff00");
+    const box = (await popup.locator(".react-colorful__saturation").boundingBox())!;
+    await page.touchscreen.tap(box.x + box.width * 0.7, box.y + box.height * 0.3);
+    expect(await trigger(page).getAttribute("data-color")).toMatch(/^#(?:00|ff){3}$/);
+    for (const [x, y] of [
+      [0.05, 0.3],
+      [0.7, 0.95],
+      [0.7, 0.3],
+    ]) {
+      await page.touchscreen.tap(box.x + box.width * x, box.y + (box.height - 12) * y);
+      await expect(popup.locator(".react-colorful__hue [role=slider]")).toHaveAttribute(
+        "aria-valuenow",
+        "120",
+      );
+    }
+    await expect(trigger(page)).toHaveAttribute("data-color", "#00ff00");
+    const range = (await limit.boundingBox())!;
+    expect(range.x).toBeGreaterThanOrEqual(8);
+    expect(range.x + range.width).toBeLessThanOrEqual(312);
+    await page.screenshot({ path: testInfo.outputPath("phone-quantized-spectrum.png") });
+    await page.reload();
+    await expect(trigger(page)).toBeVisible();
+    await trigger(page).tap();
+    await expect(
+      picker(page).getByRole("slider", { name: "Количество цветов", exact: true }),
+    ).toHaveValue("0");
+  });
+  test("phone color fields show complete HEX and RGB values", async ({ page }, testInfo) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await editor(page);
+    await trigger(page).tap();
+    const popup = picker(page);
+    const hex = popup.getByLabel("HEX выбранного цвета");
+    for (const width of [320, 390, 430, 600]) {
+      await page.setViewportSize({ width, height: 844 });
+      await hex.fill("#dddddd");
+      await hex.blur();
+      await page.evaluate(() => document.fonts.ready);
+      for (const input of await popup.locator("input").all()) {
+        await expect(input).toBeVisible();
+        const metrics = await input.evaluate((element: HTMLInputElement) => {
+          const style = getComputedStyle(element);
+          const context = document.createElement("canvas").getContext("2d")!;
+          context.font = style.font;
+          const box = element.getBoundingClientRect();
+          const dialog = element.closest("dialog")!.getBoundingClientRect();
+          return {
+            textWidth: context.measureText(element.value).width,
+            availableWidth:
+              element.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight),
+            fontSize: parseFloat(style.fontSize),
+            insideDialog: box.left >= dialog.left && box.right <= dialog.right,
+          };
+        });
+        expect(metrics.availableWidth).toBeGreaterThanOrEqual(metrics.textWidth);
+        expect(metrics.fontSize).toBeGreaterThanOrEqual(16);
+        expect(metrics.insideDialog).toBe(true);
+      }
+      expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
+        width,
+      );
+      await page.screenshot({ path: testInfo.outputPath(`phone-picker-${width}.png`) });
+    }
+    await hex.fill("#ffffff");
+    await popup.getByLabel("Красный", { exact: true }).fill("128");
+    await expect(hex).toHaveValue("#80FFFF");
+    await expect(trigger(page)).toHaveAttribute("data-color", "#80ffff");
+  });
   test("spectrum accepts touch and model lab uses the same custom controls", async ({ page }) => {
     await page.goto("/model-lab");
     await expect(page.getByTestId("skin-texture")).toBeVisible();

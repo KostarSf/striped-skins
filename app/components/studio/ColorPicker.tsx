@@ -1,7 +1,8 @@
 import { useTranslation } from "react-i18next";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
-import { HexColorPicker } from "react-colorful";
+import { ColorSpectrum } from "./ColorSpectrum";
 import { HexInput } from "./ui";
+import { colorLevels, colorQuantizationKey, readColorLevels } from "./color-quantization";
 
 const historyKey = "striped-skins:recent-colors";
 const validHex = /^#[\da-f]{6}$/i;
@@ -44,6 +45,9 @@ export function ColorPicker({
   const [open, setOpen] = useState(false);
   const [original, setOriginal] = useState(value);
   const [recent, setRecent] = useState<string[]>([]);
+  const [levels, setLevels] = useState(256);
+  const quantized = levels !== 256;
+  const colorCount = quantized ? String(levels ** 3) : t("colors.unlimited");
   const normalized = value.toLowerCase();
   const swatches = [...new Set(palette.map((c) => c.toLowerCase()))].filter((c) =>
     validHex.test(c),
@@ -108,6 +112,7 @@ export function ColorPicker({
           if (open) close();
           else {
             setOriginal(value);
+            setLevels(readColorLevels(levels));
             // Dismissing another picker saves its final color synchronously.
             popup.current?.showPopover();
             setRecent(readHistory());
@@ -158,7 +163,36 @@ export function ColorPicker({
                 ×
               </button>
             </div>
-            <HexColorPicker color={value} onChange={choose} aria-label={t("colors.spectrum")} />
+            <ColorSpectrum
+              color={value}
+              onChange={choose}
+              label={t("colors.spectrum")}
+              levels={levels}
+            />
+            <label className="color-picker-quantization">
+              <span>
+                {t("colors.limit")}
+                <output>{colorCount}</output>
+              </span>
+              <input
+                type="range"
+                aria-label={t("colors.limit")}
+                aria-valuetext={colorCount}
+                min={0}
+                max={colorLevels.length - 1}
+                step={1}
+                value={colorLevels.findIndex((level) => level === levels)}
+                onChange={(event) => {
+                  const next = colorLevels[Number(event.target.value)];
+                  setLevels(next);
+                  try {
+                    localStorage.setItem(colorQuantizationKey, String(next));
+                  } catch {
+                    // The setting still works for this picker without browser storage.
+                  }
+                }}
+              />
+            </label>
             <div className="color-picker-values">
               <label htmlFor={`${id}-hex`}>
                 HEX
