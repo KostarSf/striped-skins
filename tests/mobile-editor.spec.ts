@@ -87,6 +87,24 @@ test("phone tabs fill the workspace, keep the palette and footer reachable, and 
   await expect(page.locator(".texture-slot")).toBeVisible();
 });
 
+test("rectangle selection opens the touch texture view and can be cleared from its controls", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 320, height: 844 });
+  await chooseTool(page, "Прямоугольное выделение");
+  await expect(page.getByTestId("skin-texture")).toBeVisible();
+  const mode = page.getByRole("combobox", { name: "Режим выделения" });
+  await expect(mode).toHaveValue("replace");
+  await touchPixel(page);
+  const overlay = page.getByTestId("texture-selection");
+  await expect(overlay).toBeVisible();
+  await mode.selectOption("subtract");
+  await touchPixel(page);
+  await expect(page.getByText("Пустое выделение", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Снять выделение", exact: true }).tap();
+  await expect(overlay).toHaveCount(0);
+});
+
 test("touch tools update the floating icon, edit the same pixels across views, and undo through the settings popup", async ({
   page,
 }) => {

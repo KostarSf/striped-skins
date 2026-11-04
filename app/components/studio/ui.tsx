@@ -6,6 +6,7 @@ export type DesignIconName =
   | "brush"
   | "eraser"
   | "drop"
+  | "select"
   | "hand"
   | "plus"
   | "cube"

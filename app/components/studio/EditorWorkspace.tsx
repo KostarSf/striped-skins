@@ -33,6 +33,7 @@ import { useDocumentSetting } from "./useDocumentSetting";
 import { usePhoneLayout } from "./usePhoneLayout";
 import { useViewerPreferencesContext } from "../striped-viewer.client";
 import { inspectorTabs } from "./inspector-tabs";
+import type { SelectionMode } from "./rectangle-selection";
 function paletteFor(pixels: Uint8ClampedArray) {
   const counts = new Map<string, number>();
   for (let i = 32; i < pixels.length; i += 4) {
@@ -70,6 +71,14 @@ export default function EditorWorkspace({
   const defaults = useViewerPreferencesContext((s) => s.userOptions);
   const [options] = useDocumentSetting(skin, "viewOptions", { ...defaults });
   const isPhone = usePhoneLayout();
+  const [selectionSize, setSelectionSize] = useState(`${skin.width}x${skin.height}`);
+  const [selection, setSelection] = useState<Uint8Array | null>(null);
+  const [selectionMode, setSelectionMode] = useState<SelectionMode>("replace");
+  const textureSize = `${skin.width}x${skin.height}`;
+  if (selectionSize !== textureSize) {
+    setSelectionSize(textureSize);
+    setSelection(null);
+  }
   const [inspectorTab, setCurrentInspectorTab] = useState<"texture" | "skin">(
     () => inspectorTabs.get(skin) ?? "texture",
   );
@@ -191,15 +200,29 @@ export default function EditorWorkspace({
   const selectTool = useCallback(
     (value: PaintTool) => {
       setTool(value);
-      setPainting(value !== "hand");
+      setPainting(value !== "hand" && value !== "select");
+      if (value === "select") {
+        if (isPhone) setMobileView("2d");
+        else setLayout((current) => (current === "3d" ? "split" : current));
+      }
     },
-    [setTool, setPainting],
+    [setTool, setPainting, isPhone, setMobileView, setLayout],
   );
   useEffect(() => {
     const key = (e: KeyboardEvent) => {
       if ((e.target as HTMLElement).closest("input,select,textarea,dialog,.color-picker-trigger"))
         return;
       const k = e.key.toLowerCase();
+      if (
+        (e.ctrlKey || e.metaKey) &&
+        !e.shiftKey &&
+        !e.altKey &&
+        (k === "d" || e.code === "KeyD")
+      ) {
+        e.preventDefault();
+        setSelection(null);
+        return;
+      }
       if ((e.ctrlKey || e.metaKey) && (k === "z" || e.code === "KeyZ")) {
         e.preventDefault();
         if (e.shiftKey) skin.redo();
@@ -208,7 +231,8 @@ export default function EditorWorkspace({
       }
       if (e.ctrlKey || e.metaKey || e.altKey) return;
       const tools: Record<string, PaintTool> = { b: "brush", e: "eraser", i: "drop", h: "hand" };
-      if (tools[k]) selectTool(tools[k]);
+      if (k === "m" || e.code === "KeyM") selectTool("select");
+      else if (tools[k]) selectTool(tools[k]);
       if ((k === "x" || e.code === "KeyX") && !e.repeat) {
         e.preventDefault();
         swapColors();
@@ -288,7 +312,7 @@ export default function EditorWorkspace({
       {!isPhone ? (
         <div className="brush-toolbar" role="toolbar" aria-label={t("tools.settings")}>
           <div className="current-tool">
-            <DesignIcon name={tool === "drop" ? "drop" : tool} />
+            <DesignIcon name={tool} />
             <strong>
               {
                 {
@@ -296,6 +320,7 @@ export default function EditorWorkspace({
                   eraser: t("tools.eraser"),
                   drop: t("tools.eyedropper"),
                   hand: t("tools.pan"),
+                  select: t("tools.rectangleSelect"),
                 }[tool]
               }
             </strong>
@@ -345,13 +370,13 @@ export default function EditorWorkspace({
           </div>
           <Button
             className="paint-mode"
-            aria-pressed={painting}
+            aria-pressed={painting && tool !== "select"}
             onClick={() => {
-              setPainting((v) => !v);
-              if (tool === "hand") setTool("brush");
+              if (tool === "hand" || tool === "select") selectTool("brush");
+              else setPainting((v) => !v);
             }}
           >
-            {painting ? t("tools.brushMode") : t("tools.orbitMode")}
+            {painting && tool !== "select" ? t("tools.brushMode") : t("tools.orbitMode")}
           </Button>
           {layout === "2d" && !showMini ? (
             <Button onClick={() => setShowMini(true)}>{t("viewport.preview3d")}</Button>
@@ -382,6 +407,7 @@ export default function EditorWorkspace({
                 ["brush", t("tools.brushShortcut")],
                 ["eraser", t("tools.eraserShortcut")],
                 ["drop", t("tools.eyedropperShortcut")],
+                ["select", t("tools.rectangleSelectShortcut")],
               ] as const
             ).map(([id, label]) => (
               <IconButton
@@ -420,7 +446,8 @@ export default function EditorWorkspace({
                 overrides={appearance}
                 preview={preview}
                 hidden={hidden}
-                painting={(isPhone || painting) && tool !== "hand"}
+                painting={(isPhone || painting) && tool !== "hand" && tool !== "select"}
+                paintMask={selection ?? undefined}
                 color={color}
                 brushSize={brushSize}
                 activePart={selected}
@@ -458,6 +485,10 @@ export default function EditorWorkspace({
                 document={skin}
                 color={color}
                 tool={tool}
+                selection={selection}
+                selectionMode={selectionMode}
+                onSelectionMode={setSelectionMode}
+                onSelection={setSelection}
                 brushSize={brushSize}
                 onSample={sample}
                 onPaint={onPaint}

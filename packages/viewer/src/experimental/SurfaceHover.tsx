@@ -130,6 +130,7 @@ export function TextureBrushPreview({
   activePart,
   contextKey,
   clip,
+  paintMask,
 }: {
   pixel: { x: number; y: number };
   document: SkinDocument;
@@ -138,6 +139,7 @@ export function TextureBrushPreview({
   activePart: string | null;
   contextKey: string;
   clip?: PaintBounds;
+  paintMask?: Uint8Array;
 }) {
   const scene = useThree((s) => s.scene);
   const [hits, setHits] = useState<SurfaceHit[]>([]);
@@ -155,6 +157,7 @@ export function TextureBrushPreview({
       color={color}
       size={size}
       document={document}
+      paintMask={paintMask}
     />
   ));
 }
@@ -210,19 +213,50 @@ export function BrushPreview({
   color,
   size,
   document,
+  paintMask,
 }: {
   hit: SurfaceHit;
   color: Pixel;
   size: number;
   document: SkinDocument;
+  paintMask?: Uint8Array;
 }) {
+  const { width, height } = document;
   const geometry = useMemo(() => {
     const geometry = new BufferGeometry();
-    const patch = brushPatch(hit, document.width, document.height, size);
-    geometry.setAttribute("position", new Float32BufferAttribute(patch, 3));
-    geometry.setIndex(patch.length ? [0, 1, 2, 0, 2, 3] : []);
+    const positions: number[] = [];
+    const indices: number[] = [];
+    const append = (patch: number[]) => {
+      if (!patch.length) return;
+      const i = positions.length / 3;
+      positions.push(...patch);
+      indices.push(i, i + 1, i + 2, i, i + 2, i + 3);
+    };
+    if (!paintMask) append(brushPatch(hit, width, height, size));
+    else {
+      const offset = Math.floor((size - 1) / 2);
+      const left = Math.max(hit.x - offset, hit.bounds.minX, 0);
+      const right = Math.min(hit.x - offset + size - 1, hit.bounds.maxX, width - 1);
+      const top = Math.max(hit.y - offset, hit.bounds.minY, 0);
+      const bottom = Math.min(hit.y - offset + size - 1, hit.bounds.maxY, height - 1);
+      for (let y = top; y <= bottom; y++) {
+        let x = left;
+        while (x <= right) {
+          if (!paintMask[y * width + x]) {
+            x++;
+            continue;
+          }
+          const minX = x++;
+          while (x <= right && paintMask[y * width + x]) x++;
+          const bounds = { minX, maxX: x - 1, minY: y, maxY: y };
+          append(brushPatch({ ...hit, bounds }, width, height, size));
+        }
+      }
+    }
+    geometry.setAttribute("position", new Float32BufferAttribute(positions, 3));
+    geometry.setIndex(indices);
     return geometry;
-  }, [hit, document, size]);
+  }, [hit, width, height, size, paintMask]);
   useEffect(() => () => geometry.dispose(), [geometry]);
   return createPortal(
     <mesh geometry={geometry} raycast={() => {}} renderOrder={1000}>

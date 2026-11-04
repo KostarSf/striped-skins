@@ -23,6 +23,7 @@ function getToolNames(t: TFunction) {
     brush: t("tools.brush"),
     eraser: t("tools.eraser"),
     drop: t("tools.eyedropper"),
+    select: t("tools.rectangleSelect"),
   };
 }
 
@@ -116,7 +117,7 @@ export function MobileToolMenu({
           <DesignIcon name={tool} />
         </summary>
         <div className="studio-panel" role="toolbar" aria-label={t("tools.label")}>
-          {(["hand", "brush", "eraser", "drop"] as const).map((id) => (
+          {(["hand", "brush", "eraser", "drop", "select"] as const).map((id) => (
             <Button
               key={id}
               aria-pressed={tool === id}
@@ -259,7 +260,13 @@ export function MobileEditorFooter({
             />
           </Field>
         ) : (
-          <p className="muted">{tool === "hand" ? t("mobile.panHint") : t("mobile.sampleHint")}</p>
+          <p className="muted">
+            {tool === "hand"
+              ? t("mobile.panHint")
+              : tool === "select"
+                ? t("selection.dragHint")
+                : t("mobile.sampleHint")}
+          </p>
         )}
         {tool === "brush" ? (
           <>

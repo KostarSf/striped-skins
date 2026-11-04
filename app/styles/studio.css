@@ -229,6 +229,20 @@ button:disabled {
   overflow: hidden;
   height: 100%;
 }
+.texture-heading-controls {
+  min-width: 0;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+.viewport-heading .selection-mode {
+  min-width: 0;
+  max-width: min(162px, 100%);
+}
+.selection-status {
+  margin-right: auto;
+  color: var(--studio-muted);
+  font-size: 11px;
+}
 .model-viewport > div:first-child {
   position: absolute !important;
   inset: 0;
@@ -1086,12 +1100,19 @@ button:disabled {
   image-rendering: pixelated;
 }
 .texture-guides,
-.pixel-grid {
+.pixel-grid,
+.texture-selection {
   position: absolute;
   inset: 0;
   pointer-events: none;
   width: 100%;
   height: 100%;
+}
+.texture-selection-draft {
+  position: absolute;
+  pointer-events: none;
+  border: 1px dashed white;
+  outline: 1px solid #101014;
 }
 .brush-cursor {
   position: absolute;

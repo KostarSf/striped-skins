@@ -532,6 +532,108 @@ test("3D brush in the redesigned workspace edits the shared texture and remains 
     .toEqual(before.slice((y * 64 + x) * 4, (y * 64 + x) * 4 + 4));
 });
 
+test("rectangle selection combines regions and constrains the 2D brush and eraser", async ({
+  page,
+}) => {
+  await enter(page);
+  await setColor(page, "Цвет кисти", "#ff00ff");
+  await page.getByRole("button", { name: "Цвет кисти", exact: true }).blur();
+  const box = (await tex(page).boundingBox())!;
+  const point = (x: number, y: number) => ({
+    x: box.x + ((x + 0.5) * box.width) / 64,
+    y: box.y + ((y + 0.5) * box.height) / 64,
+  });
+  const drag = async (from: number, to: number) => {
+    const start = point(from, 12);
+    const end = point(to, 12);
+    await page.mouse.move(start.x, start.y);
+    await page.mouse.down();
+    await page.mouse.move(end.x, end.y, { steps: 4 });
+    await page.mouse.up();
+  };
+  const selected = () =>
+    page.getByTestId("texture-selection").evaluate((canvas) => {
+      const data = (canvas as HTMLCanvasElement).getContext("2d")!.getImageData(0, 12, 64, 1).data;
+      return Array.from({ length: 64 }, (_, x) => x).filter((x) => data[x * 4 + 3] > 0);
+    });
+
+  await page.keyboard.press("m");
+  const mode = page.getByRole("combobox", { name: "Режим выделения" });
+  await expect(mode).toHaveValue("replace");
+  await drag(14, 12);
+  await expect.poll(selected).toEqual([12, 13, 14]);
+  await page.keyboard.down("Shift");
+  await drag(14, 16);
+  await page.keyboard.up("Shift");
+  await expect.poll(selected).toEqual([12, 13, 14, 15, 16]);
+  await page.keyboard.down("Alt");
+  await drag(13, 14);
+  await page.keyboard.up("Alt");
+  await expect.poll(selected).toEqual([12, 15, 16]);
+  await page.keyboard.down("Shift");
+  await page.keyboard.down("Alt");
+  await drag(15, 17);
+  await page.keyboard.up("Alt");
+  await page.keyboard.up("Shift");
+  await expect.poll(selected).toEqual([12, 17]);
+  await mode.selectOption("add");
+  await drag(19, 19);
+  await expect.poll(selected).toEqual([12, 17, 19]);
+  const cancelled = point(20, 12);
+  await page.mouse.move(cancelled.x, cancelled.y);
+  await page.mouse.down();
+  await page.keyboard.press("Escape");
+  await page.mouse.up();
+  expect(await selected()).toEqual([12, 17, 19]);
+
+  const outside = await pixel(page, 16, 12);
+  await page.keyboard.press("b");
+  await drag(12, 19);
+  await expect.poll(() => pixel(page, 17, 12)).toEqual([255, 0, 255, 255]);
+  expect(await pixel(page, 16, 12)).toEqual(outside);
+  await page.keyboard.press("e");
+  await drag(12, 19);
+  await expect.poll(() => pixel(page, 17, 12)).toEqual([0, 0, 0, 0]);
+  expect(await pixel(page, 16, 12)).toEqual(outside);
+  await page.keyboard.press("Control+d");
+  await expect(page.getByTestId("texture-selection")).toHaveCount(0);
+});
+
+test("rectangle selection constrains painting on a 3D UV face", async ({ page }) => {
+  await enter(page);
+  await setColor(page, "Цвет кисти", "#ff00ff");
+  await page.getByRole("button", { name: "Цвет кисти", exact: true }).blur();
+  const point = { x: 0, y: 0 };
+  await expect
+    .poll(async () => {
+      const hit = await opaquePoint(page);
+      if (hit) Object.assign(point, hit);
+      return !!hit;
+    })
+    .toBe(true);
+  await page.mouse.move(point.x, point.y);
+  const uv = page.getByTestId("uv-hover");
+  await expect(uv).toBeVisible();
+  const [x, y] = (await uv.getAttribute("data-pixel"))!.split(",").map(Number);
+  const before = await pixel(page, x, y);
+  const selectPixel = async (px: number, py: number) => {
+    await page.keyboard.press("m");
+    await expect(page.getByRole("combobox", { name: "Режим выделения" })).toBeVisible();
+    await paint(page, px, py);
+    await expect(page.getByTestId("texture-selection")).toBeVisible();
+    await page.keyboard.press("b");
+  };
+  await selectPixel((x + 32) % 64, y);
+  await page.mouse.click(point.x, point.y);
+  expect(await pixel(page, x, y)).toEqual(before);
+  await expect(page.getByRole("button", { name: "Отменить штрих", exact: true })).toBeDisabled();
+  await selectPixel(x, y);
+  await page.mouse.click(point.x, point.y);
+  await expect.poll(() => pixel(page, x, y)).toEqual([255, 0, 255, 255]);
+  await page.keyboard.press("Control+z");
+  await expect.poll(() => pixel(page, x, y)).toEqual(before);
+});
+
 test("wheel zoom keeps the pixel under the cursor fixed after panning and at zoom limits", async ({
   page,
 }) => {
