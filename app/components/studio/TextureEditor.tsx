@@ -7,8 +7,19 @@ import { Button, DesignIcon, IconButton } from "./ui";
 import { useDocumentSetting } from "./useDocumentSetting";
 import { useSkinDrop } from "./useSkinDrop";
 import { uvPaintMask } from "./paint-mask";
-export type PaintTool = "brush" | "eraser" | "drop" | "hand";
-type TouchPoint = { x: number; y: number };
+import { XMarkIcon } from "@heroicons/react/24/outline";
+import {
+  applyRectangleSelection,
+  selectionModeFor,
+  selectionOutline,
+  selectionCursor,
+  selectionModes,
+  selectionRect,
+  type SelectionMode,
+  type SelectionRect,
+  type TexturePoint,
+} from "./rectangle-selection";
+export type PaintTool = "brush" | "eraser" | "drop" | "hand" | "select";
 function hoverBrushRect(hover: SurfaceHover, width: number, height: number, size: number) {
   const xs = hover.uv.filter((_, i) => i % 2 === 0).map((u) => u * width);
   const ys = hover.uv.filter((_, i) => i % 2 === 1).map((v) => (1 - v) * height);
@@ -26,6 +37,10 @@ export function TextureEditor({
   color,
   brushSize,
   tool,
+  selection,
+  selectionMode,
+  onSelectionMode,
+  onSelection,
   onSample,
   onPaint,
   guides,
@@ -41,6 +56,10 @@ export function TextureEditor({
   color: Pixel;
   brushSize: number;
   tool: PaintTool;
+  selection: Uint8Array | null;
+  selectionMode: SelectionMode;
+  onSelectionMode?: (mode: SelectionMode) => void;
+  onSelection: (selection: Uint8Array | null) => void;
   onSample: (pixel: Pixel) => void;
   onPaint: (p: { x: number; y: number; part: string }) => void;
   guides: ModelQuad[];
@@ -56,24 +75,36 @@ export function TextureEditor({
   const drop = useSkinDrop(onFileDrop);
   const canvas = useRef<HTMLCanvasElement>(null),
     area = useRef<HTMLDivElement>(null);
-  const mode = useRef<"draw" | "pan" | "pinch" | "sample" | null>(null),
+  const [modifiers, setModifiers] = useState({ shiftKey: false, altKey: false });
+  const effectiveSelectionMode = selectionModeFor(modifiers, selectionMode);
+  const selectionDrag = useRef<{ start: TexturePoint } | null>(null);
+  const [draft, setDraft] = useState<SelectionRect | null>(null);
+  const mode = useRef<"draw" | "pan" | "pinch" | "sample" | "select" | "clear" | null>(null),
     origin = useRef({ x: 0, y: 0, px: 0, py: 0 });
   const pointer = useRef<number | null>(null);
-  const touches = useRef(new Map<number, TouchPoint>());
-  const pinch = useRef<{ distance: number; center: TouchPoint } | null>(null);
+  const touches = useRef(new Map<number, TexturePoint>());
+  const pinch = useRef<{ distance: number; center: TexturePoint } | null>(null);
   const [size, setSize] = useState({ width: 500, height: 600 }),
     [view, setView] = useDocumentSetting(skin, "textureView", { zoom: 1, pan: { x: 0, y: 0 } }),
     [grid, setGrid] = useDocumentSetting<boolean>(skin, "pixelGrid", true),
     [space, setSpace] = useState(false),
     [cursor, storeCursor] = useState<{ x: number; y: number } | null>(null);
-  const paintMask = useMemo(
+  const partMask = useMemo(
     () => (paintQuads ? uvPaintMask(paintQuads, skin.width, skin.height) : undefined),
     [paintQuads, skin.width, skin.height],
   );
-  const paintBlocked = tool !== "drop" && !!skin.paintBlockedReason;
+  const paintMask = useMemo(
+    () =>
+      selection && partMask
+        ? selection.map((value, i) => value & partMask[i])
+        : (selection ?? partMask),
+    [selection, partMask],
+  );
+  const drawingTool = tool === "brush" || tool === "eraser";
+  const paintBlocked = drawingTool && !!skin.paintBlockedReason;
   const cursorBlocked =
     paintBlocked ||
-    (tool !== "drop" && !!cursor && !!paintMask && !paintMask[cursor.y * skin.width + cursor.x]);
+    (drawingTool && !!cursor && !!partMask && !partMask[cursor.y * skin.width + cursor.x]);
   const setCursor = useCallback((pixel: { x: number; y: number } | null) => {
     storeCursor((old) => (old?.x === pixel?.x && old?.y === pixel?.y ? old : pixel));
   }, []);
@@ -87,6 +118,8 @@ export function TextureEditor({
       pinch.current = null;
       pointer.current = null;
       mode.current = null;
+      selectionDrag.current = null;
+      setDraft(null);
       setCursor(null);
     };
     window.addEventListener("blur", clear);
@@ -112,6 +145,29 @@ export function TextureEditor({
     [skin.width, skin.height],
   );
   const { width: textureWidth, height: textureHeight } = skin;
+  const emptySelection = useMemo(() => selection !== null && !selection.includes(1), [selection]);
+  const outline = useMemo(
+    () => (selection ? selectionOutline(selection, textureWidth, textureHeight) : ""),
+    [selection, textureWidth, textureHeight],
+  );
+  const draftOutline = draft
+    ? `M${draft.x} ${draft.y}h${draft.width}v${draft.height}h${-draft.width}Z`
+    : "";
+  const cancelSelectionDrag = useCallback(() => {
+    if (mode.current !== "select") return;
+    const id = pointer.current;
+    mode.current = null;
+    pointer.current = null;
+    selectionDrag.current = null;
+    setDraft(null);
+    if (id !== null) {
+      touches.current.delete(id);
+      if (area.current?.hasPointerCapture(id)) area.current.releasePointerCapture(id);
+    }
+  }, [setDraft]);
+  useEffect(() => {
+    cancelSelectionDrag();
+  }, [cancelSelectionDrag, tool, textureWidth, textureHeight]);
   useEffect(() => {
     const update = () => {
       // A resize notifies before React updates the canvas dimensions; the next effect draws it.
@@ -157,6 +213,12 @@ export function TextureEditor({
   }, [setView]);
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
+      setModifiers({ shiftKey: e.shiftKey, altKey: e.altKey });
+      if (e.key === "Escape" && mode.current === "select") {
+        e.preventDefault();
+        cancelSelectionDrag();
+        return;
+      }
       if ((e.target as HTMLElement).closest("input,select,textarea,dialog,button,a,summary"))
         return;
       if (e.code === "Space") {
@@ -167,17 +229,24 @@ export function TextureEditor({
         setView({ zoom: 1, pan: { x: 0, y: 0 } });
       }
     };
-    const up = () => setSpace(false);
+    const up = (e: KeyboardEvent) => {
+      setModifiers({ shiftKey: e.shiftKey, altKey: e.altKey });
+      if (e.code === "Space") setSpace(false);
+    };
+    const blur = () => {
+      setSpace(false);
+      setModifiers({ shiftKey: false, altKey: false });
+    };
     window.addEventListener("keydown", down);
     window.addEventListener("keyup", up);
-    window.addEventListener("blur", up);
+    window.addEventListener("blur", blur);
     return () => {
       window.removeEventListener("keydown", down);
       window.removeEventListener("keyup", up);
-      window.removeEventListener("blur", up);
+      window.removeEventListener("blur", blur);
       skin.cancelStroke();
     };
-  }, [skin, setView]);
+  }, [skin, setView, cancelSelectionDrag]);
   const point = (e: PointerEvent) => {
     const rect = canvas.current!.getBoundingClientRect();
     return {
@@ -192,7 +261,7 @@ export function TextureEditor({
       return;
     }
     setCursor(p);
-    if (paintMask && !paintMask[p.y * skin.width + p.x]) {
+    if (partMask && !partMask[p.y * skin.width + p.x]) {
       skin.breakStroke();
       return;
     }
@@ -201,6 +270,10 @@ export function TextureEditor({
   };
   const end = () => {
     if (mode.current === "draw") skin.endStroke();
+    if (mode.current === "select") {
+      selectionDrag.current = null;
+      setDraft(null);
+    }
     mode.current = null;
     pointer.current = null;
   };
@@ -230,6 +303,19 @@ export function TextureEditor({
         if (p.x >= 0 && p.y >= 0 && p.x < skin.width && p.y < skin.height)
           onSample(skin.readPixel(p.x, p.y));
       }
+      if (!cancelled && mode.current === "clear") onSelection(null);
+      if (!cancelled && selectionDrag.current) {
+        const { start } = selectionDrag.current;
+        onSelection(
+          applyRectangleSelection(
+            selection,
+            selectionRect(start, point(event), textureWidth, textureHeight),
+            selectionModeFor(event, selectionMode),
+            textureWidth,
+            textureHeight,
+          ),
+        );
+      }
       end();
     }
     if (event.currentTarget.hasPointerCapture(event.pointerId))
@@ -241,7 +327,33 @@ export function TextureEditor({
       {drop.dragging ? <div className="skin-drop-overlay">{t("import.dropPng")}</div> : null}
       <div className="viewport-heading">
         <h2>{t("texture.title")}</h2>
-        <div className="inline-controls">
+        <div className="inline-controls texture-heading-controls">
+          {tool === "select" && onSelectionMode ? (
+            <select
+              aria-label={t("selection.mode")}
+              className="selection-mode"
+              value={selectionMode}
+              onChange={(event) => {
+                const next = selectionModes.find((value) => value === event.target.value);
+                if (next) onSelectionMode(next);
+              }}
+            >
+              {selectionModes.map((value) => (
+                <option key={value} value={value}>
+                  {t(`selection.${value}`)}
+                </option>
+              ))}
+            </select>
+          ) : null}
+          {selection !== null && onSelectionMode ? (
+            <IconButton
+              label={t("selection.clear")}
+              title={t("selection.clearShortcut")}
+              onClick={() => onSelection(null)}
+            >
+              <XMarkIcon />
+            </IconButton>
+          ) : null}
           <Button aria-pressed={uv} onClick={() => onShowUV(!uv)}>
             UV
           </Button>
@@ -253,6 +365,10 @@ export function TextureEditor({
       <div
         ref={area}
         className={`texture-area ${tool === "hand" || space ? "panning" : cursorBlocked ? "painting-blocked" : ""}`}
+        style={{
+          cursor: tool === "select" && !space ? selectionCursor(effectiveSelectionMode) : undefined,
+        }}
+        data-selection-mode={tool === "select" ? effectiveSelectionMode : undefined}
         onContextMenu={(e) => e.preventDefault()}
         onPointerDown={(e) => {
           if (e.pointerType === "touch") {
@@ -260,6 +376,8 @@ export function TextureEditor({
             e.currentTarget.setPointerCapture(e.pointerId);
             if (touches.current.size >= 2) {
               if (mode.current === "draw") skin.cancelStroke();
+              selectionDrag.current = null;
+              setDraft(null);
               mode.current = "pinch";
               pointer.current = null;
               pinch.current = touchFrame();
@@ -280,7 +398,16 @@ export function TextureEditor({
           }
           if (e.button !== 0) return;
           const p = point(e);
-          if (p.x < 0 || p.y < 0 || p.x >= skin.width || p.y >= skin.height) return;
+          if (p.x < 0 || p.y < 0 || p.x >= skin.width || p.y >= skin.height) {
+            if (tool === "select") {
+              pointer.current = e.pointerId;
+              mode.current = "clear";
+              e.currentTarget.setPointerCapture(e.pointerId);
+              canvas.current?.focus({ preventScroll: true });
+              e.preventDefault();
+            }
+            return;
+          }
           pointer.current = e.pointerId;
           e.currentTarget.setPointerCapture(e.pointerId);
           if (tool === "drop") {
@@ -288,11 +415,26 @@ export function TextureEditor({
             else onSample(skin.readPixel(p.x, p.y));
             return;
           }
+          if (tool === "select") {
+            setModifiers({ shiftKey: e.shiftKey, altKey: e.altKey });
+            mode.current = "select";
+            selectionDrag.current = { start: p };
+            setDraft({ ...p, width: 1, height: 1 });
+            canvas.current?.focus({ preventScroll: true });
+            e.preventDefault();
+            return;
+          }
           mode.current = "draw";
           skin.beginStroke();
           paint(e);
         }}
         onPointerMove={(e) => {
+          if (tool === "select")
+            setModifiers((current) =>
+              current.shiftKey === e.shiftKey && current.altKey === e.altKey
+                ? current
+                : { shiftKey: e.shiftKey, altKey: e.altKey },
+            );
           if (touches.current.has(e.pointerId)) {
             touches.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
           }
@@ -326,7 +468,11 @@ export function TextureEditor({
               y: origin.current.py + e.clientY - origin.current.y,
             });
           } else if (mode.current === "draw") paint(e);
-          else if (mode.current !== "sample") {
+          else if (selectionDrag.current) {
+            setDraft(
+              selectionRect(selectionDrag.current.start, point(e), textureWidth, textureHeight),
+            );
+          } else if (mode.current !== "sample") {
             const p = point(e);
             setCursor(p.x >= 0 && p.y >= 0 && p.x < skin.width && p.y < skin.height ? p : null);
           }
@@ -350,6 +496,7 @@ export function TextureEditor({
             height={skin.height}
             data-testid="skin-texture"
             aria-label={t("texture.canvasLabel")}
+            tabIndex={-1}
             style={{ width: skin.width * scale, height: skin.height * scale }}
           />
           {uv ? (
@@ -416,6 +563,28 @@ export function TextureEditor({
               ))}
             </svg>
           ) : null}
+          {selection !== null || draft ? (
+            <svg
+              aria-hidden="true"
+              className="texture-selection"
+              viewBox={`0 0 ${textureWidth} ${textureHeight}`}
+              preserveAspectRatio="none"
+              data-testid="texture-selection"
+            >
+              {outline ? (
+                <g data-testid="selection-outline">
+                  <path d={outline} className="selection-outline-dark" />
+                  <path d={outline} className="selection-outline-ants" />
+                </g>
+              ) : null}
+              {draft ? (
+                <g data-testid="selection-draft">
+                  <path d={draftOutline} className="selection-outline-dark" />
+                  <path d={draftOutline} className="selection-outline-ants" />
+                </g>
+              ) : null}
+            </svg>
+          ) : null}
           {uv && hover && hoverRect ? (
             <svg
               aria-hidden="true"
@@ -458,7 +627,7 @@ export function TextureEditor({
               <rect {...hoverRect} fill="none" stroke="white" strokeWidth={1 / scale} />
             </svg>
           ) : null}
-          {cursor && tool !== "hand" && !space && !cursorBlocked ? (
+          {cursor && (drawingTool || tool === "drop") && !space && !cursorBlocked ? (
             <div
               className="brush-cursor"
               style={{
@@ -474,9 +643,12 @@ export function TextureEditor({
       <div className="viewport-footer">
         <div className="camera-actions">
           <span className="viewport-hint">
-            <span>{t("texture.paintHint")}</span>
+            <span>{t(tool === "select" ? "selection.dragHint" : "texture.paintHint")}</span>
             <span>{t("texture.panHint")}</span>
           </span>
+          {emptySelection ? (
+            <output className="selection-status">{t("selection.empty")}</output>
+          ) : null}
           <div className="zoom-controls">
             <IconButton label="2D −" onClick={() => setZoom((z) => Math.max(0.15, z / 1.25))}>
               −

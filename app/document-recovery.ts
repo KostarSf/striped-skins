@@ -13,18 +13,28 @@ export type SavedDocuments = Record<
 >;
 let connection: Promise<IDBDatabase> | undefined;
 let ready: IDBDatabase | undefined;
-const bufferKeys = new WeakMap<Uint8ClampedArray, string>();
+const bufferKeys = new WeakMap<Uint8ClampedArray | Uint8Array, string>();
 const snapshots = new WeakMap<SkinDocument, { revision: number; snapshot: RecoverySnapshot }>();
 
 /** Chromium limits an individual IndexedDB value; a 4K snapshot exceeds that limit. */
 function splitBuffers(saved: SavedDocuments) {
-  const buffers = new Map<Uint8ClampedArray, string>();
-  const entries = new Map<string, Uint8ClampedArray>();
-  const retained = new Set<Uint8ClampedArray>();
+  const buffers = new Map<Uint8ClampedArray | Uint8Array, string>();
+  const entries = new Map<string, Uint8ClampedArray | Uint8Array>();
+  const retained = new Set<Uint8ClampedArray | Uint8Array>();
   for (const slot of Object.values(saved)) {
     if (!slot) continue;
     const snapshot = slot.document;
     retained.add(snapshot.pixels);
+    if (snapshot.selection) retained.add(snapshot.selection);
+    for (const command of [...snapshot.undo, ...snapshot.redo]) {
+      const masks =
+        command.kind === "selection"
+          ? [command.before, command.after]
+          : command.kind === "structure"
+            ? [command.before.selection, command.after.selection]
+            : [];
+      for (const mask of masks) if (mask) retained.add(mask);
+    }
     const layers = [
       ...snapshot.layers,
       ...[...snapshot.undo, ...snapshot.redo].flatMap((command) =>
@@ -38,7 +48,7 @@ function splitBuffers(saved: SavedDocuments) {
   if ([...retained].reduce((bytes, buffer) => bytes + buffer.byteLength, 0) < 4 * 1024 * 1024)
     return { session: saved, entries };
   const visit = (value: unknown): unknown => {
-    if (value instanceof Uint8ClampedArray) {
+    if (value instanceof Uint8ClampedArray || value instanceof Uint8Array) {
       if (value.byteLength < 64 * 64 * 4) return value;
       let key = buffers.get(value);
       if (!key) {
@@ -59,8 +69,11 @@ function splitBuffers(saved: SavedDocuments) {
   return { session: visit(saved), entries };
 }
 
-function restoreBuffers(value: unknown, buffers: Map<string, Uint8ClampedArray>): unknown {
-  if (value instanceof Uint8ClampedArray) return value;
+function restoreBuffers(
+  value: unknown,
+  buffers: Map<string, Uint8ClampedArray | Uint8Array>,
+): unknown {
+  if (value instanceof Uint8ClampedArray || value instanceof Uint8Array) return value;
   if (Array.isArray(value)) return value.map((item) => restoreBuffers(item, buffers));
   if (value && typeof value === "object") {
     if ("kind" in value && value.kind === "pixels") return value;
@@ -121,7 +134,7 @@ export async function readSavedDocuments(): Promise<SavedDocuments | undefined> 
       const store = tx.objectStore("documents");
       const request = store.get("session");
       const keys = store.getAllKeys();
-      const buffers = new Map<string, Uint8ClampedArray>();
+      const buffers = new Map<string, Uint8ClampedArray | Uint8Array>();
       keys.onsuccess = () => {
         for (const key of keys.result) {
           if (typeof key !== "string" || !key.startsWith("rgba/")) continue;

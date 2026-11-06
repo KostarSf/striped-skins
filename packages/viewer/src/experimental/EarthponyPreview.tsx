@@ -44,6 +44,7 @@ export type PonyPreviewProps = Partial<Omit<PreviewCameraProps, "painting" | "co
   preview?: PreviewSettings;
   motionLayers?: readonly MotionLayer[];
   brushSize?: number;
+  paintMask?: Uint8Array;
   animate?: boolean;
   onStats?: (stats: PreviewStats) => void;
   onPaint?: (pixel: { x: number; y: number; part: string }) => void;
@@ -65,6 +66,7 @@ function ModelScene(props: PonyPreviewProps) {
     onStats,
     onPaint,
     brushSize = 1,
+    paintMask,
     onSample,
   } = props;
   const gl = useThree((s) => s.gl),
@@ -128,7 +130,7 @@ function ModelScene(props: PonyPreviewProps) {
       onSample(skinDocument.readPixel(hit.x, hit.y));
       return;
     }
-    skinDocument.paint(hit.x, hit.y, color, hit.surface, brushSize, hit.bounds);
+    skinDocument.paint(hit.x, hit.y, color, hit.surface, brushSize, hit.bounds, paintMask);
     onPaint?.({ x: hit.x, y: hit.y, part: hit.part });
   };
   const end = () => {
@@ -169,6 +171,7 @@ function ModelScene(props: PonyPreviewProps) {
           size={brushSize}
           activePart={null}
           clip={hoverClip}
+          paintMask={paintMask}
           contextKey={contextKey}
         />
       ) : null}

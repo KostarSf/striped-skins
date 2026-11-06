@@ -21,7 +21,13 @@ export type WorkspaceValue =
   | WorkspaceValue[]
   | { [key: string]: WorkspaceValue };
 type Change = { index: number; before: Pixel; after: Pixel };
-type Structure = { layers: LayerNode[]; activeLayerId: string; width?: number; height?: number };
+type Structure = {
+  layers: LayerNode[];
+  activeLayerId: string;
+  width?: number;
+  height?: number;
+  selection?: Uint8Array | null;
+};
 type Command = {
   label: string;
   beforeId: number;
@@ -29,6 +35,7 @@ type Command = {
 } & (
   | { kind: "pixels"; layerId: string | null; changes: Change[] }
   | { kind: "structure"; before: Structure; after: Structure }
+  | { kind: "selection"; before: Uint8Array | null; after: Uint8Array | null }
 );
 export type ProjectSnapshot = {
   version: 2;
@@ -37,6 +44,7 @@ export type ProjectSnapshot = {
   sourceFormat: "modern" | "legacy";
   pixels: Uint8ClampedArray;
   metadata: Uint8ClampedArray;
+  selection?: Uint8Array | null;
   layers: LayerNode[];
   activeLayerId: string;
   workspace: Record<string, WorkspaceValue>;
@@ -66,6 +74,7 @@ export class SkinDocument {
   readonly id = ++documentSequence;
   pixels: Uint8ClampedArray<ArrayBuffer>;
   private metadata: Uint8ClampedArray;
+  private selectedPixels: Uint8Array | null = null;
   private nodes: LayerNode[];
   private active: string;
   private sequence = 1;
@@ -218,6 +227,27 @@ export class SkinDocument {
     this.workspaceRevision++;
     this.emit(false);
   }
+  get selection() {
+    return this.selectedPixels;
+  }
+  setSelection(value: Uint8Array | null) {
+    if (value && (value.length !== this.width * this.height || value.some((v) => v > 1)))
+      throw new SkinError("invalidImage", "Invalid selection mask");
+    const before = this.selectedPixels;
+    if (before === value || (before && value && before.every((v, i) => v === value[i]))) return;
+    this.endStroke();
+    const after = value?.slice() ?? null;
+    this.selectedPixels = after;
+    this.push({
+      kind: "selection",
+      label: after === null ? "history.clearSelection" : "history.selection",
+      before,
+      after,
+      beforeId: this.stateId,
+      afterId: this.nextId++,
+    });
+    this.emit();
+  }
   setActiveLayer(id: string) {
     this.endStroke();
     if (this.active === id || !this.nodes.some((n) => n.id === id)) return;
@@ -230,6 +260,7 @@ export class SkinDocument {
       activeLayerId: this.active,
       width: this.width,
       height: this.height,
+      selection: this.selectedPixels,
     };
   }
   private restoreStructure(state: Structure) {
@@ -240,6 +271,7 @@ export class SkinDocument {
       this.height = height;
       this.pixels = new Uint8ClampedArray(width * height * 4);
     }
+    this.selectedPixels = state.selection ?? null;
     this.nodes = state.layers.map((n) => ({ ...n }));
     this.active = state.activeLayerId;
   }
@@ -263,13 +295,18 @@ export class SkinDocument {
     this.stateId = command.afterId;
     // Bound retained buffers as well as pixel deltas, including deleted/merged HD layers.
     const overBudget = () => {
-      const buffers = new Set<Uint8ClampedArray>();
+      const buffers = new Set<Uint8ClampedArray | Uint8Array>();
       let bytes = 0;
       for (const c of this.undoStack) {
         if (c.kind === "pixels") bytes += c.changes.length * 40;
-        else
-          for (const state of [c.before, c.after])
+        else if (c.kind === "selection") {
+          if (c.before) buffers.add(c.before);
+          if (c.after) buffers.add(c.after);
+        } else
+          for (const state of [c.before, c.after]) {
+            if (state.selection) buffers.add(state.selection);
             for (const n of state.layers) if (n.pixels) buffers.add(n.pixels);
+          }
       }
       return (
         bytes > 32 * 1024 * 1024 ||
@@ -341,6 +378,7 @@ export class SkinDocument {
           ? { pixels: resizeSkinPixels(node.pixels, this.width, this.height, size) }
           : {}),
       }));
+      this.selectedPixels = null;
       this.width = this.height = size;
       this.pixels = new Uint8ClampedArray(size * size * 4);
     });
@@ -678,6 +716,7 @@ export class SkinDocument {
   }
   private apply(command: Command, direction: "before" | "after") {
     if (command.kind === "structure") this.restoreStructure(command[direction]);
+    else if (command.kind === "selection") this.selectedPixels = command[direction];
     else {
       const target = this.target(command.layerId)!;
       command.changes.forEach((c) => target.set(c[direction], c.index));
@@ -751,6 +790,7 @@ export class SkinDocument {
       sourceFormat: this.sourceFormat,
       pixels: this.pixels,
       metadata: this.metadata,
+      selection: this.selectedPixels,
       layers: this.nodes,
       activeLayerId: this.active,
       workspace: this.workspace,
@@ -778,6 +818,7 @@ export class SkinDocument {
     document.nodes = saved.layers;
     document.active = saved.activeLayerId;
     document.metadata = saved.metadata;
+    document.selectedPixels = saved.selection ?? null;
     document.workspace = saved.workspace;
     document.workspaceRevision = saved.workspaceRevision;
     document.stateId = saved.stateId;
@@ -821,7 +862,18 @@ export function validateSnapshot(s: ProjectSnapshot) {
     s.metadata.length !== 32
   )
     fail();
-  const buffers = new Set<Uint8ClampedArray>([s.pixels, s.metadata]);
+  const buffers = new Set<Uint8ClampedArray | Uint8Array>([s.pixels, s.metadata]);
+  const selection = (value: Uint8Array | null | undefined, width: number, height: number) => {
+    if (value == null) return;
+    if (
+      !(value instanceof Uint8Array) ||
+      value.length !== width * height ||
+      value.some((v) => v > 1)
+    )
+      fail();
+    buffers.add(value);
+  };
+  selection(s.selection, s.width, s.height);
   const structure = (value: Structure, width: number, height: number) => {
     if (!value || !Array.isArray(value.layers) || !value.layers.length || value.layers.length > 128)
       return fail();
@@ -836,6 +888,7 @@ export function validateSnapshot(s: ProjectSnapshot) {
       height > MAX_SKIN_SIZE
     )
       fail();
+    selection(value.selection, width, height);
     const size = width * height * 4;
     const nodes = value.layers,
       ids = new Set(nodes.map((n) => n.id));
@@ -901,6 +954,8 @@ export function validateSnapshot(s: ProjectSnapshot) {
     if (c.kind === "structure") {
       // Validate dimensions and buffers while replaying each side of the history cursor.
       if (!c.before || !c.after) fail();
+    } else if (c.kind === "selection") {
+      if (c.before === undefined || c.after === undefined) fail();
     } else if (c.kind === "pixels") {
       if (!Array.isArray(c.changes) || (c.layerId !== null && typeof c.layerId !== "string"))
         fail();
@@ -937,6 +992,9 @@ export function validateSnapshot(s: ProjectSnapshot) {
         width = next.width ?? width;
         height = next.height ?? height;
         nodes = next.layers;
+      } else if (c.kind === "selection") {
+        selection(c.before, width, height);
+        selection(c.after, width, height);
       } else {
         if (c.layerId !== null && !nodes.some((n) => n.id === c.layerId && n.kind === "layer"))
           fail();
@@ -974,8 +1032,8 @@ function validateWorkspace(workspace: Record<string, WorkspaceValue>, fail: () =
   const record = (v: unknown): v is Record<string, unknown> =>
     !!v && typeof v === "object" && !Array.isArray(v);
   const rules: Record<string, (v: unknown) => boolean> = {
-    tool: (v) => ["brush", "eraser", "drop", "hand"].includes(v as string),
-    lastPaintTool: (v) => ["brush", "eraser", "drop"].includes(v as string),
+    tool: (v) => ["brush", "eraser", "drop", "hand", "select"].includes(v as string),
+    lastPaintTool: (v) => ["brush", "eraser", "drop", "select"].includes(v as string),
     layout: (v) => ["3d", "2d", "split"].includes(v as string),
     mobileView: (v) => ["3d", "2d", "settings"].includes(v as string),
     brushSize: (v) => finite(v) && Number.isInteger(v) && (v as number) >= 1 && (v as number) <= 32,

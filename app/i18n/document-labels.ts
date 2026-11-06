@@ -44,6 +44,10 @@ export function documentLabel(t: TFunction, label: string | null | undefined): s
       return t("history.mergeDown");
     case "history.metadata":
       return t("history.metadata");
+    case "history.selection":
+      return t("history.selection");
+    case "history.clearSelection":
+      return t("history.clearSelection");
     case "history.stroke":
       return t("history.stroke");
     case "history.resize":
