@@ -551,40 +551,53 @@ test("rectangle selection combines regions and constrains the 2D brush and erase
     await page.mouse.move(end.x, end.y, { steps: 4 });
     await page.mouse.up();
   };
-  const selected = () =>
-    page.getByTestId("texture-selection").evaluate((canvas) => {
-      const data = (canvas as HTMLCanvasElement).getContext("2d")!.getImageData(0, 12, 64, 1).data;
-      return Array.from({ length: 64 }, (_, x) => x).filter((x) => data[x * 4 + 3] > 0);
-    });
+  const row = () =>
+    tex(page).evaluate((canvas) =>
+      Array.from((canvas as HTMLCanvasElement).getContext("2d")!.getImageData(0, 12, 64, 1).data),
+    );
+  const expectSelection = async (columns: number[]) => {
+    // Verify the mask through painting, independent of how its contour is rendered.
+    const before = await row();
+    const color = [255, 0, 255, 255];
+    const expected = before.map((value, index) =>
+      columns.includes(Math.floor(index / 4)) ? color[index % 4] : value,
+    );
+    await page.keyboard.press("b");
+    await drag(0, 63);
+    await expect.poll(row).toEqual(expected);
+    await page.keyboard.press("Control+z");
+    await expect.poll(row).toEqual(before);
+    await page.keyboard.press("m");
+  };
 
   await page.keyboard.press("m");
   const mode = page.getByRole("combobox", { name: "Режим выделения" });
   await expect(mode).toHaveValue("replace");
   await drag(14, 12);
-  await expect.poll(selected).toEqual([12, 13, 14]);
+  await expectSelection([12, 13, 14]);
   await page.keyboard.down("Shift");
   await drag(14, 16);
   await page.keyboard.up("Shift");
-  await expect.poll(selected).toEqual([12, 13, 14, 15, 16]);
+  await expectSelection([12, 13, 14, 15, 16]);
   await page.keyboard.down("Alt");
   await drag(13, 14);
   await page.keyboard.up("Alt");
-  await expect.poll(selected).toEqual([12, 15, 16]);
+  await expectSelection([12, 15, 16]);
   await page.keyboard.down("Shift");
   await page.keyboard.down("Alt");
   await drag(15, 17);
   await page.keyboard.up("Alt");
   await page.keyboard.up("Shift");
-  await expect.poll(selected).toEqual([12, 17]);
+  await expectSelection([12, 17]);
   await mode.selectOption("add");
   await drag(19, 19);
-  await expect.poll(selected).toEqual([12, 17, 19]);
+  await expectSelection([12, 17, 19]);
   const cancelled = point(20, 12);
   await page.mouse.move(cancelled.x, cancelled.y);
   await page.mouse.down();
   await page.keyboard.press("Escape");
   await page.mouse.up();
-  expect(await selected()).toEqual([12, 17, 19]);
+  await expectSelection([12, 17, 19]);
 
   const outside = await pixel(page, 16, 12);
   await page.keyboard.press("b");
@@ -624,9 +637,15 @@ test("rectangle selection constrains painting on a 3D UV face", async ({ page })
     await page.keyboard.press("b");
   };
   await selectPixel((x + 32) % 64, y);
+  const history = page.locator(".history-state");
+  const statesBeforeBlockedStroke = await history.count();
+  const undo = page.getByRole("button", { name: "Отменить штрих", exact: true });
+  await expect(undo).toBeEnabled();
+  await expect(undo).toHaveAttribute("title", /Изменение выделения/);
   await page.mouse.click(point.x, point.y);
   expect(await pixel(page, x, y)).toEqual(before);
-  await expect(page.getByRole("button", { name: "Отменить штрих", exact: true })).toBeDisabled();
+  await expect(history).toHaveCount(statesBeforeBlockedStroke);
+  await expect(undo).toHaveAttribute("title", /Изменение выделения/);
   await selectPixel(x, y);
   await page.mouse.click(point.x, point.y);
   await expect.poll(() => pixel(page, x, y)).toEqual([255, 0, 255, 255]);
