@@ -133,6 +133,7 @@ export function ImportDialog({
             </Button>
           </div>
           <form
+            className="import-url-form"
             onSubmit={(e) => {
               e.preventDefault();
               if (url.trim()) accept(url.trim());

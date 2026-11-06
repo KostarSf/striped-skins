@@ -1212,6 +1212,18 @@ button:disabled {
 .studio-dialog form .studio-field {
   font-size: 12px;
 }
+.import-url-form {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+}
+.import-url-form .studio-field {
+  flex: 1;
+}
+.import-url-form .dialog-actions {
+  flex-shrink: 0;
+  margin-top: 0;
+}
 .dialog-actions {
   display: flex;
   justify-content: flex-end;
@@ -1700,6 +1712,10 @@ button:disabled {
   }
   .studio-dialog {
     padding: 20px;
+  }
+  .import-url-form {
+    flex-direction: column;
+    align-items: stretch;
   }
   .dialog-heading h2 {
     font-size: 18px;
