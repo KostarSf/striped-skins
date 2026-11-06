@@ -11,6 +11,8 @@ import { XMarkIcon } from "@heroicons/react/24/outline";
 import {
   applyRectangleSelection,
   selectionModeFor,
+  selectionOutline,
+  selectionCursor,
   selectionModes,
   selectionRect,
   type SelectionMode,
@@ -56,7 +58,7 @@ export function TextureEditor({
   tool: PaintTool;
   selection: Uint8Array | null;
   selectionMode: SelectionMode;
-  onSelectionMode: (mode: SelectionMode) => void;
+  onSelectionMode?: (mode: SelectionMode) => void;
   onSelection: (selection: Uint8Array | null) => void;
   onSample: (pixel: Pixel) => void;
   onPaint: (p: { x: number; y: number; part: string }) => void;
@@ -73,10 +75,11 @@ export function TextureEditor({
   const drop = useSkinDrop(onFileDrop);
   const canvas = useRef<HTMLCanvasElement>(null),
     area = useRef<HTMLDivElement>(null);
-  const selectionCanvas = useRef<HTMLCanvasElement>(null);
-  const selectionDrag = useRef<{ start: TexturePoint; mode: SelectionMode } | null>(null);
+  const [modifiers, setModifiers] = useState({ shiftKey: false, altKey: false });
+  const effectiveSelectionMode = selectionModeFor(modifiers, selectionMode);
+  const selectionDrag = useRef<{ start: TexturePoint } | null>(null);
   const [draft, setDraft] = useState<SelectionRect | null>(null);
-  const mode = useRef<"draw" | "pan" | "pinch" | "sample" | "select" | null>(null),
+  const mode = useRef<"draw" | "pan" | "pinch" | "sample" | "select" | "clear" | null>(null),
     origin = useRef({ x: 0, y: 0, px: 0, py: 0 });
   const pointer = useRef<number | null>(null);
   const touches = useRef(new Map<number, TexturePoint>());
@@ -143,20 +146,13 @@ export function TextureEditor({
   );
   const { width: textureWidth, height: textureHeight } = skin;
   const emptySelection = useMemo(() => selection !== null && !selection.includes(1), [selection]);
-  useEffect(() => {
-    if (!selection) return;
-    const ctx = selectionCanvas.current?.getContext("2d");
-    if (!ctx) return;
-    const image = ctx.createImageData(textureWidth, textureHeight);
-    for (let i = 0; i < selection.length; i++) {
-      if (!selection[i]) continue;
-      image.data[i * 4] = 144;
-      image.data[i * 4 + 1] = 178;
-      image.data[i * 4 + 2] = 255;
-      image.data[i * 4 + 3] = 116;
-    }
-    ctx.putImageData(image, 0, 0);
-  }, [selection, textureWidth, textureHeight]);
+  const outline = useMemo(
+    () => (selection ? selectionOutline(selection, textureWidth, textureHeight) : ""),
+    [selection, textureWidth, textureHeight],
+  );
+  const draftOutline = draft
+    ? `M${draft.x} ${draft.y}h${draft.width}v${draft.height}h${-draft.width}Z`
+    : "";
   const cancelSelectionDrag = useCallback(() => {
     if (mode.current !== "select") return;
     const id = pointer.current;
@@ -168,7 +164,7 @@ export function TextureEditor({
       touches.current.delete(id);
       if (area.current?.hasPointerCapture(id)) area.current.releasePointerCapture(id);
     }
-  }, []);
+  }, [setDraft]);
   useEffect(() => {
     cancelSelectionDrag();
   }, [cancelSelectionDrag, tool, textureWidth, textureHeight]);
@@ -217,6 +213,7 @@ export function TextureEditor({
   }, [setView]);
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
+      setModifiers({ shiftKey: e.shiftKey, altKey: e.altKey });
       if (e.key === "Escape" && mode.current === "select") {
         e.preventDefault();
         cancelSelectionDrag();
@@ -233,9 +230,13 @@ export function TextureEditor({
       }
     };
     const up = (e: KeyboardEvent) => {
+      setModifiers({ shiftKey: e.shiftKey, altKey: e.altKey });
       if (e.code === "Space") setSpace(false);
     };
-    const blur = () => setSpace(false);
+    const blur = () => {
+      setSpace(false);
+      setModifiers({ shiftKey: false, altKey: false });
+    };
     window.addEventListener("keydown", down);
     window.addEventListener("keyup", up);
     window.addEventListener("blur", blur);
@@ -302,13 +303,14 @@ export function TextureEditor({
         if (p.x >= 0 && p.y >= 0 && p.x < skin.width && p.y < skin.height)
           onSample(skin.readPixel(p.x, p.y));
       }
+      if (!cancelled && mode.current === "clear") onSelection(null);
       if (!cancelled && selectionDrag.current) {
-        const { start, mode: operation } = selectionDrag.current;
+        const { start } = selectionDrag.current;
         onSelection(
           applyRectangleSelection(
             selection,
             selectionRect(start, point(event), textureWidth, textureHeight),
-            operation,
+            selectionModeFor(event, selectionMode),
             textureWidth,
             textureHeight,
           ),
@@ -326,7 +328,7 @@ export function TextureEditor({
       <div className="viewport-heading">
         <h2>{t("texture.title")}</h2>
         <div className="inline-controls texture-heading-controls">
-          {tool === "select" ? (
+          {tool === "select" && onSelectionMode ? (
             <select
               aria-label={t("selection.mode")}
               className="selection-mode"
@@ -343,7 +345,7 @@ export function TextureEditor({
               ))}
             </select>
           ) : null}
-          {selection !== null ? (
+          {selection !== null && onSelectionMode ? (
             <IconButton
               label={t("selection.clear")}
               title={t("selection.clearShortcut")}
@@ -363,6 +365,10 @@ export function TextureEditor({
       <div
         ref={area}
         className={`texture-area ${tool === "hand" || space ? "panning" : cursorBlocked ? "painting-blocked" : ""}`}
+        style={{
+          cursor: tool === "select" && !space ? selectionCursor(effectiveSelectionMode) : undefined,
+        }}
+        data-selection-mode={tool === "select" ? effectiveSelectionMode : undefined}
         onContextMenu={(e) => e.preventDefault()}
         onPointerDown={(e) => {
           if (e.pointerType === "touch") {
@@ -392,7 +398,16 @@ export function TextureEditor({
           }
           if (e.button !== 0) return;
           const p = point(e);
-          if (p.x < 0 || p.y < 0 || p.x >= skin.width || p.y >= skin.height) return;
+          if (p.x < 0 || p.y < 0 || p.x >= skin.width || p.y >= skin.height) {
+            if (tool === "select") {
+              pointer.current = e.pointerId;
+              mode.current = "clear";
+              e.currentTarget.setPointerCapture(e.pointerId);
+              canvas.current?.focus({ preventScroll: true });
+              e.preventDefault();
+            }
+            return;
+          }
           pointer.current = e.pointerId;
           e.currentTarget.setPointerCapture(e.pointerId);
           if (tool === "drop") {
@@ -401,8 +416,9 @@ export function TextureEditor({
             return;
           }
           if (tool === "select") {
+            setModifiers({ shiftKey: e.shiftKey, altKey: e.altKey });
             mode.current = "select";
-            selectionDrag.current = { start: p, mode: selectionModeFor(e, selectionMode) };
+            selectionDrag.current = { start: p };
             setDraft({ ...p, width: 1, height: 1 });
             canvas.current?.focus({ preventScroll: true });
             e.preventDefault();
@@ -413,6 +429,12 @@ export function TextureEditor({
           paint(e);
         }}
         onPointerMove={(e) => {
+          if (tool === "select")
+            setModifiers((current) =>
+              current.shiftKey === e.shiftKey && current.altKey === e.altKey
+                ? current
+                : { shiftKey: e.shiftKey, altKey: e.altKey },
+            );
           if (touches.current.has(e.pointerId)) {
             touches.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
           }
@@ -541,27 +563,27 @@ export function TextureEditor({
               ))}
             </svg>
           ) : null}
-          {selection !== null ? (
-            <canvas
-              ref={selectionCanvas}
+          {selection !== null || draft ? (
+            <svg
+              aria-hidden="true"
               className="texture-selection"
-              width={textureWidth}
-              height={textureHeight}
-              aria-hidden="true"
+              viewBox={`0 0 ${textureWidth} ${textureHeight}`}
+              preserveAspectRatio="none"
               data-testid="texture-selection"
-            />
-          ) : null}
-          {draft ? (
-            <div
-              aria-hidden="true"
-              className="texture-selection-draft"
-              style={{
-                left: draft.x * scale,
-                top: draft.y * scale,
-                width: draft.width * scale,
-                height: draft.height * scale,
-              }}
-            />
+            >
+              {outline ? (
+                <g data-testid="selection-outline">
+                  <path d={outline} className="selection-outline-dark" />
+                  <path d={outline} className="selection-outline-ants" />
+                </g>
+              ) : null}
+              {draft ? (
+                <g data-testid="selection-draft">
+                  <path d={draftOutline} className="selection-outline-dark" />
+                  <path d={draftOutline} className="selection-outline-ants" />
+                </g>
+              ) : null}
+            </svg>
           ) : null}
           {uv && hover && hoverRect ? (
             <svg

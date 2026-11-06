@@ -326,6 +326,8 @@ export default {
   "tools.eyedropperShortcut": "Пипетка · I",
   "tools.rectangleSelect": "Прямоугольное выделение",
   "tools.rectangleSelectShortcut": "Прямоугольное выделение · M",
+  "history.selection": "Изменение выделения",
+  "history.clearSelection": "Снятие выделения",
   "selection.mode": "Режим выделения",
   "selection.replace": "Замена",
   "selection.add": "Добавление · Shift",

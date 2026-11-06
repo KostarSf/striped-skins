@@ -49,3 +49,48 @@ export function applyRectangleSelection(
   }
   return next;
 }
+
+/** Only exposed edges, merged into runs to keep HD contours compact. */
+export function selectionOutline(mask: Uint8Array, width: number, height: number): string {
+  const paths: string[] = [];
+  for (let y = 0; y <= height; y++) {
+    let start = -1;
+    let previous = 0;
+    for (let x = 0; x <= width; x++) {
+      const above = y > 0 && x < width ? mask[(y - 1) * width + x] : 0;
+      const below = y < height && x < width ? mask[y * width + x] : 0;
+      const edge = above !== below ? (above ? 1 : -1) : 0;
+      if (edge !== previous) {
+        if (start !== -1) paths.push(`M${start} ${y}H${x}`);
+        start = edge ? x : -1;
+        previous = edge;
+      }
+    }
+  }
+  for (let x = 0; x <= width; x++) {
+    let start = -1;
+    let previous = 0;
+    for (let y = 0; y <= height; y++) {
+      const left = x > 0 && y < height ? mask[y * width + x - 1] : 0;
+      const right = x < width && y < height ? mask[y * width + x] : 0;
+      const edge = left !== right ? (left ? 1 : -1) : 0;
+      if (edge !== previous) {
+        if (start !== -1) paths.push(`M${x} ${start}V${y}`);
+        start = edge ? y : -1;
+        previous = edge;
+      }
+    }
+  }
+  return paths.join("");
+}
+
+export function selectionCursor(mode: SelectionMode): string {
+  const badge = {
+    replace: "",
+    add: '<path d="M23 17v12m-6-6h12"/>',
+    subtract: '<path d="M17 23h12"/>',
+    difference: '<path d="m18 18 10 10m0-10L18 28"/>',
+  }[mode];
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32"><g fill="none" stroke="#101014" stroke-width="3"><path d="M8 1v14M1 8h14"/>${badge}</g><g fill="none" stroke="white" stroke-width="1"><path d="M8 1v14M1 8h14"/>${badge}</g></svg>`;
+  return `url("data:image/svg+xml,${encodeURIComponent(svg)}") 8 8, crosshair`;
+}

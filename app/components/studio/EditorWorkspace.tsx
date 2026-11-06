@@ -1,6 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { useCallback, useEffect, useId, useMemo, useState } from "react";
-import { ArrowUturnLeftIcon, ArrowUturnRightIcon } from "@heroicons/react/24/outline";
+import { ArrowUturnLeftIcon, ArrowUturnRightIcon, XMarkIcon } from "@heroicons/react/24/outline";
 import { decodeSkinMetadata, type SkinDocument, type Pixel } from "@striped-skins/api";
 import {
   flattenNodes,
@@ -33,7 +33,7 @@ import { useDocumentSetting } from "./useDocumentSetting";
 import { usePhoneLayout } from "./usePhoneLayout";
 import { useViewerPreferencesContext } from "../striped-viewer.client";
 import { inspectorTabs } from "./inspector-tabs";
-import type { SelectionMode } from "./rectangle-selection";
+import { selectionModes, type SelectionMode } from "./rectangle-selection";
 function paletteFor(pixels: Uint8ClampedArray) {
   const counts = new Map<string, number>();
   for (let i = 32; i < pixels.length; i += 4) {
@@ -71,14 +71,9 @@ export default function EditorWorkspace({
   const defaults = useViewerPreferencesContext((s) => s.userOptions);
   const [options] = useDocumentSetting(skin, "viewOptions", { ...defaults });
   const isPhone = usePhoneLayout();
-  const [selectionSize, setSelectionSize] = useState(`${skin.width}x${skin.height}`);
-  const [selection, setSelection] = useState<Uint8Array | null>(null);
+  const selection = skin.selection;
   const [selectionMode, setSelectionMode] = useState<SelectionMode>("replace");
-  const textureSize = `${skin.width}x${skin.height}`;
-  if (selectionSize !== textureSize) {
-    setSelectionSize(textureSize);
-    setSelection(null);
-  }
+  const setSelection = useCallback((value: Uint8Array | null) => skin.setSelection(value), [skin]);
   const [inspectorTab, setCurrentInspectorTab] = useState<"texture" | "skin">(
     () => inspectorTabs.get(skin) ?? "texture",
   );
@@ -242,7 +237,7 @@ export default function EditorWorkspace({
     };
     window.addEventListener("keydown", key);
     return () => window.removeEventListener("keydown", key);
-  }, [skin, selectTool, swapColors, setBrushSize]);
+  }, [skin, selectTool, swapColors, setBrushSize, setSelection]);
   const sample = (pixel: Pixel) => {
     setHex(
       "#" +
@@ -326,30 +321,63 @@ export default function EditorWorkspace({
             </strong>
           </div>
           <span className="toolbar-divider" />
-          <label className="inline-field">
-            {t("skin.size")}{" "}
-            <NumberSlider
-              label={t("tools.brushSize")}
-              min={1}
-              max={32}
-              unit=" px"
-              value={brushSize}
-              onChange={setBrushSize}
-            />
-            <span>px</span>
-          </label>
-          <label className="inline-field opacity-field">
-            {t("tools.opacity")}{" "}
-            <NumberSlider
-              label={t("tools.brushOpacity")}
-              min={0}
-              max={100}
-              unit="%"
-              value={opacity}
-              onChange={setOpacity}
-            />
-            <span>%</span>
-          </label>
+          {tool === "select" ? (
+            <div className="inline-controls">
+              <select
+                aria-label={t("selection.mode")}
+                className="selection-mode"
+                value={selectionMode}
+                onChange={(event) => {
+                  const next = selectionModes.find((value) => value === event.target.value);
+                  if (next) setSelectionMode(next);
+                }}
+              >
+                {selectionModes.map((value) => (
+                  <option key={value} value={value}>
+                    {t(`selection.${value}`)}
+                  </option>
+                ))}
+              </select>
+              <IconButton
+                label={t("selection.clear")}
+                title={t("selection.clearShortcut")}
+                disabled={selection === null}
+                onClick={() => setSelection(null)}
+              >
+                <XMarkIcon />
+              </IconButton>
+            </div>
+          ) : null}
+          {tool === "brush" || tool === "eraser" ? (
+            <>
+              <label className="inline-field">
+                {t("skin.size")}{" "}
+                <NumberSlider
+                  label={t("tools.brushSize")}
+                  min={1}
+                  max={32}
+                  unit=" px"
+                  value={brushSize}
+                  onChange={setBrushSize}
+                />
+                <span>px</span>
+              </label>
+              {tool === "brush" ? (
+                <label className="inline-field opacity-field">
+                  {t("tools.opacity")}{" "}
+                  <NumberSlider
+                    label={t("tools.brushOpacity")}
+                    min={0}
+                    max={100}
+                    unit="%"
+                    value={opacity}
+                    onChange={setOpacity}
+                  />
+                  <span>%</span>
+                </label>
+              ) : null}
+            </>
+          ) : null}
           <div className="inline-controls">
             <IconButton
               label={t("history.undoStroke")}
@@ -487,7 +515,7 @@ export default function EditorWorkspace({
                 tool={tool}
                 selection={selection}
                 selectionMode={selectionMode}
-                onSelectionMode={setSelectionMode}
+                onSelectionMode={isPhone ? setSelectionMode : undefined}
                 onSelection={setSelection}
                 brushSize={brushSize}
                 onSample={sample}

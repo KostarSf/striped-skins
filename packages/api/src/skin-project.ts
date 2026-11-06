@@ -9,18 +9,18 @@ const MAX_EXPANDED = 320 * 1024 * 1024;
 export function encodeSkinProject(document: SkinDocument): Uint8Array {
   if (document.isDrawing) document.endStroke();
   const files: Record<string, Uint8Array> = {};
-  const buffers = new Map<Uint8ClampedArray, string>();
+  const buffers = new Map<Uint8ClampedArray | Uint8Array, string>();
   const snapshot = document.snapshot();
   validateSnapshot(snapshot);
   const manifest = JSON.stringify(snapshot, (_key, value: unknown) => {
-    if (!(value instanceof Uint8ClampedArray)) return value;
+    if (!(value instanceof Uint8ClampedArray) && !(value instanceof Uint8Array)) return value;
     let path = buffers.get(value);
     if (!path) {
       path = `buffers/${buffers.size}.rgba`;
       buffers.set(value, path);
       files[path] = new Uint8Array(value.buffer, value.byteOffset, value.byteLength);
     }
-    return { rgba: path };
+    return value instanceof Uint8Array ? { mask: path } : { rgba: path };
   });
   files["project.json"] = strToU8(manifest);
   if (
@@ -58,13 +58,15 @@ export function decodeSkinProject(bytes: Uint8Array): SkinDocument {
     },
   });
   if (!files["project.json"]) throw new SkinError("projectMissing", "В файле нет проекта Striped");
-  const buffers = new Map<string, Uint8ClampedArray>();
+  const buffers = new Map<string, Uint8ClampedArray | Uint8Array>();
   const snapshot: unknown = JSON.parse(strFromU8(files["project.json"]), (_key, value: unknown) => {
-    if (value && typeof value === "object" && "rgba" in value) {
-      const path = (value as { rgba: unknown }).rgba;
+    if (value && typeof value === "object" && ("rgba" in value || "mask" in value)) {
+      const mask = "mask" in value;
+      const path = mask ? value.mask : (value as { rgba: unknown }).rgba;
       if (typeof path !== "string" || !/^buffers\/\d+\.rgba$/.test(path) || !files[path])
         throw new SkinError("projectLayerMissing", "В проекте отсутствуют данные слоя");
-      if (!buffers.has(path)) buffers.set(path, new Uint8ClampedArray(files[path]));
+      if (!buffers.has(path))
+        buffers.set(path, mask ? new Uint8Array(files[path]) : new Uint8ClampedArray(files[path]));
       return buffers.get(path);
     }
     return value;

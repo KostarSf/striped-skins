@@ -323,6 +323,8 @@ export default {
   "tools.eyedropperShortcut": "Eyedropper · I",
   "tools.rectangleSelect": "Rectangle select",
   "tools.rectangleSelectShortcut": "Rectangle select · M",
+  "history.selection": "Change selection",
+  "history.clearSelection": "Clear selection",
   "selection.mode": "Selection mode",
   "selection.replace": "Replace",
   "selection.add": "Add · Shift",

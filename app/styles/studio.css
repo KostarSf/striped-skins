@@ -234,9 +234,9 @@ button:disabled {
   justify-content: flex-end;
   flex-wrap: wrap;
 }
-.viewport-heading .selection-mode {
+.selection-mode {
   min-width: 0;
-  max-width: min(162px, 100%);
+  max-width: min(190px, 100%);
 }
 .selection-status {
   margin-right: auto;
@@ -1108,11 +1108,28 @@ button:disabled {
   width: 100%;
   height: 100%;
 }
-.texture-selection-draft {
-  position: absolute;
-  pointer-events: none;
-  border: 1px dashed white;
-  outline: 1px solid #101014;
+.texture-selection {
+  overflow: visible;
+}
+.selection-outline-dark,
+.selection-outline-ants {
+  fill: none;
+  vector-effect: non-scaling-stroke;
+}
+.selection-outline-dark {
+  stroke: #101014;
+  stroke-width: 3px;
+}
+.selection-outline-ants {
+  stroke: white;
+  stroke-width: 1px;
+  stroke-dasharray: 4 4;
+  animation: selection-march 0.8s linear infinite;
+}
+@keyframes selection-march {
+  to {
+    stroke-dashoffset: -8;
+  }
 }
 .brush-cursor {
   position: absolute;
