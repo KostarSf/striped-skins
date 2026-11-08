@@ -12,6 +12,7 @@ import {
 } from "@heroicons/react/24/outline";
 import { ColorPicker } from "./ColorPicker";
 import type { SkinDocument } from "@striped-skins/api";
+import { MoveControls } from "./MoveControls";
 import { NumberSlider } from "./NumberSlider";
 import type { PaintTool } from "./TextureEditor";
 import { Button, DesignIcon, Field, HexInput, IconButton } from "./ui";
@@ -24,6 +25,7 @@ function getToolNames(t: TFunction) {
     eraser: t("tools.eraser"),
     drop: t("tools.eyedropper"),
     select: t("tools.rectangleSelect"),
+    move: t("tools.move"),
   };
 }
 
@@ -117,7 +119,7 @@ export function MobileToolMenu({
           <DesignIcon name={tool} />
         </summary>
         <div className="studio-panel" role="toolbar" aria-label={t("tools.label")}>
-          {(["hand", "brush", "eraser", "drop", "select"] as const).map((id) => (
+          {(["hand", "move", "brush", "eraser", "drop", "select"] as const).map((id) => (
             <Button
               key={id}
               aria-pressed={tool === id}
@@ -265,9 +267,12 @@ export function MobileEditorFooter({
               ? t("mobile.panHint")
               : tool === "select"
                 ? t("selection.dragHint")
-                : t("mobile.sampleHint")}
+                : tool === "move"
+                  ? t("move.dragHint")
+                  : t("mobile.sampleHint")}
           </p>
         )}
+        {tool === "move" ? <MoveControls document={skin} /> : null}
         {tool === "brush" ? (
           <>
             <Field label={t("mobile.opacity")}>

@@ -27,6 +27,7 @@ import {
   MobileToolMenu,
   type MobileEditorView,
 } from "./MobileEditorControls";
+import { MoveControls } from "./MoveControls";
 import { NumberSlider } from "./NumberSlider";
 import { LayerPanel, HistoryPanel } from "./LayerPanel";
 import { useDocumentSetting } from "./useDocumentSetting";
@@ -195,8 +196,8 @@ export default function EditorWorkspace({
   const selectTool = useCallback(
     (value: PaintTool) => {
       setTool(value);
-      setPainting(value !== "hand" && value !== "select");
-      if (value === "select") {
+      setPainting(value !== "hand" && value !== "select" && value !== "move");
+      if (value === "select" || value === "move") {
         if (isPhone) setMobileView("2d");
         else setLayout((current) => (current === "3d" ? "split" : current));
       }
@@ -225,8 +226,15 @@ export default function EditorWorkspace({
         return;
       }
       if (e.ctrlKey || e.metaKey || e.altKey) return;
-      const tools: Record<string, PaintTool> = { b: "brush", e: "eraser", i: "drop", h: "hand" };
+      const tools: Record<string, PaintTool> = {
+        b: "brush",
+        e: "eraser",
+        i: "drop",
+        h: "hand",
+        v: "move",
+      };
       if (k === "m" || e.code === "KeyM") selectTool("select");
+      else if (e.code === "KeyV") selectTool("move");
       else if (tools[k]) selectTool(tools[k]);
       if ((k === "x" || e.code === "KeyX") && !e.repeat) {
         e.preventDefault();
@@ -316,11 +324,13 @@ export default function EditorWorkspace({
                   drop: t("tools.eyedropper"),
                   hand: t("tools.pan"),
                   select: t("tools.rectangleSelect"),
+                  move: t("tools.move"),
                 }[tool]
               }
             </strong>
           </div>
           <span className="toolbar-divider" />
+          {tool === "move" ? <MoveControls document={skin} /> : null}
           {tool === "select" ? (
             <div className="inline-controls">
               <select
@@ -398,13 +408,15 @@ export default function EditorWorkspace({
           </div>
           <Button
             className="paint-mode"
-            aria-pressed={painting && tool !== "select"}
+            aria-pressed={painting && tool !== "select" && tool !== "move"}
             onClick={() => {
-              if (tool === "hand" || tool === "select") selectTool("brush");
+              if (tool === "hand" || tool === "select" || tool === "move") selectTool("brush");
               else setPainting((v) => !v);
             }}
           >
-            {painting && tool !== "select" ? t("tools.brushMode") : t("tools.orbitMode")}
+            {painting && tool !== "select" && tool !== "move"
+              ? t("tools.brushMode")
+              : t("tools.orbitMode")}
           </Button>
           {layout === "2d" && !showMini ? (
             <Button onClick={() => setShowMini(true)}>{t("viewport.preview3d")}</Button>
@@ -432,6 +444,7 @@ export default function EditorWorkspace({
             {(
               [
                 ["hand", t("tools.panShortcut")],
+                ["move", t("tools.moveShortcut")],
                 ["brush", t("tools.brushShortcut")],
                 ["eraser", t("tools.eraserShortcut")],
                 ["drop", t("tools.eyedropperShortcut")],
@@ -474,7 +487,9 @@ export default function EditorWorkspace({
                 overrides={appearance}
                 preview={preview}
                 hidden={hidden}
-                painting={(isPhone || painting) && tool !== "hand" && tool !== "select"}
+                painting={
+                  (isPhone || painting) && tool !== "hand" && tool !== "select" && tool !== "move"
+                }
                 paintMask={selection ?? undefined}
                 color={color}
                 brushSize={brushSize}
