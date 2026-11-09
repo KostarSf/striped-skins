@@ -1,3 +1,4 @@
+import { documentLabel } from "../../i18n/document-labels";
 import { useTranslation } from "react-i18next";
 import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent } from "react";
 import { type SkinDocument, type Pixel } from "@striped-skins/api";
@@ -19,7 +20,7 @@ import {
   type SelectionRect,
   type TexturePoint,
 } from "./rectangle-selection";
-export type PaintTool = "brush" | "eraser" | "drop" | "hand" | "select";
+export type PaintTool = "brush" | "eraser" | "drop" | "hand" | "select" | "move";
 function hoverBrushRect(hover: SurfaceHover, width: number, height: number, size: number) {
   const xs = hover.uv.filter((_, i) => i % 2 === 0).map((u) => u * width);
   const ys = hover.uv.filter((_, i) => i % 2 === 1).map((v) => (1 - v) * height);
@@ -77,9 +78,12 @@ export function TextureEditor({
     area = useRef<HTMLDivElement>(null);
   const [modifiers, setModifiers] = useState({ shiftKey: false, altKey: false });
   const effectiveSelectionMode = selectionModeFor(modifiers, selectionMode);
+  const moveStart = useRef<TexturePoint | null>(null);
   const selectionDrag = useRef<{ start: TexturePoint } | null>(null);
   const [draft, setDraft] = useState<SelectionRect | null>(null);
-  const mode = useRef<"draw" | "pan" | "pinch" | "sample" | "select" | "clear" | null>(null),
+  const mode = useRef<"draw" | "pan" | "pinch" | "sample" | "select" | "clear" | "move" | null>(
+      null,
+    ),
     origin = useRef({ x: 0, y: 0, px: 0, py: 0 });
   const pointer = useRef<number | null>(null);
   const touches = useRef(new Map<number, TexturePoint>());
@@ -101,7 +105,8 @@ export function TextureEditor({
     [selection, partMask],
   );
   const drawingTool = tool === "brush" || tool === "eraser";
-  const paintBlocked = drawingTool && !!skin.paintBlockedReason;
+  const paintBlocked =
+    (drawingTool && !!skin.paintBlockedReason) || (tool === "move" && !!skin.moveBlockedReason);
   const cursorBlocked =
     paintBlocked ||
     (drawingTool && !!cursor && !!partMask && !partMask[cursor.y * skin.width + cursor.x]);
@@ -119,12 +124,14 @@ export function TextureEditor({
       pointer.current = null;
       mode.current = null;
       selectionDrag.current = null;
+      moveStart.current = null;
       setDraft(null);
       setCursor(null);
     };
     window.addEventListener("blur", clear);
     return () => {
       window.removeEventListener("blur", clear);
+      skin.cancelStroke();
       onHover?.(null);
     };
   }, [skin, onHover, setCursor]);
@@ -153,8 +160,10 @@ export function TextureEditor({
   const draftOutline = draft
     ? `M${draft.x} ${draft.y}h${draft.width}v${draft.height}h${-draft.width}Z`
     : "";
-  const cancelSelectionDrag = useCallback(() => {
-    if (mode.current !== "select") return;
+  const cancelToolDrag = useCallback(() => {
+    if (mode.current !== "select" && mode.current !== "move") return;
+    if (mode.current === "move") skin.cancelMove();
+    moveStart.current = null;
     const id = pointer.current;
     mode.current = null;
     pointer.current = null;
@@ -164,10 +173,10 @@ export function TextureEditor({
       touches.current.delete(id);
       if (area.current?.hasPointerCapture(id)) area.current.releasePointerCapture(id);
     }
-  }, [setDraft]);
+  }, [skin, setDraft]);
   useEffect(() => {
-    cancelSelectionDrag();
-  }, [cancelSelectionDrag, tool, textureWidth, textureHeight]);
+    cancelToolDrag();
+  }, [cancelToolDrag, tool, textureWidth, textureHeight]);
   useEffect(() => {
     const update = () => {
       // A resize notifies before React updates the canvas dimensions; the next effect draws it.
@@ -214,13 +223,39 @@ export function TextureEditor({
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
       setModifiers({ shiftKey: e.shiftKey, altKey: e.altKey });
-      if (e.key === "Escape" && mode.current === "select") {
+      if (e.key === "Escape" && (mode.current === "select" || mode.current === "move")) {
         e.preventDefault();
-        cancelSelectionDrag();
+        cancelToolDrag();
         return;
       }
-      if ((e.target as HTMLElement).closest("input,select,textarea,dialog,button,a,summary"))
+      if (
+        (e.target as HTMLElement).closest(
+          "input,select,textarea,dialog,[contenteditable],.color-picker-trigger",
+        )
+      )
         return;
+      if (
+        tool === "move" &&
+        !e.ctrlKey &&
+        !e.metaKey &&
+        !e.altKey &&
+        !space &&
+        mode.current === null
+      ) {
+        const delta: Record<string, [number, number]> = {
+          ArrowLeft: [-1, 0],
+          ArrowRight: [1, 0],
+          ArrowUp: [0, -1],
+          ArrowDown: [0, 1],
+        };
+        const step = delta[e.key];
+        if (step) {
+          e.preventDefault();
+          skin.movePixels(...step);
+          return;
+        }
+      }
+      if ((e.target as HTMLElement).closest("button,a,summary")) return;
       if (e.code === "Space") {
         e.preventDefault();
         setSpace(true);
@@ -244,9 +279,8 @@ export function TextureEditor({
       window.removeEventListener("keydown", down);
       window.removeEventListener("keyup", up);
       window.removeEventListener("blur", blur);
-      skin.cancelStroke();
     };
-  }, [skin, setView, cancelSelectionDrag]);
+  }, [skin, setView, cancelToolDrag, tool, space]);
   const point = (e: PointerEvent) => {
     const rect = canvas.current!.getBoundingClientRect();
     return {
@@ -270,6 +304,8 @@ export function TextureEditor({
   };
   const end = () => {
     if (mode.current === "draw") skin.endStroke();
+    if (mode.current === "move") skin.endMove();
+    moveStart.current = null;
     if (mode.current === "select") {
       selectionDrag.current = null;
       setDraft(null);
@@ -297,7 +333,7 @@ export function TextureEditor({
       // Wait until every finger lifts before allowing another stroke or pan.
       if (!touches.current.size) end();
     } else if (pointer.current === event.pointerId) {
-      if (cancelled && mode.current === "draw") skin.cancelStroke();
+      if (cancelled && (mode.current === "draw" || mode.current === "move")) skin.cancelStroke();
       if (!cancelled && mode.current === "sample") {
         const p = point(event);
         if (p.x >= 0 && p.y >= 0 && p.x < skin.width && p.y < skin.height)
@@ -366,7 +402,12 @@ export function TextureEditor({
         ref={area}
         className={`texture-area ${tool === "hand" || space ? "panning" : cursorBlocked ? "painting-blocked" : ""}`}
         style={{
-          cursor: tool === "select" && !space ? selectionCursor(effectiveSelectionMode) : undefined,
+          cursor:
+            tool === "select" && !space
+              ? selectionCursor(effectiveSelectionMode)
+              : tool === "move" && !space && !paintBlocked
+                ? "move"
+                : undefined,
         }}
         data-selection-mode={tool === "select" ? effectiveSelectionMode : undefined}
         onContextMenu={(e) => e.preventDefault()}
@@ -375,7 +416,8 @@ export function TextureEditor({
             touches.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
             e.currentTarget.setPointerCapture(e.pointerId);
             if (touches.current.size >= 2) {
-              if (mode.current === "draw") skin.cancelStroke();
+              if (mode.current === "draw" || mode.current === "move") skin.cancelStroke();
+              moveStart.current = null;
               selectionDrag.current = null;
               setDraft(null);
               mode.current = "pinch";
@@ -424,6 +466,15 @@ export function TextureEditor({
             e.preventDefault();
             return;
           }
+          if (tool === "move") {
+            canvas.current?.focus({ preventScroll: true });
+            if (skin.beginMove()) {
+              moveStart.current = p;
+              mode.current = "move";
+            }
+            e.preventDefault();
+            return;
+          }
           mode.current = "draw";
           skin.beginStroke();
           paint(e);
@@ -468,7 +519,10 @@ export function TextureEditor({
               y: origin.current.py + e.clientY - origin.current.y,
             });
           } else if (mode.current === "draw") paint(e);
-          else if (selectionDrag.current) {
+          else if (mode.current === "move" && moveStart.current) {
+            const p = point(e);
+            skin.previewMove(p.x - moveStart.current.x, p.y - moveStart.current.y);
+          } else if (selectionDrag.current) {
             setDraft(
               selectionRect(selectionDrag.current.start, point(e), textureWidth, textureHeight),
             );
@@ -643,9 +697,20 @@ export function TextureEditor({
       <div className="viewport-footer">
         <div className="camera-actions">
           <span className="viewport-hint">
-            <span>{t(tool === "select" ? "selection.dragHint" : "texture.paintHint")}</span>
+            <span>
+              {t(
+                tool === "select"
+                  ? "selection.dragHint"
+                  : tool === "move"
+                    ? "move.dragHint"
+                    : "texture.paintHint",
+              )}
+            </span>
             <span>{t("texture.panHint")}</span>
           </span>
+          {tool === "move" && skin.moveBlockedReason ? (
+            <output className="selection-status">{documentLabel(t, skin.moveBlockedReason)}</output>
+          ) : null}
           {emptySelection ? (
             <output className="selection-status">{t("selection.empty")}</output>
           ) : null}

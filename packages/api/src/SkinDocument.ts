@@ -89,6 +89,7 @@ export class SkinDocument {
   private rasterRevisions = new Map<string, number>();
   private historyInteraction: string | undefined;
   private stroke: { layerId: string | null; changes: Map<number, Change> } | null = null;
+  private movement: { before: Structure; dx: number; dy: number } | null = null;
   private undoStack: Command[] = [];
   private redoStack: Command[] = [];
   private lastPoint: { x: number; y: number; surface: string } | null = null;
@@ -202,7 +203,7 @@ export class SkinDocument {
     }));
   }
   get isDrawing() {
-    return this.stroke !== null;
+    return this.stroke !== null || this.movement !== null;
   }
   get paintBlockedReason(): string | null {
     if (!this.canEditTexture) return "skin.parametersOnly";
@@ -213,6 +214,97 @@ export class SkinDocument {
       if (!n.visible || n.opacity === 0) return "paint.hidden";
     }
     return null;
+  }
+  get moveBlockedReason(): string | null {
+    return this.paintBlockedReason ?? (this.activeLayer.alphaLocked ? "paint.alphaLocked" : null);
+  }
+  /** Integer translation from the gesture's original raster; previews never accumulate clipping. */
+  beginMove() {
+    this.endStroke();
+    if (this.moveBlockedReason) return false;
+    this.movement = { before: this.structure(), dx: 0, dy: 0 };
+    return true;
+  }
+  previewMove(dx: number, dy: number) {
+    const move = this.movement;
+    if (!move || !Number.isSafeInteger(dx) || !Number.isSafeInteger(dy)) return;
+    if (move.dx === dx && move.dy === dy) return;
+    move.dx = dx;
+    move.dy = dy;
+    const source = move.before.layers.find((n) => n.id === move.before.activeLayerId)!.pixels!;
+    const mask = move.before.selection;
+    const result = source.slice();
+    const selected = mask ? new Uint8Array(mask.length) : null;
+    // Clear the source first so overlapping translations use the original RGBA, without blending.
+    for (let y = 0; y < this.height; y++)
+      for (let x = 0; x < this.width; x++) {
+        const i = y * this.width + x;
+        if ((!mask || mask[i]) && !isTrigger(x, y)) result.fill(0, i * 4, i * 4 + 4);
+      }
+    for (let y = 0; y < this.height; y++)
+      for (let x = 0; x < this.width; x++) {
+        const i = y * this.width + x;
+        if (mask && !mask[i]) continue;
+        const tx = x + dx,
+          ty = y + dy;
+        if (tx < 0 || ty < 0 || tx >= this.width || ty >= this.height) continue;
+        const target = ty * this.width + tx;
+        if (selected) selected[target] = 1;
+        if (!isTrigger(x, y) && !isTrigger(tx, ty))
+          result.set(source.subarray(i * 4, i * 4 + 4), target * 4);
+      }
+    this.activeLayer.pixels = result;
+    this.selectedPixels = selected;
+    this.compose();
+    this.emit();
+  }
+  private moveCommand(): Command | null {
+    const move = this.movement;
+    if (!move) return null;
+    const before = move.before;
+    const source = before.layers.find((n) => n.id === before.activeLayerId)!.pixels!;
+    if (
+      source.every((v, i) => v === this.activeLayer.pixels![i]) &&
+      (before.selection === this.selectedPixels ||
+        (before.selection &&
+          this.selectedPixels &&
+          before.selection.every((v, i) => v === this.selectedPixels![i])))
+    )
+      return null;
+    return {
+      kind: "structure",
+      label: "history.movePixels",
+      before,
+      after: this.structure(),
+      beforeId: this.stateId,
+      afterId: this.nextId,
+    };
+  }
+  endMove() {
+    if (!this.movement) return;
+    const command = this.moveCommand();
+    this.movement = null;
+    if (command) {
+      this.nextId++;
+      this.rasterChanged(this.active);
+      this.push(command);
+    }
+    this.emit();
+  }
+  cancelMove() {
+    if (!this.movement) return;
+    const { before } = this.movement;
+    this.movement = null;
+    this.restoreStructure(before);
+    this.rasterChanged(this.active);
+    this.compose();
+    this.emit();
+  }
+  movePixels(dx: number, dy: number) {
+    if (!dx && !dy) return;
+    if (!this.beginMove()) return;
+    this.previewMove(dx, dy);
+    this.endMove();
   }
   getWorkspace<T extends WorkspaceValue>(key: string, fallback: T): T {
     return (this.workspace[key] as T | undefined) ?? fallback;
@@ -683,6 +775,7 @@ export class SkinDocument {
     }
   }
   endStroke(label = "history.stroke") {
+    this.endMove();
     if (!this.stroke) return;
     const { layerId } = this.stroke,
       changes = [...this.stroke.changes.values()].filter((c) =>
@@ -705,6 +798,7 @@ export class SkinDocument {
     this.emit();
   }
   cancelStroke() {
+    this.cancelMove();
     if (!this.stroke) return;
     const target = this.target(this.stroke.layerId)!;
     if (this.stroke.layerId !== null) this.rasterChanged(this.stroke.layerId);
@@ -770,19 +864,23 @@ export class SkinDocument {
     const pending = this.stroke
       ? [...this.stroke.changes.values()].filter((c) => c.before.some((v, i) => v !== c.after[i]))
       : [];
-    const undo: Command[] = pending.length
-      ? [
-          ...this.undoStack,
-          {
-            kind: "pixels",
-            label: "history.stroke",
-            layerId: this.stroke!.layerId,
-            changes: pending,
-            beforeId: this.stateId,
-            afterId: this.nextId,
-          },
-        ]
-      : this.undoStack;
+    const moving = this.moveCommand();
+    const hasPending = pending.length > 0 || moving !== null;
+    const undo: Command[] = moving
+      ? [...this.undoStack, moving]
+      : pending.length
+        ? [
+            ...this.undoStack,
+            {
+              kind: "pixels",
+              label: "history.stroke",
+              layerId: this.stroke!.layerId,
+              changes: pending,
+              beforeId: this.stateId,
+              afterId: this.nextId,
+            },
+          ]
+        : this.undoStack;
     return copy({
       version: 2,
       width: this.width,
@@ -794,11 +892,11 @@ export class SkinDocument {
       layers: this.nodes,
       activeLayerId: this.active,
       workspace: this.workspace,
-      stateId: pending.length ? this.nextId : this.stateId,
-      nextId: this.nextId + (pending.length ? 1 : 0),
+      stateId: hasPending ? this.nextId : this.stateId,
+      nextId: this.nextId + (hasPending ? 1 : 0),
       workspaceRevision: this.workspaceRevision,
       undo: undo.slice(-MAX_HISTORY),
-      redo: pending.length ? [] : this.redoStack,
+      redo: hasPending ? [] : this.redoStack,
     });
   }
   clone() {
@@ -1032,8 +1130,8 @@ function validateWorkspace(workspace: Record<string, WorkspaceValue>, fail: () =
   const record = (v: unknown): v is Record<string, unknown> =>
     !!v && typeof v === "object" && !Array.isArray(v);
   const rules: Record<string, (v: unknown) => boolean> = {
-    tool: (v) => ["brush", "eraser", "drop", "hand", "select"].includes(v as string),
-    lastPaintTool: (v) => ["brush", "eraser", "drop", "select"].includes(v as string),
+    tool: (v) => ["brush", "eraser", "drop", "hand", "select", "move"].includes(v as string),
+    lastPaintTool: (v) => ["brush", "eraser", "drop", "select", "move"].includes(v as string),
     layout: (v) => ["3d", "2d", "split"].includes(v as string),
     mobileView: (v) => ["3d", "2d", "settings"].includes(v as string),
     brushSize: (v) => finite(v) && Number.isInteger(v) && (v as number) >= 1 && (v as number) <= 32,
