@@ -859,6 +859,12 @@ button:disabled {
   gap: 5px;
   align-items: center;
 }
+.clipboard-controls {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  min-width: 0;
+}
 .brush-toolbar .layout-tabs {
   margin-left: auto;
 }

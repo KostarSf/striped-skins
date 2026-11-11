@@ -13,6 +13,8 @@ import {
 import { ColorPicker } from "./ColorPicker";
 import type { SkinDocument } from "@striped-skins/api";
 import { MoveControls } from "./MoveControls";
+import { ClipboardControls } from "./ClipboardControls";
+import type { SelectionClipboardActions } from "./useSelectionClipboard";
 import { NumberSlider } from "./NumberSlider";
 import type { PaintTool } from "./TextureEditor";
 import { Button, DesignIcon, Field, HexInput, IconButton } from "./ui";
@@ -144,6 +146,7 @@ export function MobileEditorFooter({
   onView,
   tool,
   skin,
+  clipboard,
   primary,
   secondary,
   onPrimary,
@@ -159,6 +162,7 @@ export function MobileEditorFooter({
   onView: (view: MobileEditorView) => void;
   tool: PaintTool;
   skin: SkinDocument;
+  clipboard: SelectionClipboardActions;
   primary: string;
   secondary: string;
   onPrimary: (color: string) => void;
@@ -273,6 +277,7 @@ export function MobileEditorFooter({
           </p>
         )}
         {tool === "move" ? <MoveControls document={skin} /> : null}
+        <ClipboardControls actions={clipboard} />
         {tool === "brush" ? (
           <>
             <Field label={t("mobile.opacity")}>
