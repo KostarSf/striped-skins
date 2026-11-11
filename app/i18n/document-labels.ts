@@ -50,6 +50,10 @@ export function documentLabel(t: TFunction, label: string | null | undefined): s
       return t("history.clearSelection");
     case "history.movePixels":
       return t("history.movePixels");
+    case "history.cutSelection":
+      return t("history.cutSelection");
+    case "history.pasteSelection":
+      return t("history.pasteSelection");
     case "paint.alphaLocked":
       return t("paint.alphaLocked");
     case "history.stroke":
