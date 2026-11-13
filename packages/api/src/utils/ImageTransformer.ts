@@ -14,10 +14,6 @@ export class ImageTransformer {
     return this._canvas;
   }
 
-  constructor(image?: HTMLImageElement) {
-    if (image) this.setImage(image);
-  }
-
   get hasImage() {
     return !!this._canvas && !!this._context;
   }
@@ -26,13 +22,19 @@ export class ImageTransformer {
     this._context = canvas.getContext("2d")!;
   }
 
-  setImage(image: HTMLImageElement) {
-    this._rawImage = image;
-
-    this._canvas = this.initializeCanvas(image.width, image.height);
-    this._context = this._canvas.getContext("2d")!;
-
-    this._context.drawImage(image, 0, 0);
+  async setImage(image: HTMLImageElement) {
+    // Skin RGB values encode metadata; ICC/gamma conversion would corrupt them.
+    const bitmap = await createImageBitmap(image, { colorSpaceConversion: "none" });
+    try {
+      const canvas = this.initializeCanvas(bitmap.width, bitmap.height);
+      const context = canvas.getContext("2d")!;
+      context.drawImage(bitmap, 0, 0);
+      this._rawImage = image;
+      this._canvas = canvas;
+      this._context = context;
+    } finally {
+      bitmap.close();
+    }
   }
 
   private initializeCanvas(width: number, height: number): HTMLCanvasElement {
