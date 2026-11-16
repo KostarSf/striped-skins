@@ -1,6 +1,8 @@
 import { SkinError } from "./SkinError.js";
 import { SkinDocument } from "./SkinDocument.js";
 import { MAX_SKIN_SIZE } from "./skin-resolution.js";
+import { ImageTransformer } from "./utils/ImageTransformer.js";
+import { loadImage } from "./utils/image.js";
 
 /** Normalizes vanilla legacy limb islands, then MLP's extra wing island. */
 export function normalizeSkinPixels(
@@ -72,21 +74,16 @@ export function normalizeSkinPixels(
   return new SkinDocument(width, width, out, "legacy", baseLayerName);
 }
 export async function loadSkinDocument(url: string, baseLayerName?: string): Promise<SkinDocument> {
-  const image = new Image();
-  image.crossOrigin = "anonymous";
-  image.src = url;
-  await image.decode();
+  const image = await loadImage(url);
   if (image.width > MAX_SKIN_SIZE || image.height > MAX_SKIN_SIZE)
     throw new SkinError("invalidDimensions", "Максимальный размер скина — 4096 пикселей");
-  const canvas = document.createElement("canvas");
-  canvas.width = image.width;
-  canvas.height = image.height;
-  const context = canvas.getContext("2d", { willReadFrequently: true })!;
-  context.drawImage(image, 0, 0);
+  const transformer = new ImageTransformer();
+  await transformer.setImage(image);
+  const canvas = transformer.canvas!;
   return normalizeSkinPixels(
-    image.width,
-    image.height,
-    context.getImageData(0, 0, image.width, image.height).data,
+    canvas.width,
+    canvas.height,
+    canvas.getContext("2d")!.getImageData(0, 0, canvas.width, canvas.height).data,
     baseLayerName,
   );
 }
@@ -102,4 +99,24 @@ export function documentCanvas(document: SkinDocument): HTMLCanvasElement {
       0,
     );
   return canvas;
+}
+
+/** Export a fresh PNG with only image data, never color profiles or other metadata. */
+export async function exportSkinPNG(document: SkinDocument): Promise<Blob> {
+  const blob = await new Promise<Blob | null>((resolve) =>
+    documentCanvas(document).toBlob(resolve, "image/png"),
+  );
+  if (!blob) throw new SkinError("exportPng", "Не удалось экспортировать PNG");
+  const bytes = new Uint8Array(await blob.arrayBuffer());
+  const view = new DataView(bytes.buffer);
+  const chunks = [bytes.subarray(0, 8)]; // PNG signature
+  const imageChunks = new Set(["IHDR", "PLTE", "tRNS", "IDAT", "IEND"]);
+  for (let offset = 8; offset < bytes.length;) {
+    const end = offset + view.getUint32(offset) + 12;
+    const type = String.fromCharCode(...bytes.subarray(offset + 4, offset + 8));
+    // Retained chunks keep their original CRC; color/profile chunks are omitted.
+    if (imageChunks.has(type)) chunks.push(bytes.subarray(offset, end));
+    offset = end;
+  }
+  return new Blob(chunks, { type: "image/png" });
 }
