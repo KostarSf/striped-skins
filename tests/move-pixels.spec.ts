@@ -2,6 +2,7 @@ import { test, expect, type Page } from "@playwright/test";
 import { readFile } from "node:fs/promises";
 import { decodeSkinProject } from "@striped-skins/api";
 import { setColor } from "./color-picker-helpers";
+import { waitForRecoveryState } from "./recovery-helpers";
 
 test.use({ viewport: { width: 1440, height: 1000 } });
 test.beforeEach(async ({ page }) => {
@@ -67,6 +68,7 @@ test("V moves the active layer live, arrows nudge by 1 pixel, undo/redo and reco
   const saved = decodeSkinProject(await readFile((await (await download).path())!));
   expect(saved.readPixel(16, 15)).toEqual([255, 0, 255, 255]);
   expect(saved.getWorkspace("tool", "brush")).toBe("move");
+  await waitForRecoveryState(page, saved.snapshot().stateId);
   await page.reload();
   await expect.poll(() => pixel(page, 16, 15)).toEqual([255, 0, 255, 255]);
   await page.screenshot({ path: testInfo.outputPath("move-desktop.png") });
@@ -103,6 +105,10 @@ test("selected pixels and contour move together; Escape and pointer cancellation
   await drag(page, 12, 12, 14, 13);
   await page.mouse.up();
   await expect(outline(page)).toHaveAttribute("d", /M14 13H15/);
+  const download = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Сохранить проект", exact: true }).click();
+  const saved = decodeSkinProject(await readFile((await (await download).path())!));
+  await waitForRecoveryState(page, saved.snapshot().stateId);
   await page.reload();
   await expect(outline(page)).toHaveAttribute("d", /M14 13H15/);
   await page.keyboard.press("Control+z");

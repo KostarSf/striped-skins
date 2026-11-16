@@ -2,6 +2,7 @@ import { test, expect, type Page } from "@playwright/test";
 import { readFile } from "node:fs/promises";
 import { decodeSkinProject, encodeSkinProject, SkinDocument } from "@striped-skins/api";
 import { setColor } from "./color-picker-helpers";
+import { waitForRecoveryState } from "./recovery-helpers";
 
 test.use({ viewport: { width: 1440, height: 1000 } });
 test.beforeEach(async ({ page }) => {
@@ -89,31 +90,7 @@ test("keyboard copy/paste creates a new movable layer every time and keeps sourc
   expect(rgba(project, 3, 12, 12)).toEqual([255, 0, 255, 255]);
   expect(rgba(project, 3, 14, 12)).toEqual([0, 0, 0, 0]);
   expect(project.activeLayer.parentId).toBeNull();
-  // Recovery is debounced: verify the committed IndexedDB state before reloading.
-  await expect
-    .poll(() =>
-      page.evaluate(
-        () =>
-          new Promise<number | undefined>((resolve, reject) => {
-            const request = indexedDB.open("striped.editor", 1);
-            request.onerror = () => reject(request.error);
-            request.onsuccess = () => {
-              const db = request.result;
-              const tx = db.transaction("documents", "readonly");
-              const saved = tx.objectStore("documents").get("session");
-              tx.oncomplete = () => {
-                resolve(saved.result?.first?.document.stateId);
-                db.close();
-              };
-              tx.onabort = () => {
-                db.close();
-                reject(tx.error);
-              };
-            };
-          }),
-      ),
-    )
-    .toBe(project.snapshot().stateId);
+  await waitForRecoveryState(page, project.snapshot().stateId);
   await page.reload();
   await expect(rows(page)).toHaveCount(4);
   await expect(button(page, "Вставить в новый слой")).toBeDisabled();

@@ -1,4 +1,7 @@
 import { test, expect, type Page } from "@playwright/test";
+import { readFile } from "node:fs/promises";
+import { decodeSkinProject } from "@striped-skins/api";
+import { waitForRecoveryState } from "./recovery-helpers";
 
 test.use({ viewport: { width: 1440, height: 1000 } });
 test.beforeEach(async ({ page }) => {
@@ -116,6 +119,10 @@ test("outside click clears and can be undone; right-click pan and cancelled sele
   await expect(page.getByTestId("texture-selection")).toHaveCount(0);
   await page.keyboard.press("Control+z");
   await expect(path(page)).toHaveAttribute("d", first!);
+  const download = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Сохранить проект", exact: true }).click();
+  const saved = decodeSkinProject(await readFile((await (await download).path())!));
+  await waitForRecoveryState(page, saved.snapshot().stateId);
   await page.reload();
   await expect(path(page)).toHaveAttribute("d", first!);
 });
