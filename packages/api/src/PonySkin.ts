@@ -100,13 +100,14 @@ export class PonySkin {
       : this.initialShape;
   }
   static async fromUrl(url: string, baseLayerName?: string) {
-    const skin = this.fromImage(await loadImage(url), baseLayerName);
+    const skin = await this.fromImage(await loadImage(url), baseLayerName);
     skin.sourceUrl = url;
     return skin;
   }
-  static fromImage(image: HTMLImageElement, baseLayerName?: string) {
-    const transformer = new ImageTransformer(image),
-      canvas = transformer.canvas!;
+  static async fromImage(image: HTMLImageElement, baseLayerName?: string) {
+    const transformer = new ImageTransformer();
+    await transformer.setImage(image);
+    const canvas = transformer.canvas!;
     return this.fromDocument(
       normalizeSkinPixels(
         canvas.width,

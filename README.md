@@ -43,6 +43,12 @@ npm start
 
 For the standalone viewer, use `npm run dist:lib` and `npm run preview:lib`.
 
+Skin imports ignore embedded color profiles to preserve texture RGB and MLP
+trigger pixels. Both `PonySkin.fromUrl(url)` and `PonySkin.fromImage(image)`
+are asynchronous; use `await` for either. The lower-level
+`ImageTransformer.setImage(image)` also requires `await`.
+PNG exports contain only image chunks, without embedded profiles or color metadata.
+
 ## Documentation
 
 - [Interface and shortcuts](docs/figma-interface.md)

@@ -21,6 +21,7 @@ import {
   SkinDocument,
   decodeSkinMetadata,
   loadSkinDocument,
+  exportSkinPNG,
   writeSkinMetadata,
   type SkinMetadata,
   type Pixel,
@@ -263,26 +264,14 @@ export function SkinEditor({ skin, lab = false }: { skin: SkinDocument; lab?: bo
     (pixel: { x: number; y: number; part: string }) => setLastPixel(pixel),
     [],
   );
-  const download = () => {
-    const canvas = document.createElement("canvas");
-    canvas.width = skin.width;
-    canvas.height = skin.height;
-    canvas
-      .getContext("2d")!
-      .putImageData(
-        new ImageData(new Uint8ClampedArray(skin.pixels), skin.width, skin.height),
-        0,
-        0,
-      );
-    canvas.toBlob((blob) => {
-      if (!blob) return;
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "pony-skin.png";
-      a.click();
-      setTimeout(() => URL.revokeObjectURL(url), 1000);
-    }, "image/png");
+  const download = async () => {
+    const blob = await exportSkinPNG(skin);
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "pony-skin.png";
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
   };
   return (
     <div className="grid min-h-0 flex-1 grid-cols-1 lg:grid-cols-[minmax(0,1fr)_340px]">
