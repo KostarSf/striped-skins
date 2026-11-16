@@ -1,4 +1,7 @@
 import { test, expect, type Page } from "@playwright/test";
+import { readFile } from "node:fs/promises";
+import { decodeSkinProject } from "@striped-skins/api";
+import { waitForRecoveryState } from "./recovery-helpers";
 
 test.use({ viewport: { width: 1440, height: 1000 } });
 test.beforeEach(async ({ page }) => {
@@ -116,6 +119,10 @@ test("outside click clears and can be undone; right-click pan and cancelled sele
   await expect(page.getByTestId("texture-selection")).toHaveCount(0);
   await page.keyboard.press("Control+z");
   await expect(path(page)).toHaveAttribute("d", first!);
+  const download = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Сохранить проект", exact: true }).click();
+  const saved = decodeSkinProject(await readFile((await (await download).path())!));
+  await waitForRecoveryState(page, saved.snapshot().stateId);
   await page.reload();
   await expect(path(page)).toHaveAttribute("d", first!);
 });
@@ -129,11 +136,13 @@ test("selection history survives sharded recovery after a large resize", async (
   await expect(page.getByTestId("skin-texture")).toHaveCount(0);
   await page.getByLabel("Разрешение скина", { exact: true }).selectOption("64");
   await expect(page.getByTestId("skin-texture")).toBeVisible();
+  // The initial recovery snapshot is also 64×64. Wait for the resize history,
+  // so a pending debounced save cannot make this assertion pass prematurely.
   await expect
     .poll(() =>
       page.evaluate(
         () =>
-          new Promise<number | undefined>((resolve, reject) => {
+          new Promise<{ width: number; previousWidth?: number } | undefined>((resolve, reject) => {
             const request = indexedDB.open("striped.editor", 1);
             request.onerror = () => reject(request.error);
             request.onsuccess = () => {
@@ -141,14 +150,24 @@ test("selection history survives sharded recovery after a large resize", async (
               const transaction = db.transaction("documents", "readonly");
               const saved = transaction.objectStore("documents").get("session");
               transaction.oncomplete = () => {
-                resolve(saved.result?.first?.document.width);
+                const document = saved.result?.first?.document;
+                resolve(
+                  document && {
+                    width: document.width,
+                    previousWidth: document.undo.at(-1)?.before?.width,
+                  },
+                );
                 db.close();
+              };
+              transaction.onabort = () => {
+                db.close();
+                reject(transaction.error);
               };
             };
           }),
       ),
     )
-    .toBe(64);
+    .toEqual({ width: 64, previousWidth: 1024 });
   await page.reload();
   await expect(page.getByTestId("skin-texture")).toBeVisible();
   await page.locator(".texture-area").click({ position: { x: 5, y: 250 } });

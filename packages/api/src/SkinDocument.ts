@@ -2,6 +2,13 @@ import { SkinError } from "./SkinError.js";
 import { MAX_SKIN_SIZE, MAX_EDITABLE_SKIN_SIZE, resizeSkinPixels } from "./skin-resolution.js";
 export type PaintBounds = { minX: number; minY: number; maxX: number; maxY: number };
 export type Pixel = readonly [number, number, number, number];
+/** Session clipboard: exact active-layer RGBA and mask at their original texture coordinates. */
+export type SelectionClipboard = {
+  width: number;
+  height: number;
+  pixels: Uint8ClampedArray;
+  selection: Uint8Array;
+};
 export type LayerNode = {
   id: string;
   kind: "layer" | "group";
@@ -217,6 +224,95 @@ export class SkinDocument {
   }
   get moveBlockedReason(): string | null {
     return this.paintBlockedReason ?? (this.activeLayer.alphaLocked ? "paint.alphaLocked" : null);
+  }
+  get canCopySelection() {
+    return (
+      this.canEditTexture &&
+      this.activeLayer.kind === "layer" &&
+      !!this.selectedPixels?.some(
+        (value, i) => value && !isTrigger(i % this.width, Math.floor(i / this.width)),
+      )
+    );
+  }
+  get canCutSelection() {
+    return this.canCopySelection && this.moveBlockedReason === null;
+  }
+  copySelection(): SelectionClipboard | null {
+    this.endStroke();
+    if (!this.canCopySelection) return null;
+    const selection = this.selectedPixels!.slice();
+    const pixels = new Uint8ClampedArray(this.pixels.length);
+    const source = this.activeLayer.pixels!;
+    for (let i = 0; i < selection.length; i++) {
+      if (isTrigger(i % this.width, Math.floor(i / this.width))) selection[i] = 0;
+      if (selection[i]) pixels.set(source.subarray(i * 4, i * 4 + 4), i * 4);
+    }
+    return { width: this.width, height: this.height, pixels, selection };
+  }
+  cutSelection(): SelectionClipboard | null {
+    this.endStroke();
+    if (!this.canCutSelection) return null;
+    const clipboard = this.copySelection()!;
+    this.beginStroke();
+    for (let i = 0; i < clipboard.selection.length; i++)
+      if (clipboard.selection[i]) this.record(i * 4, [0, 0, 0, 0]);
+    this.compose();
+    this.endStroke("history.cutSelection");
+    return clipboard;
+  }
+  canPasteSelection(clipboard: SelectionClipboard | null): boolean {
+    if (!this.canEditTexture || !this.canAddLayer || !clipboard) return false;
+    const { width, height, pixels, selection } = clipboard;
+    if (
+      !Number.isInteger(width) ||
+      !Number.isInteger(height) ||
+      width < 4 ||
+      height < 2 ||
+      width > MAX_EDITABLE_SKIN_SIZE ||
+      height > MAX_EDITABLE_SKIN_SIZE ||
+      !(pixels instanceof Uint8ClampedArray) ||
+      !(selection instanceof Uint8Array) ||
+      pixels.length !== width * height * 4 ||
+      selection.length !== width * height ||
+      selection.some((value) => value > 1)
+    )
+      return false;
+    for (let y = 0; y < Math.min(height, this.height); y++)
+      for (let x = 0; x < Math.min(width, this.width); x++)
+        if (!isTrigger(x, y) && selection[y * width + x]) return true;
+    return false;
+  }
+  /** Always create a visible top-level layer; clip across resolutions without resampling. */
+  pasteSelection(clipboard: SelectionClipboard, name = "Вставленный участок") {
+    if (!this.canPasteSelection(clipboard)) return;
+    this.endStroke();
+    const pixels = new Uint8ClampedArray(this.pixels.length);
+    const selection = new Uint8Array(this.width * this.height);
+    for (let y = 0; y < Math.min(clipboard.height, this.height); y++)
+      for (let x = 0; x < Math.min(clipboard.width, this.width); x++) {
+        const source = y * clipboard.width + x,
+          target = y * this.width + x;
+        if (isTrigger(x, y) || !clipboard.selection[source]) continue;
+        selection[target] = 1;
+        pixels.set(clipboard.pixels.subarray(source * 4, source * 4 + 4), target * 4);
+      }
+    const id = `layer-${++this.sequence}`;
+    this.changeStructure("history.pasteSelection", () => {
+      this.nodes.push({
+        id,
+        kind: "layer",
+        name: name.trim().slice(0, MAX_LAYER_NAME) || "Вставленный участок",
+        parentId: null,
+        visible: true,
+        locked: false,
+        alphaLocked: false,
+        opacity: 100,
+        pixels,
+      });
+      this.active = id;
+      this.selectedPixels = selection;
+    });
+    return id;
   }
   /** Integer translation from the gesture's original raster; previews never accumulate clipping. */
   beginMove() {

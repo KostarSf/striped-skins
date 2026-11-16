@@ -28,6 +28,8 @@ import {
   type MobileEditorView,
 } from "./MobileEditorControls";
 import { MoveControls } from "./MoveControls";
+import { ClipboardControls } from "./ClipboardControls";
+import { useSelectionClipboard } from "./useSelectionClipboard";
 import { NumberSlider } from "./NumberSlider";
 import { LayerPanel, HistoryPanel } from "./LayerPanel";
 import { useDocumentSetting } from "./useDocumentSetting";
@@ -63,6 +65,7 @@ export default function EditorWorkspace({
   onFileDrop: (file: File) => void;
 }) {
   const { t } = useTranslation();
+  const clipboard = useSelectionClipboard(skin);
   const labelFor = createPartLabel(t);
   const wearableNames = getWearableNames(t);
   useEffect(() => {
@@ -206,9 +209,30 @@ export default function EditorWorkspace({
   );
   useEffect(() => {
     const key = (e: KeyboardEvent) => {
-      if ((e.target as HTMLElement).closest("input,select,textarea,dialog,.color-picker-trigger"))
+      if (
+        (e.target as HTMLElement).closest(
+          "input,select,textarea,dialog,[contenteditable],.color-picker-trigger",
+        )
+      )
         return;
       const k = e.key.toLowerCase();
+      if ((e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey) {
+        const action =
+          e.code === "KeyC" || k === "c"
+            ? ([clipboard.canCopy, clipboard.copy] as const)
+            : e.code === "KeyX" || k === "x"
+              ? ([clipboard.canCut, clipboard.cut] as const)
+              : e.code === "KeyV" || k === "v"
+                ? ([clipboard.canPaste, clipboard.paste] as const)
+                : null;
+        if (action) {
+          if (action[0]) {
+            e.preventDefault();
+            if (!e.repeat) action[1]();
+          }
+          return;
+        }
+      }
       if (
         (e.ctrlKey || e.metaKey) &&
         !e.shiftKey &&
@@ -245,7 +269,7 @@ export default function EditorWorkspace({
     };
     window.addEventListener("keydown", key);
     return () => window.removeEventListener("keydown", key);
-  }, [skin, selectTool, swapColors, setBrushSize, setSelection]);
+  }, [skin, selectTool, swapColors, setBrushSize, setSelection, clipboard]);
   const sample = (pixel: Pixel) => {
     setHex(
       "#" +
@@ -330,6 +354,7 @@ export default function EditorWorkspace({
             </strong>
           </div>
           <span className="toolbar-divider" />
+          <ClipboardControls actions={clipboard} />
           {tool === "move" ? <MoveControls document={skin} /> : null}
           {tool === "select" ? (
             <div className="inline-controls">
@@ -645,6 +670,7 @@ export default function EditorWorkspace({
           onView={setMobileView}
           tool={tool}
           skin={skin}
+          clipboard={clipboard}
           primary={hex}
           secondary={colors.secondary}
           onPrimary={setHex}
